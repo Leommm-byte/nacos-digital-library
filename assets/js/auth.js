@@ -364,3 +364,45 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 });
+
+// Device fingerprinting: generate SHA-256 hex of several client properties
+async function getDeviceFingerprint() {
+  try {
+    const parts = [
+      navigator.userAgent || '',
+      navigator.language || '',
+      (screen && screen.width && screen.height) ? `${screen.width}x${screen.height}` : '',
+      navigator.platform || '',
+      (Intl && Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions) ? Intl.DateTimeFormat().resolvedOptions().timeZone : ''
+    ].join('||');
+
+    if (!window.crypto || !crypto.subtle) {
+      console.warn('Web Crypto unavailable — device fingerprint not generated.');
+      return '';
+    }
+
+    const enc = new TextEncoder().encode(parts);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (err) {
+    console.warn('Fingerprint generation failed:', err);
+    return '';
+  }
+}
+
+// Inject fingerprint into forms if present
+document.addEventListener('DOMContentLoaded', async () => {
+  const fp = await getDeviceFingerprint();
+  ['signupForm', 'loginForm', 'forgotForm'].forEach(id => {
+    const form = document.getElementById(id);
+    if (!form) return;
+    let input = form.querySelector('input[name="device_fp"]');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'device_fp';
+      form.appendChild(input);
+    }
+    input.value = fp;
+  });
+});

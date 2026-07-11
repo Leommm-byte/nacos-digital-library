@@ -44,18 +44,18 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     if ($stmt->fetch()) {
         // User exists → redirect to home page
         $stmt->close();
-        header("Location: home.php");
+        header("Location: " . $BASE_URL . "home.php");
         exit();
     } else {
         // User does not exist → session invalid, destroy it
         $stmt->close();
         session_unset();
         session_destroy();
-        header("Location: auth/login.php");
+        header("Location: " . $BASE_URL . "auth/login.php");
         exit();
     }
 } else {
     // No session detected → redirect to login page
-    header("Location: auth/login.php");
+    header("Location: " . $BASE_URL . "auth/login.php");
     exit();
 }

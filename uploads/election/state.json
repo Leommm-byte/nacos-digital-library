@@ -1,0 +1,64 @@
+{
+    "election_name": "NACOS 2026 Executive Council Election",
+    "status": "open",
+    "positions": [
+        {
+            "id": "pres",
+            "title": "President"
+        },
+        {
+            "id": "vpres",
+            "title": "Vice President"
+        },
+        {
+            "id": "gsec",
+            "title": "General Secretary"
+        },
+        {
+            "id": "pos_44019e5c",
+            "title": "Welfare Director"
+        }
+    ],
+    "candidates": [
+        {
+            "id": 1,
+            "name": "Adewale John",
+            "matric": "F\/HD\/24\/321009",
+            "pos_id": "pres",
+            "votes": 12,
+            "manifesto": "Empowering students through technology."
+        },
+        {
+            "id": 2,
+            "name": "Chioma Nnamdi",
+            "matric": "F\/HD\/24\/321155",
+            "pos_id": "pres",
+            "votes": 9,
+            "manifesto": "Transparency and accountability in leadership."
+        },
+        {
+            "id": 3,
+            "name": "Musa Ibrahim",
+            "matric": "F\/HD\/24\/321045",
+            "pos_id": "vpres",
+            "votes": 16,
+            "manifesto": "Fostering synergy between departments."
+        },
+        {
+            "id": 4,
+            "name": "Aisha Yusuf",
+            "matric": "F\/HD\/24\/321112",
+            "pos_id": "vpres",
+            "votes": 7,
+            "manifesto": "Fostering academic excellence."
+        },
+        {
+            "id": 188,
+            "name": "TireniOluwa",
+            "matric": "234567",
+            "pos_id": "pos_44019e5c",
+            "votes": 0,
+            "manifesto": "efvdcdccs"
+        }
+    ]
+}
