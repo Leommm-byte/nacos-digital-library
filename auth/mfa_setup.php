@@ -82,8 +82,8 @@ $backup_codes = json_decode($user['mfa_backup_codes'], true) ?: [];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Configure your NACOS Digital Library security settings including Multi-Factor Authentication (MFA) and account protection.">
-    <title>Security Settings | NACOS Digital Library</title>
+    <meta name="description" content="Configure your NACOS App security settings including Multi-Factor Authentication (MFA) and account protection.">
+    <title>Security Settings | NACOS App</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

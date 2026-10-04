@@ -26,10 +26,10 @@ $page_title = "Upload Success";
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your academic resource has been uploaded successfully to the NACOS Digital Library and is pending moderation review.">
-    <title>NACOS Digital Library | Success</title>
+    <?php render_meta([
+        'title'       => 'Upload Successful | NACOS App',
+        'description' => 'Your academic resource was uploaded successfully and is now pending review by the NACOS App moderation team.',
+    ]); ?>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -193,7 +193,7 @@ $page_title = "Upload Success";
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <span class="meta-pill"><i class="ri-government-line"></i> <?= safe_output(ucfirst($book['department'])) ?></span>
+                <span class="meta-pill"><i class="ri-government-line"></i> <?= safe_output(format_department($book['department'])) ?></span>
                 <?php if ($book['is_ocr']): ?>
                     <span class="meta-pill" style="background: #eff6ff; color: #1e40af; border-color: #bfdbfe;"><i class="ri-cpu-line"></i> AI Scanned</span>
                 <?php endif; ?>

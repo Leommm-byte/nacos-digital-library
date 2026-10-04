@@ -83,8 +83,8 @@ $page_title = "Reading: " . $book['title'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Read <?= safe_output($book['title']) ?> online at the NACOS Digital Library. Access academic books and study materials.">
-    <title>NACOS Digital Library | <?= safe_output($book['title']) ?></title>
+    <meta name="description" content="Read <?= safe_output($book['title']) ?> online in NACOS App. Access academic books and study materials.">
+    <title>NACOS App | <?= safe_output($book['title']) ?></title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/main.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
 

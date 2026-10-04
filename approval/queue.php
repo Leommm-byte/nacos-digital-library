@@ -26,8 +26,8 @@ $result = $stmt->get_result();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Review and approve pending book uploads in the NACOS Digital Library moderation queue.">
-    <title>NACOS Digital Library | Approval Queue</title>
+    <meta name="description" content="Review and approve pending book uploads in the NACOS App moderation queue.">
+    <title>NACOS App | Approval Queue</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/main.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
 </head>
@@ -54,7 +54,7 @@ $result = $stmt->get_result();
                         <td><?= safe_output($book['title']) ?></td>
                         <td><?= safe_output($book['author']) ?></td>
                         <td><?= safe_output($book['uploader']) ?></td>
-                        <td><?= safe_output($book['department']) ?></td>
+                        <td><?= safe_output(format_department($book['department'])) ?></td>
                         <td>
                             <a href="<?= $BASE_URL ?>approval/review.php?id=<?= $book['id'] ?>" class="btn btn-small">Review</a>
                         </td>

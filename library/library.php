@@ -60,16 +60,18 @@ if ($user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0) {
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Browse and search the NACOS Digital Library catalog - Access academic books, study materials, and resources for Computer Science students.">
-    <title>NACOS Digital Library | Catalog</title>
+    <?php render_meta([
+        'title'       => 'Browse Books | NACOS App',
+        'description' => 'Browse and search the NACOS App book catalog for academic books, study materials and resources for Computer Science students.',
+        'og_type'     => 'website',
+    ]); ?>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/main.css">
+    <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/library.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
@@ -260,6 +262,7 @@ if ($user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0) {
             line-height: 1.4;
             color: var(--text-dark);
             display: -webkit-box;
+            line-clamp: 2;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;

@@ -24,12 +24,23 @@ function load_env($path) {
 
 load_env(__DIR__ . '/../.env');
 
+// Never accept credentials over plaintext HTTP in production.
+$isHttps = !empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
+$forwardedProto = strtolower(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')[0]));
+$isHttps = $isHttps || $forwardedProto === 'https';
+if ((getenv('APP_ENV') ?: 'local') === 'production' && !$isHttps) {
+    $host = $_SERVER['HTTP_HOST'] ?? '';
+    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    header('Location: https://' . $host . $uri, true, 301);
+    exit();
+}
+
 // 2. CONFIGURATION
-$servername = getenv('DB_SERVER') ?: 'localhost';
-$username   = getenv('DB_USERNAME') ?: 'root';
-$password   = getenv('DB_PASSWORD') ?: '';
-$dbname     = getenv('DB_NAME') ?: 'nacos_library';
-$BASE_URL   = getenv('BASE_URL') ?: '/nacos-app/';
+$servername = getenv('DB_SERVER') ?: 'mysql.nacosyabatech.com';
+$username   = getenv('DB_USERNAME') ?: 'nacos_db';
+$password   = getenv('DB_PASSWORD') ?: 'Programming1234$';
+$dbname     = getenv('DB_NAME') ?: 'nacos_app_db';
+$BASE_URL   = getenv('BASE_URL') ?: '/';
 
 // Global variables for convenience (Phase 15 - Code Quality)
 $GLOBALS['BASE_URL'] = $BASE_URL;
@@ -42,13 +53,15 @@ try {
     $conn->set_charset("utf8mb4");
 } catch (mysqli_sql_exception $e) {
     // In production, log this and show a generic error
-    error_log("Database Connection Failed: " . $e->getMessage());
-    die("A technical error occurred. Please try again later.");
+    die("Database Connection Failed: " . $e->getMessage());
 }
 
 // 4. INCLUDE HELPERS & SESSION AUTOMATICALLY (Foundation)
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/session.php';
+
+// 5. CENTRAL META / SEO HELPERS (provides render_meta() for every page)
+require_once __DIR__ . '/meta.php';
 
 secure_session_start();
 

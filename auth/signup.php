@@ -13,9 +13,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $fullname       = trim($_POST['fullname']);
     $matric_number  = strtoupper(trim($_POST['matric_number']));
-    $department     = trim($_POST['department']);
+    $department     = normalize_department($_POST['department'] ?? '');
     $level          = $_POST['level'];
-    $programme      = $_POST['programme'];
+    $programme      = normalize_programme($_POST['programme'] ?? '');
     $password       = $_POST['password'];
     $confirm_pw     = $_POST['confirm_password'];
 
@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Phase 2: Matric Number Validation
     if (!validate_matric_number($matric_number)) {
-        $errors[] = "Invalid Matric Number format. Expected format: ND/2023/CS/1234 or HND/2023/CS/1234";
+        $errors[] = "Invalid Matric Number format. Expected format: F/ND/24/1234567, P/HND/21/1234567, or C/HD/19/1234567";
     }
 
     if ($password !== $confirm_pw) {
@@ -109,15 +109,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Create an account on NACOS Digital Library to access course materials, books and student resources.">
-    <meta name="author" content="NACOS Digital Library">
-    <meta name="robots" content="index,follow">
+    <meta name="description" content="Create an account on NACOS App to access student services, course materials and academic resources.">
+    <meta name="author" content="NACOS App">
+    <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#0a74da">
-    <meta property="og:title" content="NACOS Digital Library — Sign Up">
-    <meta property="og:description" content="Register for the NACOS Digital Library to browse and read protected resources for students.">
+    <meta property="og:title" content="NACOS App — Sign Up">
+    <meta property="og:description" content="Register for NACOS App to access student services and protected academic resources.">
     <meta property="og:image" content="<?= $BASE_URL ?>assets/images/YCT_LOGO.png">
     <meta name="twitter:card" content="summary_large_image">
-    <title>NACOS Digital Library | Signup</title>
+    <title>NACOS App | Signup</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/auth.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -144,20 +144,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" id="signupForm">
+            <form method="POST" action="<?= $BASE_URL ?>auth/signup.php" id="signupForm" autocomplete="on">
                 <!-- Phase 5: CSRF Token -->
-                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" id="signup_csrf_token" name="csrf_token" value="<?= csrf_token() ?>">
 
-                <input type="text" name="fullname" placeholder="Full Name" value="<?= isset($_POST['fullname']) ? safe_output($_POST['fullname']) : '' ?>" required>
+                <input type="text" id="signup_fullname" name="fullname" placeholder="Full Name" value="<?= isset($_POST['fullname']) ? safe_output($_POST['fullname']) : '' ?>" required autocomplete="name">
 
-                <input type="text" name="matric_number" placeholder="Matric Number (e.g. ND/2023/CS/1234)" value="<?= isset($_POST['matric_number']) ? safe_output($_POST['matric_number']) : '' ?>" required>
+                <input type="text" id="signup_matric_number" name="matric_number" placeholder="Matric Number (e.g. F/ND/24/1234567)" value="<?= isset($_POST['matric_number']) ? safe_output($_POST['matric_number']) : '' ?>" required autocomplete="username">
 
-                <select name="department" required>
+                <select id="signup_department" name="department" required>
                     <option value="">Select Department</option>
                     <option value="computer-science" <?= isset($_POST['department']) && $_POST['department'] == 'computer-science' ? 'selected' : '' ?>>Computer Science</option>
                 </select>
 
-                <select name="level" required>
+                <select id="signup_level" name="level" required>
                     <option value="">Select Level</option>
                     <option value="ND1" <?= isset($_POST['level']) && $_POST['level'] == 'ND1' ? 'selected' : '' ?>>ND1</option>
                     <option value="ND2" <?= isset($_POST['level']) && $_POST['level'] == 'ND2' ? 'selected' : '' ?>>ND2</option>
@@ -167,7 +167,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <option value="HND3" <?= isset($_POST['level']) && $_POST['level'] == 'HND3' ? 'selected' : '' ?>>HND3</option>
                 </select>
 
-                <select name="programme" required>
+                <select id="signup_programme" name="programme" required>
                     <option value="">Select Programme</option>
                     <option value="Full-time" <?= isset($_POST['programme']) && $_POST['programme'] == 'Full-time' ? 'selected' : '' ?>>Full-time</option>
                     <option value="Part-time" <?= isset($_POST['programme']) && $_POST['programme'] == 'Part-time' ? 'selected' : '' ?>>Part-time</option>
@@ -175,13 +175,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </select>
 
                 <div class="password-wrapper">
-                    <input type="password" name="password" id="password" placeholder="Password" required>
-                    <i class="ri-eye-line toggle-eye" data-target="password"></i>
+                    <input type="password" name="password" id="signup_password" placeholder="Password" required autocomplete="new-password">
+                    <i class="ri-eye-line toggle-eye" data-target="signup_password"></i>
                 </div>
 
                 <div class="password-wrapper">
-                    <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm Password" required>
-                    <i class="ri-eye-line toggle-eye" data-target="confirm_password"></i>
+                    <input type="password" name="confirm_password" id="signup_confirm_password" placeholder="Confirm Password" required autocomplete="new-password">
+                    <i class="ri-eye-line toggle-eye" data-target="signup_confirm_password"></i>
                 </div>
 
                 <button type="submit">Sign Up</button>

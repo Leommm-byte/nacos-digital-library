@@ -81,7 +81,7 @@ class TOTP_Helper {
         return $decoded;
     }
 
-    public static function getQRCodeUrl($name, $secret, $issuer = 'NACOS Library') {
+    public static function getQRCodeUrl($name, $secret, $issuer = 'NACOS App') {
         // We don't have a library for QR codes, so we provide the raw otpauth:// URI
         // The frontend can use a public JS library (like qrcode.js) to render it.
         $encodedName = rawurlencode($name);

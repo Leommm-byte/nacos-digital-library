@@ -95,7 +95,7 @@ body {
     border-radius: 8px;
     margin-top: 12px;
     border: 2px solid var(--border-gray);
-    font-size: 15px;
+    font-size: 16px;
     transition: all 0.3s ease;
     background-color: var(--white);
     color: var(--text-dark);
@@ -126,7 +126,7 @@ body {
 .toggle-eye {
     position: absolute;
     right: 14px;
-    top: 60%;
+    top: 38px;
     transform: translateY(-50%);
     cursor: pointer;
     color: var(--text-secondary);
@@ -324,4 +324,14 @@ button:disabled {
         opacity: 1;
         transform: translateX(0);
     }
+}
+
+/* Prevent iOS/Safari auto-zoom when a form control is focused.
+   Safari zooms in on inputs/selects/textareas whose font-size is smaller
+   than 16px. Forcing 16px keeps the page from jumping/zooming on signup,
+   login, search, upload and election forms. */
+.auth-box input,
+.auth-box select,
+.auth-box textarea {
+    font-size: 16px !important;
 }

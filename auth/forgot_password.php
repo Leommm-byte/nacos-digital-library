@@ -55,10 +55,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Request a password reset for NACOS Digital Library accounts.">
-    <meta name="author" content="NACOS Digital Library">
+    <meta name="description" content="Request a password reset for NACOS App accounts.">
+    <meta name="author" content="NACOS App">
     <meta name="robots" content="noindex">
-    <title>NACOS Digital Library | Forgot Password</title>
+    <title>NACOS App | Forgot Password</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/auth.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -86,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" id="forgotForm">
+            <form method="POST" action="<?= $BASE_URL ?>auth/forgot_password.php" id="forgotForm" autocomplete="on">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
                 <input type="text" name="matric_number" placeholder="Matric Number" value="<?= isset($_POST['matric_number']) ? safe_output($_POST['matric_number']) : '' ?>" required>

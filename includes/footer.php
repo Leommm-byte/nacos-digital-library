@@ -5,7 +5,7 @@ $currentYear = date('Y');
 ?>
 <footer class="site-footer" role="contentinfo">
 	<div class="site-footer__inner">
-		<p class="site-footer__text">© <?= $currentYear ?> NACOS Digital Library — <span class="muted">Built for academic access</span></p>
+		<p class="site-footer__text">© <?= $currentYear ?> NACOS App — <span class="muted">Built for student access</span></p>
 	</div>
 
 	<style>
@@ -43,4 +43,7 @@ $currentYear = date('Y');
 	</style>
 
 	<?php include_once __DIR__ . '/modal.php'; ?>
+
+	<?php /* PWA "Add to Home Screen" install prompt — authenticated pages only */ ?>
+	<?php include_once __DIR__ . '/pwa_install.php'; ?>
 </footer>

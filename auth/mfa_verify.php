@@ -4,6 +4,12 @@ require_once __DIR__ . '/../includes/mfa_helpers.php';
 
 secure_session_start();
 
+try {
+    $conn->query("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Throwable $e) {
+    // The column already exists.
+}
+
 // Ensure there is a pending MFA session
 if (!isset($_SESSION['mfa_user_id']) || !isset($_SESSION['mfa_pending'])) {
     header("Location: " . $BASE_URL . "auth/login.php");
@@ -14,7 +20,7 @@ $user_id = $_SESSION['mfa_user_id'];
 $errors = [];
 
 // Fetch user data
-$stmt = $conn->prepare("SELECT id, uuid, fullname, department, level, programme, role, mfa_secret, mfa_backup_codes, device_fp FROM users WHERE id = ? LIMIT 1");
+$stmt = $conn->prepare("SELECT id, uuid, fullname, department, level, programme, role, mfa_secret, mfa_backup_codes, device_fp, must_change_password FROM users WHERE id = ? LIMIT 1");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
@@ -80,11 +86,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $_SESSION['level'] = $user['level'];
         $_SESSION['programme'] = $user['programme'];
         $_SESSION['role'] = $user['role'];
+        $_SESSION['must_change_password'] = (int)$user['must_change_password'];
 
         log_audit($conn, "mfa_verified_success", "users", $user['id'], ["method" => $method]);
         log_audit($conn, "login_success", "users", $user['id'], ["mfa" => true]);
 
-        header("Location: " . $BASE_URL . "home.php");
+        header("Location: " . $BASE_URL . ($user['must_change_password'] ? "auth/change_password.php" : "home.php"));
         exit();
     } else {
         $errors[] = "Invalid verification code.";
@@ -99,8 +106,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Complete two-factor authentication to securely access your NACOS Digital Library account.">
-    <title>NACOS Digital Library | MFA Verification</title>
+    <meta name="description" content="Complete two-factor authentication to securely access your NACOS App account.">
+    <title>NACOS App | MFA Verification</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/auth.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">

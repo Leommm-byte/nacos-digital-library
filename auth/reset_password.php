@@ -65,8 +65,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Reset your NACOS Digital Library account password securely.">
-    <title>NACOS Digital Library | Reset Password</title>
+    <meta name="description" content="Reset your NACOS App account password securely.">
+    <title>NACOS App | Reset Password</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/auth.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -92,17 +92,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <?= $success ?>
                 </div>
             <?php else: ?>
-                <form method="POST">
+                <form method="POST" action="<?= $BASE_URL ?>auth/reset_password.php" autocomplete="on">
                     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                     <input type="hidden" name="token" value="<?= safe_output($token) ?>">
 
                     <div class="password-wrapper">
-                        <input type="password" name="password" id="password" placeholder="New Password" required>
+                        <input type="password" name="password" id="password" placeholder="New Password" required autocomplete="new-password">
                         <i class="ri-eye-line toggle-eye" data-target="password"></i>
                     </div>
 
                     <div class="password-wrapper">
-                        <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm New Password" required>
+                        <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm New Password" required autocomplete="new-password">
                         <i class="ri-eye-line toggle-eye" data-target="confirm_password"></i>
                     </div>
 

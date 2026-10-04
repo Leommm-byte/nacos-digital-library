@@ -25,7 +25,7 @@ function render_admin_layout($content_callback, $active_tab, $page_title, $bread
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="NACOS Digital Library Admin Panel - Manage books, users, announcements, elections, and system settings.">
+        <meta name="description" content="NACOS App Admin Panel - Manage books, users, announcements, elections, and system settings.">
         <title>Admin Panel | <?= htmlspecialchars($page_title) ?></title>
 
         <!-- Design Tokens Fonts -->
@@ -575,6 +575,63 @@ function render_admin_layout($content_callback, $active_tab, $page_title, $bread
                 .admin-header {
                     padding: 0 18px;
                 }
+
+                .admin-content {
+                    padding: 22px 18px;
+                }
+
+                .card-container {
+                    padding: 20px;
+                }
+
+                /* Allow wide data tables to scroll horizontally instead of
+                   breaking the mobile layout */
+                .admin-table-wrapper {
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                .admin-table {
+                    min-width: 640px;
+                }
+            }
+
+            @media (max-width: 620px) {
+                .admin-content {
+                    padding: 16px 14px;
+                }
+
+                .card-container {
+                    padding: 16px;
+                    border-radius: 12px;
+                }
+
+                .stats-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .admin-header__title {
+                    font-size: 1rem;
+                }
+
+                .admin-header {
+                    height: 64px;
+                    padding: 0 14px;
+                }
+
+                .stat-card {
+                    padding: 18px;
+                }
+
+                .breadcrumbs {
+                    flex-wrap: wrap;
+                    margin-bottom: 18px;
+                }
+
+                .admin-table th,
+                .admin-table td {
+                    padding: 12px 14px;
+                }
             }
         </style>
     </head>
@@ -605,6 +662,9 @@ function render_admin_layout($content_callback, $active_tab, $page_title, $bread
                 </li>
                 <li class="sidebar-menu-item <?= $active_tab === 'users' ? 'active' : '' ?>">
                     <a href="<?= $BASE_URL ?>admin/users.php"><i class="ri-group-line"></i> Users</a>
+                </li>
+                <li class="sidebar-menu-item <?= $active_tab === 'bulk_students' ? 'active' : '' ?>">
+                    <a href="<?= $BASE_URL ?>admin/bulk_students.php"><i class="ri-file-upload-line"></i> Bulk Register</a>
                 </li>
                 <li class="sidebar-menu-item <?= $active_tab === 'announcements' ? 'active' : '' ?>">
                     <a href="<?= $BASE_URL ?>admin/announcements.php"><i class="ri-notification-3-line"></i> Announcements</a>

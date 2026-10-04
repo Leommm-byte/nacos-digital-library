@@ -11,7 +11,9 @@ function secure_session_start() {
         $lifetime = 0; // Session cookie
         $path = '/';
         $domain = ''; // Default
-        $secure = isset($_SERVER['HTTPS']);
+        $secure = !empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off';
+        $forwardedProto = strtolower(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')[0]));
+        $secure = $secure || $forwardedProto === 'https';
         $httponly = true;
         $samesite = 'Lax';
 

@@ -48,13 +48,12 @@ if (!function_exists('csrf_verify')) {
 /**
  * Matric Number Validator
  * Phase 2 Requirement
- * Format: ND/YYYY/DEPT/1234 or HND/YYYY/DEPT/1234
+ * Formats: F/ND/24/1234567, P/HND/21/1234567, C/HD/19/1234567,
+ * or the legacy ND/YYYY/DEPT/1234 format.
  */
 function validate_matric_number($matric) {
     $matric = strtoupper(trim($matric));
-    // Example YabaTech format regex: (ND|HND)/\d{4}/(CS|MC|ACC)/\d{3,5}
-    // Adjusting for general pattern if specific department codes are unknown
-    $pattern = '/^(ND|HND)\/\d{4}\/[A-Z]{2,4}\/\d{3,6}$/';
+    $pattern = '/^(?:[FPC]\/(?:ND|HND|HD)\/(?:1[9]|[2-9][0-9])\/[0-9]+|(?:ND|HND)\/[0-9]{4}\/[A-Z]{2,4}\/[0-9]{3,6})$/';
     return preg_match($pattern, $matric);
 }
 
@@ -79,10 +78,50 @@ function is_password_strong($password) {
  */
 
 function get_greeting() {
-    $hour = (int)date('H');
-    if ($hour < 12) return "Good Morning";
-    if ($hour < 17) return "Good Afternoon";
-    return "Good Evening";
+    $hour = (int)(new DateTimeImmutable('now', new DateTimeZone('Africa/Lagos')))->format('G');
+    if ($hour < 12) return "Good morning";
+    if ($hour < 17) return "Good afternoon";
+    return "Good evening";
+}
+
+function normalize_department($department) {
+    $department = strtolower(trim((string)$department));
+    $department = preg_replace('/\s+/', ' ', $department);
+    $aliases = [
+        'computer science' => 'computer-science',
+        'computer-science' => 'computer-science',
+        'cs' => 'computer-science',
+        'mass communication' => 'mass-communication',
+        'mass-communication' => 'mass-communication',
+        'mc' => 'mass-communication',
+        'accountancy' => 'accountancy',
+        'accounting' => 'accountancy',
+        'acc' => 'accountancy',
+    ];
+    return $aliases[$department] ?? str_replace(' ', '-', $department);
+}
+
+function format_department($department) {
+    $labels = [
+        'computer-science' => 'Computer Science',
+        'mass-communication' => 'Mass Communication',
+        'accountancy' => 'Accountancy',
+    ];
+    $key = normalize_department($department);
+    return $labels[$key] ?? ucwords(str_replace('-', ' ', $key));
+}
+
+function normalize_programme($programme) {
+    $programme = strtolower(trim((string)$programme));
+    $programme = preg_replace('/\s+/', ' ', $programme);
+    $aliases = [
+        'full time' => 'Full-time',
+        'full-time' => 'Full-time',
+        'part time' => 'Part-time',
+        'part-time' => 'Part-time',
+        'codfel' => 'CODFEL',
+    ];
+    return $aliases[$programme] ?? ucwords($programme);
 }
 
 function get_user_stats($conn, $user_id) {
@@ -121,16 +160,43 @@ function get_user_stats($conn, $user_id) {
 }
 
 function get_recommendations($conn, $dept, $level, $limit = 4) {
-    $stmt = $conn->prepare("SELECT b.id, b.uuid, b.title, b.author, b.thumbnail_path, b.department, b.level
-                            FROM books b
-                            WHERE b.status = 'approved'
-                            AND b.department = ?
-                            AND b.level = ?
-                            ORDER BY b.created_at DESC
-                            LIMIT ?");
-    $stmt->bind_param("ssi", $dept, $level, $limit);
+    $limit = intval($limit);
+    if ($limit < 1) {
+        $limit = 4;
+    }
+
+    // Return random books that match the user's class level.
+    // Preference 1: random books from the user's department + level.
+    // Preference 2 (fills any remaining slots): random books of the same level
+    // from any department, so the section is never empty for the user's level.
+    $sql = "(SELECT b.id, b.uuid, b.title, b.author, b.thumbnail_path, b.department, b.level
+             FROM books b
+             WHERE b.status = 'approved' AND b.department = ? AND b.level = ?
+             ORDER BY RAND()
+             LIMIT ?)
+            UNION ALL
+            (SELECT b.id, b.uuid, b.title, b.author, b.thumbnail_path, b.department, b.level
+             FROM books b
+             WHERE b.status = 'approved' AND b.level = ?
+               AND NOT (b.department = ? AND b.level = ?)
+             ORDER BY RAND()
+             LIMIT ?)
+            LIMIT ?";
+
+    $stmt = $conn->prepare($sql);
+    if (!$stmt) {
+        // Fallback: simple random pick by level if prepare fails
+        return $conn->query("SELECT b.id, b.uuid, b.title, b.author, b.thumbnail_path, b.department, b.level
+                             FROM books b
+                             WHERE b.status = 'approved' AND b.level = '" . $conn->real_escape_string($level) . "'
+                             ORDER BY RAND() LIMIT " . $limit);
+    }
+
+    $stmt->bind_param("ssissiii", $dept, $level, $limit, $level, $dept, $level, $limit, $limit);
     $stmt->execute();
-    return $stmt->get_result();
+    $result = $stmt->get_result();
+    $stmt->close();
+    return $result;
 }
 
 function get_recent_activity($conn, $user_id, $limit = 5) {

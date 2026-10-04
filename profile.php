@@ -98,8 +98,8 @@ $display_last_login = $profile['last_login'] ? date('M d, Y · h:i A', strtotime
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Manage your NACOS Digital Library student profile, update academic details, and keep your account information current.">
-    <title>My Profile | NACOS Digital Library</title>
+    <meta name="description" content="Manage your NACOS App student profile, update academic details, and keep your account information current.">
+    <title>My Profile | NACOS App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -473,7 +473,7 @@ $display_last_login = $profile['last_login'] ? date('M d, Y · h:i A', strtotime
             <div class="profile-banner">
                 <span class="eyebrow"><i class="ri-user-3-fill"></i> Student Account</span>
                 <h1>Keep your academic details current.</h1>
-                <p>Review your profile, update your department and level, and keep your digital library experience aligned with your academic record.</p>
+                <p>Review your profile, update your department and level, and keep your NACOS App experience aligned with your academic record.</p>
                 <div class="profile-meta-pills">
                     <span class="meta-pill"><i class="ri-shield-check-line"></i> Secure Profile</span>
                     <span class="meta-pill"><i class="ri-book-open-line"></i> Personalized Library Access</span>

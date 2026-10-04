@@ -16,7 +16,7 @@ $success = "";
 // Save parameters inside state files to keep DB structures intact
 $config_file = __DIR__ . '/../uploads/config.json';
 $config = file_exists($config_file) ? json_decode(file_get_contents($config_file), true) : [
-    'site_title' => 'NACOS YabaTech Digital Library',
+    'site_title' => 'NACOS App',
     'max_upload' => '10MB',
     'allowed_types' => 'PDF, JPEG, PNG',
     'session' => '2025/2026'

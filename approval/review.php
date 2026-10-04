@@ -66,8 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Review, approve, or reject pending book submissions in the NACOS Digital Library moderation system.">
-    <title>NACOS Digital Library | Review Book</title>
+    <meta name="description" content="Review, approve, or reject pending book submissions in the NACOS App moderation system.">
+    <title>NACOS App | Review Book</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/main.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">

@@ -1,6 +1,6 @@
 <?php
 // ================================
-// NACOS Digital Library | Index Page
+// NACOS App | Index Page
 // Checks session & redirects accordingly
 // ================================
 

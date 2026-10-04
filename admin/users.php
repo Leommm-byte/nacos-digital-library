@@ -69,6 +69,9 @@ function render_users_content() {
     <?php endif; ?>
 
     <div class="admin-table-wrapper">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+            <a href="<?= $BASE_URL ?>admin/bulk_students.php" class="btn btn-primary" style="text-decoration: none; padding: 10px 16px; border-radius: 8px;"><i class="ri-file-upload-line"></i> Bulk Register Students</a>
+        </div>
         <table class="admin-table">
             <thead>
                 <tr>
@@ -87,7 +90,7 @@ function render_users_content() {
                     <tr>
                         <td>
                             <strong style="display: block; font-size: 0.92rem; color: var(--text-dark);"><?= safe_output($user['fullname']) ?></strong>
-                            <span style="font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;"><?= safe_output($user['level']) ?> • <?= str_replace('-', ' ', safe_output($user['department'])) ?></span>
+                            <span style="font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;"><?= safe_output($user['level']) ?> • <?= safe_output(format_department($user['department'])) ?></span>
                         </td>
                         <td>
                             <span style="font-family: monospace; font-size: 0.88rem; font-weight: 600; color: var(--text-secondary);"><?= safe_output($user['matric_number']) ?></span>

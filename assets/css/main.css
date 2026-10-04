@@ -343,3 +343,14 @@ button:hover,
         padding: 28px;
     }
 }
+
+/* Prevent iOS/Safari auto-zoom when a form control is focused.
+   Safari zooms in on inputs/selects/textareas whose font-size is smaller
+   than 16px. Forcing 16px keeps pages (search, upload, election, profile,
+   the AI assistant, etc.) from jumping/zooming when the user begins typing.
+   !important ensures inline and lower-specificity font sizes are overridden. */
+input,
+select,
+textarea {
+    font-size: 16px !important;
+}

@@ -211,10 +211,10 @@ $page_title = "Upload Book";
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Upload and share academic books, PDFs, and scanned documents to the NACOS Digital Library for Computer Science students.">
-    <title>Upload Academic Resource | NACOS Library</title>
+    <?php render_meta([
+        'title'       => 'Upload Academic Resource | NACOS App',
+        'description' => 'Upload and share academic books, PDFs and scanned documents in NACOS App to help other Computer Science students.',
+    ]); ?>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

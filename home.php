@@ -64,10 +64,11 @@ while ($bookmark_row = $bookmark_result->fetch_assoc()) {
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="NACOS Digital Library Dashboard - Your academic hub for accessing books, tracking reading progress, and managing your profile.">
-    <title>Dashboard | NACOS Digital Library</title>
+    <?php render_meta([
+        'title'       => 'Dashboard | NACOS App',
+        'description' => 'Your academic hub for accessing books, tracking reading progress, managing bookmarks and using NACOS App services.',
+        'og_type'     => 'website',
+    ]); ?>
 
     <!-- Google Fonts Theme Integration -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -543,7 +544,7 @@ while ($bookmark_row = $bookmark_result->fetch_assoc()) {
                 <p>Welcome back to your academic hub.</p>
                 <div class="hero-badges">
                     <span class="badge"><i class="ri-user-star-line"></i> <?= safe_output(ucfirst($role)) ?></span>
-                    <span class="badge"><i class="ri-government-line"></i> <?= safe_output($user_data['department']) ?></span>
+                    <span class="badge"><i class="ri-government-line"></i> <?= safe_output(format_department($user_data['department'])) ?></span>
                     <span class="badge"><i class="ri-building-line"></i> <?= safe_output($user_data['level']) ?></span>
                 </div>
             </div>
@@ -562,11 +563,11 @@ while ($bookmark_row = $bookmark_result->fetch_assoc()) {
                     </div>
                     <div class="profile-row">
                         <span>Programme</span>
-                        <strong><?= safe_output($user_data['programme']) ?></strong>
+                        <strong><?= safe_output(normalize_programme($user_data['programme'])) ?></strong>
                     </div>
                     <div class="profile-row">
                         <span>Department</span>
-                        <strong><?= safe_output($user_data['department']) ?></strong>
+                        <strong><?= safe_output(format_department($user_data['department'])) ?></strong>
                     </div>
                     <div class="profile-row">
                         <span>Level</span>
@@ -716,12 +717,12 @@ while ($bookmark_row = $bookmark_result->fetch_assoc()) {
         </div>
         <div class="ai-body" id="aiBody">
             <div class="ai-msg bot">
-                Hello <?= safe_output(explode(' ', $user_data['fullname'])[0]) ?> 👋! I'm your academic assistant. How can I help you navigate the library today?
+                Hello <?= safe_output(explode(' ', $user_data['fullname'])[0]) ?>! I'm your academic assistant. How can I help you navigate the library today?
             </div>
         </div>
         <div class="ai-input-area">
-            <input type="text" placeholder="Type your question...">
-            <button class="btn-read" style="padding: 0;" type="button"><i class="ri-send-plane-fill"></i></button>
+            <input type="text" id="aiInput" placeholder="Type your question..." autocomplete="off">
+            <button class="btn-read" id="aiSend" style="padding: 0;" type="button" aria-label="Send message"><i class="ri-send-plane-fill"></i></button>
         </div>
     </div>
 
@@ -731,9 +732,61 @@ while ($bookmark_row = $bookmark_result->fetch_assoc()) {
         const aiBtn = document.getElementById('aiBtn');
         const aiPanel = document.getElementById('aiPanel');
         const aiClose = document.getElementById('aiClose');
+        const aiInput = document.getElementById('aiInput');
+        const aiSend = document.getElementById('aiSend');
+        const aiBody = document.getElementById('aiBody');
 
         aiBtn.addEventListener('click', () => aiPanel.style.display = 'flex');
         aiClose.addEventListener('click', () => aiPanel.style.display = 'none');
+
+        function addAiMessage(content, type) {
+            const message = document.createElement('div');
+            message.className = 'ai-msg ' + type;
+            message.innerHTML = content;
+            aiBody.appendChild(message);
+            aiBody.scrollTop = aiBody.scrollHeight;
+        }
+
+        async function sendAiMessage() {
+            const message = aiInput.value.trim();
+            if (!message || aiSend.disabled) return;
+
+            addAiMessage(message.replace(/[&<>"']/g, function (character) {
+                return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[character];
+            }), 'user');
+            aiInput.value = '';
+            aiSend.disabled = true;
+            aiInput.disabled = true;
+
+            const formData = new FormData();
+            formData.append('message', message);
+            formData.append('csrf_token', '<?= csrf_token() ?>');
+
+            try {
+                const response = await fetch('<?= $BASE_URL ?>ai_handler.php', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {'Accept': 'application/json'}
+                });
+                const data = await response.json();
+                if (!response.ok || data.status !== 'success') {
+                    throw new Error(data.message || 'The assistant could not respond.');
+                }
+                addAiMessage(data.response, 'bot');
+            } catch (error) {
+                addAiMessage(error.message || 'The assistant is temporarily unavailable. Please try again.', 'bot');
+            } finally {
+                aiSend.disabled = false;
+                aiInput.disabled = false;
+                aiInput.focus();
+            }
+        }
+
+        aiSend.addEventListener('click', sendAiMessage);
+        aiInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') sendAiMessage();
+        });
 
         document.addEventListener('click', function (event) {
             const toggle = event.target.closest('[data-book-id]');

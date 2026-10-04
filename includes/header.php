@@ -17,15 +17,15 @@ $escaped_fullname = $fullname ? htmlspecialchars($fullname, ENT_QUOTES, 'UTF-8')
 // Get current page for meta description
 $current_page = basename($_SERVER['PHP_SELF']);
 $page_descriptions = [
-	'index.php' => 'NACOS Digital Library - Access academic resources, books, and study materials for Yaba College of Technology students.',
-	'home.php' => 'NACOS Digital Library - Your gateway to academic excellence with thousands of books and resources.',
-	'library.php' => 'Browse and search our comprehensive digital library of academic books and resources.',
+	'index.php' => 'NACOS App - Access student services, academic resources, books, and campus updates for Yaba College of Technology students.',
+	'home.php' => 'NACOS App - Your hub for student services, academic resources, books, and campus updates.',
+	'library.php' => 'Browse and search the NACOS App collection of academic books and resources.',
 	'upload.php' => 'Upload and share academic resources with your department.',
 	'reader.php' => 'Read and study from our collection of digital books and academic materials.',
 	'bookmarks.php' => 'Your saved books and bookmarked resources for quick access.',
 	'profile.php' => 'Manage your NACOS student profile, update your academic details, and keep your account information current.',
 ];
-$meta_description = $page_descriptions[$current_page] ?? 'NACOS Digital Library - Empowering students with quality academic resources.';
+$meta_description = $page_descriptions[$current_page] ?? 'NACOS App - Empowering students with useful academic resources and campus services.';
 ?>
 <!-- Meta Description -->
 <meta name="description" content="<?= htmlspecialchars($meta_description, ENT_QUOTES, 'UTF-8') ?>">
@@ -36,7 +36,7 @@ $meta_description = $page_descriptions[$current_page] ?? 'NACOS Digital Library 
 	<div class="site-header__inner">
 		<!-- Left: App title / logo text -->
 		<div class="site-header__left">
-			<a href="<?= $GLOBALS['BASE_URL'] ?>" class="site-logo" aria-label="NACOS Digital Library home">
+			<a href="<?= $GLOBALS['BASE_URL'] ?>" class="site-logo" aria-label="NACOS App home">
 				<span class="logo-accent">NACOS</span><span class="logo-main">YabaTech</span>
 			</a>
 		</div>

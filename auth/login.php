@@ -12,6 +12,13 @@ if (isset($_SESSION['user_id'])) {
 
 $errors = [];
 
+// Older installations may not yet have the bulk-registration password flag.
+try {
+    $conn->query("ALTER TABLE users ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Throwable $e) {
+    // The column already exists.
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // Phase 5: CSRF Verification
     csrf_verify();
@@ -20,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST['password'];
     $device_fp = isset($_POST['device_fp']) ? trim($_POST['device_fp']) : '';
 
-    $sql = "SELECT id, uuid, fullname, department, level, programme, password_hash, role, failed_logins, lock_until, device_fp
+    $sql = "SELECT id, uuid, fullname, department, level, programme, password_hash, role, mfa_enabled, failed_logins, lock_until, device_fp, must_change_password
             FROM users WHERE matric_number = ? LIMIT 1";
 
     $stmt = $conn->prepare($sql);
@@ -79,11 +86,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['level'] = $user['level'];
                 $_SESSION['programme'] = $user['programme'];
                 $_SESSION['role'] = $user['role'];
+                $_SESSION['must_change_password'] = (int)$user['must_change_password'];
 
                 // Phase 13: Log successful login
                 log_audit($conn, "login_success", "users", $user['id']);
 
-                header("Location: " . $BASE_URL . "home.php");
+                header("Location: " . $BASE_URL . ($user['must_change_password'] ? "auth/change_password.php" : "home.php"));
                 exit();
             } else {
                 // Failed password: increment failed_logins; lock if threshold reached
@@ -122,15 +130,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Login to NACOS Digital Library — access course materials, books and resources.">
-    <meta name="author" content="NACOS Digital Library">
-    <meta name="robots" content="index,follow">
+    <meta name="description" content="Login to NACOS App — access course materials, books and student services.">
+    <meta name="author" content="NACOS App">
+    <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#0a74da">
-    <meta property="og:title" content="NACOS Digital Library — Login">
-    <meta property="og:description" content="Sign in to access the NACOS Digital Library. Browse and read protected resources for students.">
+    <meta property="og:title" content="NACOS App — Login">
+    <meta property="og:description" content="Sign in to access NACOS App student services and protected academic resources.">
     <meta property="og:image" content="<?= $BASE_URL ?>assets/images/YCT_LOGO.png">
     <meta name="twitter:card" content="summary_large_image">
-    <title>NACOS Digital Library | Login</title>
+    <title>NACOS App | Login</title>
     <link rel="stylesheet" href="<?= $BASE_URL ?>assets/css/auth.css">
     <link rel="icon" href="<?= $BASE_URL ?>assets/images/NACOS_LOGO.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -151,14 +159,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" id="loginForm">
+            <form method="POST" action="<?= $BASE_URL ?>auth/login.php" id="loginForm" autocomplete="on">
                 <!-- Phase 5: CSRF Token -->
-                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" id="login_csrf_token" name="csrf_token" value="<?= csrf_token() ?>">
 
-                <input type="text" name="matric_number" placeholder="Matric Number" value="<?= isset($_POST['matric_number']) ? safe_output($_POST['matric_number']) : '' ?>" required>
+                <input type="text" id="login_matric_number" name="matric_number" placeholder="Matric Number" value="<?= isset($_POST['matric_number']) ? safe_output($_POST['matric_number']) : '' ?>" required autocomplete="username">
 
                 <div class="password-wrapper">
-                    <input type="password" name="password" id="login_password" placeholder="Password" required>
+                    <input type="password" name="password" id="login_password" placeholder="Password" required autocomplete="current-password">
                     <i class="ri-eye-line toggle-eye" data-target="login_password"></i>
                 </div>
 

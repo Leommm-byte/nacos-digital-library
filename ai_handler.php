@@ -1,7 +1,7 @@
 <?php
 /**
  * ai_handler.php
- * Phase 18: NACOS Library Concierge Logic
+ * Phase 18: NACOS App Concierge Logic
  */
 
 require_once __DIR__ . '/includes/db.php';
@@ -119,7 +119,7 @@ elseif (strpos($message_lower, 'activity') !== false || strpos($message_lower, '
 } 
 // 6. Help / Default
 else {
-    $response = "I'm the NACOS Library Concierge. I can help you with:<br>
+    $response = "I'm the NACOS App Concierge. I can help you with:<br>
                  • Finding specific <strong>books</strong><br>
                  • Checking your <strong>upload status</strong><br>
                  • Accessing your <strong>bookmarks</strong><br>

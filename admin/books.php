@@ -81,7 +81,7 @@ function render_books_content()
                             <span style="font-size: 0.78rem; color: var(--text-secondary);">By <?= safe_output($book['author']) ?></span>
                         </td>
                         <td>
-                            <span style="text-transform: capitalize; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);"><?= str_replace('-', ' ', safe_output($book['department'])) ?></span>
+                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);"><?= safe_output(format_department($book['department'])) ?></span>
                         </td>
                         <td>
                             <?php if ($book['status'] === 'approved'): ?>

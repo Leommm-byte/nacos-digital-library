@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // ================================
   // PASSWORD STRENGTH INDICATOR
   // ================================
-  const passwordInputs = document.querySelectorAll("input[name='password']");
+  const passwordInputs = document.querySelectorAll("#signupForm input[name='password']");
   passwordInputs.forEach(input => {
     input.addEventListener("input", function () {
       showPasswordStrength(this);
@@ -269,7 +269,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function showPasswordStrength(input) {
     const value = input.value;
-    const formGroup = input.closest(".form-group");
+    const formGroup = input.closest(".form-group, .password-wrapper") || input.parentElement;
+    if (!formGroup) return;
     
     let strength = 0;
     let strengthText = "";

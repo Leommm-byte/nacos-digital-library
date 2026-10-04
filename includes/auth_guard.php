@@ -13,6 +13,12 @@ function check_auth() {
         header("Location: " . $GLOBALS['BASE_URL'] . "auth/login.php");
         exit();
     }
+
+    $current_page = basename($_SERVER['PHP_SELF'] ?? '');
+    if (!empty($_SESSION['must_change_password']) && $current_page !== 'change_password.php') {
+        header("Location: " . $GLOBALS['BASE_URL'] . "auth/change_password.php");
+        exit();
+    }
 }
 
 function check_role($allowed_roles = []) {

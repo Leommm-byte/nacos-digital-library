@@ -188,7 +188,7 @@ function render_moderation_content()
                         </td>
                         <td>
                             <span style="display: block; font-size: 0.85rem; text-transform: uppercase; font-weight: 600;"><?= safe_output($book['level']) ?></span>
-                            <span style="font-size: 0.78rem; color: var(--text-secondary); text-transform: capitalize;"><?= str_replace('-', ' ', $book['department']) ?></span>
+                            <span style="font-size: 0.78rem; color: var(--text-secondary);"><?= safe_output(format_department($book['department'])) ?></span>
                         </td>
                         <td>
                             <?php if ($book['status'] === 'pending'): ?>
