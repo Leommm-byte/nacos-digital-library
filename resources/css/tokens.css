@@ -33,9 +33,9 @@
     --color-yellow-600: #b38f00;
 
     --radius-sm: 0.375rem;
-    --radius-md: 0.625rem;
-    --radius-lg: 0.875rem;
-    --radius-xl: 1.25rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
 
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -73,10 +73,10 @@
 :root {
     color-scheme: light;
 
-    --bg: #f5f8f6;
+    --bg: #f0f4f1;
     --surface: #ffffff;
-    --surface-2: #eef3f0;
-    --border: #dfe7e2;
+    --surface-2: #edf2ee;
+    --border: #dde5df;
     --fg: #111a15;
     --muted: #51605a;
 
@@ -104,11 +104,23 @@
     --ring: var(--color-green-600);
     --overlay: rgb(10 20 15 / 0.45);
 
-    /* Small, cheap shadows: no large blurs on mobile GPUs. */
-    --shadow-card: 0 1px 2px rgb(16 24 20 / 0.06), 0 1px 3px rgb(16 24 20 / 0.04);
-    --shadow-pop: 0 8px 24px rgb(16 24 20 / 0.12);
+    /* Soft tints for icon tiles and highlights. */
+    --tint-green: #e3f6ea;
+    --tint-green-fg: var(--color-green-700);
+    --tint-yellow: #fff3c4;
+    --tint-yellow-fg: #8a6500;
+    --tint-blue: #e4edfd;
+    --tint-blue-fg: #2456c2;
+    --tint-violet: #eee8fd;
+    --tint-violet-fg: #6a3fd1;
+    --tint-red: #fde8e8;
+    --tint-red-fg: #b42323;
 
-    --header-h: 3.75rem;
+    /* Small, cheap shadows: no large blurs on mobile GPUs. */
+    --shadow-card: 0 1px 2px rgb(16 24 20 / 0.04), 0 4px 14px -6px rgb(16 24 20 / 0.1);
+    --shadow-pop: 0 12px 32px -8px rgb(16 24 20 / 0.22);
+
+    --header-h: 4rem;
     --tabbar-h: 4rem;
 
     --duration-fast: 120ms;
@@ -164,6 +176,17 @@
 
         --ring: var(--color-yellow-400);
         --overlay: rgb(0 0 0 / 0.6);
+
+        --tint-green: #12301f;
+        --tint-green-fg: var(--color-green-300);
+        --tint-yellow: #2f2708;
+        --tint-yellow-fg: var(--color-yellow-300);
+        --tint-blue: #142340;
+        --tint-blue-fg: #93b6ff;
+        --tint-violet: #241a3f;
+        --tint-violet-fg: #bba5ff;
+        --tint-red: #331616;
+        --tint-red-fg: #ff9a9a;
 
         --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
         --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.5);

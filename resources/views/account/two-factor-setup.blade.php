@@ -1,10 +1,7 @@
 <x-layouts.app title="Set up two-step verification">
-    <div class="animate-enter max-w-xl">
-        <h1 class="text-2xl sm:text-3xl">Set up two-step verification</h1>
-        <p class="mt-1 text-muted">You need an authenticator app, such as Google Authenticator, Microsoft Authenticator or Aegis.</p>
-    </div>
+    <x-page-header title="Set up two-step verification" subtitle="You need an authenticator app, such as Google Authenticator, Microsoft Authenticator or Aegis." :back="route('settings')" back-label="Account settings" />
 
-    <x-card class="mt-8 max-w-xl space-y-6">
+    <x-card class="max-w-xl space-y-6">
         <div>
             <h2 class="text-base">1. Add your account to the app</h2>
             <p class="mt-1 text-sm text-muted">On this phone, tap the button. On a computer, scan the QR code with your phone.</p>

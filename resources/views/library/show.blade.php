@@ -3,8 +3,8 @@
 @endphp
 
 <x-layouts.app :title="$book->title" :description="'By '.$book->author.' · '.$book->level->label().' '.$book->department->name">
-    <nav aria-label="Breadcrumb" class="mb-4 text-sm">
-        <a href="{{ route('library.index') }}" class="link inline-flex items-center gap-1"><x-icon name="chevron-left" /> Library</a>
+    <nav aria-label="Breadcrumb">
+        <a href="{{ route('library.index') }}" class="page-header-back"><x-icon name="chevron-left" /> Library</a>
     </nav>
 
     <div class="animate-enter grid gap-6 sm:grid-cols-[minmax(0,14rem)_1fr] sm:gap-8">
@@ -17,7 +17,7 @@
                 <x-alert type="warning" class="mb-4">This book is {{ str_replace('_', ' ', $book->status->value) }} and is only visible to you and reviewers.</x-alert>
             @endunless
 
-            <h1 class="text-2xl sm:text-3xl">{{ $book->title }}</h1>
+            <h1 class="page-header-title">{{ $book->title }}</h1>
             <p class="mt-1 text-lg text-muted">{{ $book->author }}</p>
 
             <div class="mt-4 flex flex-wrap gap-2">
@@ -43,29 +43,28 @@
                 </div>
             @endif
 
-            <dl class="mt-8 grid max-w-md grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <dl class="book-facts">
                 @if ($book->page_count)
-                    <div><dt class="text-muted">Pages</dt><dd class="font-medium">{{ number_format($book->page_count) }}</dd></div>
+                    <div><dt><x-icon name="file-text" /> Pages</dt><dd>{{ number_format($book->page_count) }}</dd></div>
                 @endif
-                <div><dt class="text-muted">Reads</dt><dd class="font-medium">{{ number_format($book->views_count) }}</dd></div>
+                <div><dt><x-icon name="book-open" /> Reads</dt><dd>{{ number_format($book->views_count) }}</dd></div>
                 @if ($book->uploader)
-                    <div><dt class="text-muted">Shared by</dt><dd class="font-medium">{{ $book->uploader->fullname }}</dd></div>
+                    <div><dt><x-icon name="user" /> Shared by</dt><dd>{{ $book->uploader->fullname }}</dd></div>
                 @endif
                 @if ($book->approved_at)
-                    <div><dt class="text-muted">Added</dt><dd class="font-medium">{{ $book->approved_at->timezone(config('app.display_timezone'))->format('j M Y') }}</dd></div>
+                    <div><dt><x-icon name="sparkles" /> Added</dt><dd>{{ $book->approved_at->timezone(config('app.display_timezone'))->format('j M Y') }}</dd></div>
                 @endif
             </dl>
         </div>
     </div>
 
     @if ($related->isNotEmpty())
-        <section class="mt-12" aria-labelledby="related-heading" data-reveal>
-            <h2 id="related-heading" class="text-lg">More for {{ $book->level->label() }} {{ $book->department->name }}</h2>
-            <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <x-section class="mt-14" title="More for {{ $book->level->label() }} {{ $book->department->name }}" icon="library-big" data-reveal>
+            <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6">
                 @foreach ($related as $item)
                     <li class="flex"><x-book-card :book="$item" :saved="isset($bookmarked[$item->id])" class="w-full" /></li>
                 @endforeach
             </ul>
-        </section>
+        </x-section>
     @endif
 </x-layouts.app>

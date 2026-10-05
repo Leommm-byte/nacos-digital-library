@@ -22,6 +22,17 @@
     }
 }
 
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Cross-fade between pages in browsers that support it (no JS needed). */
+@view-transition {
+    navigation: auto;
+}
+
 @keyframes pulse {
     50% {
         opacity: 0.55;
@@ -56,6 +67,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+    @view-transition {
+        navigation: none;
+    }
+
     *,
     ::before,
     ::after {

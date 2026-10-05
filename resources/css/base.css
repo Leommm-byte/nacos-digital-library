@@ -18,14 +18,27 @@
         -moz-osx-font-smoothing: grayscale;
     }
 
+    /*
+     * Large headings use the display face. Its space is narrow, so word
+     * spacing is opened up a little; tighter tracking only at big sizes.
+     * Small headings (cards, lists) use Inter, which reads better small.
+     */
     h1,
-    h2,
-    h3,
-    h4 {
+    h2 {
         font-family: var(--font-display);
         font-weight: 700;
         line-height: 1.2;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.015em;
+        word-spacing: 0.08em;
+        text-wrap: balance;
+    }
+
+    h3,
+    h4 {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        line-height: 1.3;
+        letter-spacing: -0.005em;
         text-wrap: balance;
     }
 

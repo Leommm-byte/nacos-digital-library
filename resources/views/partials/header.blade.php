@@ -17,7 +17,12 @@
 
         <div class="ml-auto flex items-center gap-1.5">
             @if ($user && Route::has('library.index') && ! request()->routeIs('library.index'))
-                <a href="{{ route('library.index') }}" class="btn btn-ghost btn-icon" aria-label="Search the library" title="Search the library">
+                <form method="GET" action="{{ route('library.index') }}" role="search" class="header-search">
+                    <label for="header-search" class="sr-only">Search the library</label>
+                    <x-icon name="search" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" />
+                    <input id="header-search" name="q" type="search" placeholder="Search the library" enterkeyhint="search">
+                </form>
+                <a href="{{ route('library.index') }}" class="btn btn-ghost btn-icon lg:hidden" aria-label="Search the library">
                     <x-icon name="search" />
                 </a>
             @endif

@@ -11,8 +11,8 @@ const out = process.argv[2] ?? 'screenshots';
 const password = 'Password1!';
 
 const viewports = {
-    phone: { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
-    desktop: { width: 1280, height: 860, deviceScaleFactor: 1 },
+    phone: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+    desktop: { viewport: { width: 1280, height: 860 }, deviceScaleFactor: 1 },
 };
 
 // [name, path, account] — account null means signed out.

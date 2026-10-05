@@ -6,6 +6,7 @@ import { initQr } from './qr';
 import { initPreview } from './preview';
 import { initBookmarks } from './bookmarks';
 import { initAutosubmit } from './autosubmit';
+import { initToast } from './toast';
 
 initTheme();
 initMenus();
@@ -15,3 +16,4 @@ initQr();
 initPreview();
 initBookmarks();
 initAutosubmit();
+initToast();
