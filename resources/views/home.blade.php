@@ -6,8 +6,17 @@
 
         <div class="relative max-w-2xl">
             <x-badge variant="accent" class="mb-4">{{ config('app.name') }}</x-badge>
-            <h1 class="text-3xl text-white sm:text-4xl">Your library, elections and student services in one place.</h1>
-            <p class="mt-4 text-lg text-green-100">Find books and past questions, follow announcements and vote in NACOS elections.</p>
+            @auth
+                <h1 class="text-3xl text-white sm:text-4xl">Welcome back, {{ auth()->user()->firstName() }}.</h1>
+                <p class="mt-4 text-lg text-green-100">New features arrive here as they are rebuilt: the library first, then uploads and elections.</p>
+            @else
+                <h1 class="text-3xl text-white sm:text-4xl">Your library, elections and student services in one place.</h1>
+                <p class="mt-4 text-lg text-green-100">Find books and past questions, follow announcements and vote in NACOS elections.</p>
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <x-button href="{{ route('signup') }}" variant="accent" icon="user-plus">Create account</x-button>
+                    <x-button href="{{ route('login') }}" variant="secondary" icon="log-in">Log in</x-button>
+                </div>
+            @endauth
         </div>
     </section>
 
@@ -18,7 +27,7 @@
                 ['library-big', 'Library', 'Books and past questions for your department, readable on any phone.'],
                 ['vote', 'Elections', 'Secret ballots with live, public turnout and results.'],
                 ['bookmark', 'Saved books', 'Keep your place and pick up where you left off.'],
-                ['upload', 'Uploads', 'Share materials with your class, reviewed by course reps.'],
+                ['upload', 'Uploads', 'Share materials with your class, checked before they go live.'],
             ] as [$icon, $name, $text])
                 <li class="card p-5">
                     <span class="inline-grid size-10 place-items-center rounded-md bg-primary-soft text-link">

@@ -20,6 +20,8 @@ Route::get('/', function () {
     return view('home', ['status' => $status]);
 })->name('home');
 
+require __DIR__.'/auth.php';
+
 // Every component and token on one page, for building and reviewing UI.
 if (! app()->isProduction()) {
     Route::view('/styleguide', 'styleguide')->name('styleguide');

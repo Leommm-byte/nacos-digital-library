@@ -22,3 +22,8 @@ the decisions already made with the owner, and PR status.
   need `nonce="{{ Vite::cspNonce() }}"`. Self-host every asset.
 - Animate only `transform` and `opacity`; `prefers-reduced-motion` must still
   work. No `backdrop-filter` or large shadows.
+- Authorisation: `role:<role>` route middleware for "this role or higher",
+  policies in `app/Policies` for models, gates in `AppServiceProvider` for
+  the rest. Never compare `$user->role` by hand in controllers or views.
+- `docs/legacy-checklist.md` lists every legacy behaviour; tick off what a
+  PR delivers and keep its "Fix" items from coming back.
