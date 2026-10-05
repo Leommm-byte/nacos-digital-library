@@ -97,13 +97,9 @@ class LayoutTest extends TestCase
     #[Test]
     public function navigation_shows_signed_in_items_only_to_users_and_marks_the_active_one(): void
     {
-        Route::get('/library', fn () => 'library')->name('library.index');
-        Route::get('/saved', fn () => 'saved')->name('bookmarks.index');
-        Route::getRoutes()->refreshNameLookups();
-
         $this->get('/');
 
-        $this->assertSame(['home', 'library.index'], array_column(Navigation::primary(null), 'route'));
+        $this->assertSame(['home'], array_column(Navigation::primary(null), 'route'));
 
         $items = Navigation::primary(User::factory()->role(Role::Student)->make());
 

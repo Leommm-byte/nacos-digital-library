@@ -124,20 +124,26 @@ Drop:
 
 Keep:
 
-- [ ] Catalog of approved books, newest first.
-- [ ] Search by title or author, filter by level.
-- [ ] Cards: cover (logo placeholder), title, author, level, "Read now", bookmark toggle; "No books found" state.
-- [ ] Shortcut to upload from the library.
-- [ ] Bookmark toggle without a page reload, with a confirmation message.
-- [ ] Saved books page, newest first, with remove.
+- [x] Catalog of approved books, newest first (also "most read" and A–Z).
+- [x] Search by title or author (and description), filter by level (and department when more than one is open).
+- [x] Cards: cover (generated placeholder when there's none), title, author, level, bookmark toggle; "No books found" state. "Read" is on the book's page (reader in PR 7).
+- [ ] Shortcut to upload from the library (appears automatically with PR 8).
+- [x] Bookmark toggle without a page reload, with a confirmation message.
+- [x] Saved books page, newest first, with remove.
 
 Fix:
 
-- [ ] No paging; unindexable `LIKE '%…%'` search. Now paged with full-text search.
-- [ ] Bookmark toggle had no CSRF check and allowed unapproved books.
-- [ ] Saved books listed unapproved books, and its count didn't update after removing one.
-- [ ] Covers were linked straight from the protected uploads folder; they are now served through a controller and lazy-loaded.
-- [ ] Department hard-coded to Computer Science in queries.
+- [x] No paging; unindexable `LIKE '%…%'` search. Now 24 per page with MySQL full-text search ranked by relevance.
+- [x] Bookmark toggle had no CSRF check and allowed unapproved books.
+- [x] Saved books listed unapproved books, and its count didn't update after removing one.
+- [x] Covers were linked straight from the protected uploads folder; they are now served through a permission-checked controller, cached by the browser and lazy-loaded.
+- [x] Department hard-coded to Computer Science in queries; the catalog now shows every open department.
+
+New in the rebuild:
+
+- [x] Book detail page with description, pages, reads, who shared it and "more for your level".
+- [x] Unapproved books return "not found" (not "forbidden") to everyone except the uploader and reviewers.
+- [x] Search shortcut in the header.
 
 ## Reader (PR 7)
 
@@ -239,6 +245,7 @@ Keep:
 - [ ] Books list with status and permanent delete (with confirmation).
 - [ ] Users list (name, matric, level, department, role, status).
 - [ ] Suspend and reactivate users; promote to course rep and demote.
+- [ ] Opening or closing a department clears the catalog's cached department list (`catalog:active-departments`).
 - [ ] Turn off a user's two-step verification when they lose their phone and recovery codes (needed since PR 4).
 - [ ] Bulk student import from CSV (comma or semicolon) or XLSX, up to 5 MB.
 - [ ] Bulk import columns: `matric_number` (or `matric`/`username`) and `surname` (or `last_name`) required; full name, department, level and programme optional with defaults.

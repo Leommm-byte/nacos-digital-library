@@ -29,5 +29,8 @@
     @if ($tabbar)
         @include('partials.tabbar', ['nav' => $nav])
     @endif
+
+    <div id="toast" class="toast" aria-hidden="true"></div>
+    <div id="live-region" class="sr-only" aria-live="polite"></div>
 </body>
 </html>

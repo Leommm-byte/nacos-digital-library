@@ -36,7 +36,7 @@ Every legacy behaviour, bug to avoid and open question is tracked in
 - [x] **2. Design system and layout.** Tokens, dark mode, self-hosted assets, animation system, shared layout and navigation, Content-Security-Policy, compressed logo and optimised images.
 - [x] **3. Authentication.** Signup, login, logout; rate limiting that cannot lock other people out; enforced suspension; roles and policies.
 - [x] **4. Password reset and MFA.** Email links plus admin/rep codes; email collection; TOTP with a locally generated QR code and hashed recovery codes; a code required to disable it.
-- [ ] **5. Profile and account settings.**
+- [x] **5. Profile and account settings.**
 - [ ] **6. Catalog.** Paging, full-text search and filters, book detail page, bookmarks, covers served through controllers, lazy-loaded covers.
 - [ ] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
 - [ ] **8. Uploads.** Resumable uploads, OCR as a queued job with progress, virus scanning, per-user limits.

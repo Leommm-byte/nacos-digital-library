@@ -82,6 +82,19 @@ class Book extends Model
     }
 
     /**
+     * Served through BookCoverController. The version changes with the
+     * file, so browsers can cache each cover for a year.
+     */
+    public function coverUrl(): ?string
+    {
+        if ($this->cover_path === null) {
+            return null;
+        }
+
+        return route('library.cover', ['book' => $this, 'v' => substr(md5($this->cover_path), 0, 10)]);
+    }
+
+    /**
      * @param  Builder<self>  $query
      */
     #[Scope]
