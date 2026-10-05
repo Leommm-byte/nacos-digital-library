@@ -19,6 +19,7 @@ permissions:
 jobs:
   screenshots:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       APP_ENV: local
       APP_DEBUG: 'false'
@@ -48,7 +49,9 @@ jobs:
           touch database/database.sqlite
           php artisan migrate --seed --force
       - run: npx playwright install --with-deps chromium
+        timeout-minutes: 6
       - name: Take screenshots
+        timeout-minutes: 8
         run: |
           php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/serve.log 2>&1 &
           for i in $(seq 30); do curl -fs http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
