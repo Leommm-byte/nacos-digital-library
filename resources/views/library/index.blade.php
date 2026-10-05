@@ -58,14 +58,6 @@
             @endif
         </x-empty-state>
     @else
-                    Nothing has been added yet. Check back soon.
-                @endif
-            </p>
-            @if ($filtering)
-                <x-button href="{{ route('library.index') }}" variant="secondary" size="sm" class="mt-5">Show all books</x-button>
-            @endif
-        </div>
-    @else
         <ul class="stagger mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6">
             @foreach ($books as $book)
                 <li class="flex"><x-book-card :book="$book" :saved="isset($bookmarked[$book->id])" class="w-full" /></li>

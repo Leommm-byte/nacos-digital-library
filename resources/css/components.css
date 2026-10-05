@@ -563,10 +563,6 @@
                 border-top: 0;
             }
         }
-
-        & > .card {
-            max-width: 44rem;
-        }
     }
 
     .settings-label {
@@ -675,6 +671,7 @@
         padding: 0.25rem 1rem 0.75rem;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
+        scroll-padding-inline: 1rem;
         scrollbar-width: none;
 
         &::-webkit-scrollbar {
@@ -1345,10 +1342,11 @@
 
     .book-cover-initials {
         font-family: var(--font-display);
-        font-size: 34cqi;
-        font-weight: 800;
-        line-height: 0.95;
-        letter-spacing: -0.04em;
+        font-size: 22cqi;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        opacity: 0.85;
     }
 
     .book-cover-mark {

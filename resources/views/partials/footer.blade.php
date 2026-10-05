@@ -17,5 +17,7 @@
             </nav>
         @endauth
     </div>
-    <p class="container-page mt-6 border-t border-border pt-5 text-xs">&copy; {{ now()->year }} NACOS YabaTech · Built by students, for students.</p>
+    <div class="container-page">
+        <p class="mt-6 border-t border-border pt-5 text-xs">&copy; {{ now()->year }} NACOS YabaTech · Built by students, for students.</p>
+    </div>
 </footer>

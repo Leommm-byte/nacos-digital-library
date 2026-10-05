@@ -50,7 +50,7 @@
 
         <section class="settings-row" aria-labelledby="email-heading">
             <div class="settings-label">
-                <x-icon-tile name="info" tone="blue" size="sm" />
+                <x-icon-tile name="mail" tone="blue" size="sm" />
                 <div>
                     <h2 id="email-heading">Email address</h2>
                     <p>Where we send password reset links.</p>

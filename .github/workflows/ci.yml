@@ -78,4 +78,8 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --no-progress
       - run: cp .env.example .env && php artisan key:generate
       - run: php artisan migrate --force
+      - name: Compile and lint every Blade view
+        run: |
+          php artisan view:cache
+          for f in storage/framework/views/*.php; do php -l "$f" > /dev/null || exit 1; done
       - run: php artisan test

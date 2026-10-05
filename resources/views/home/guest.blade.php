@@ -3,7 +3,7 @@
         <div class="hero-pattern" aria-hidden="true"></div>
         <div class="relative grid items-center gap-10 lg:grid-cols-[1.15fr_1fr]">
             <div>
-                <p class="hero-eyebrow">Nigeria Association of Computing Students · Yaba College of Technology</p>
+                <p class="hero-eyebrow">NACOS · Yaba College of Technology</p>
                 <h1 class="hero-title">Your course books, past questions and NACOS life, in one place.</h1>
                 <p class="hero-lead">Read on any phone, save what you need for exams, and vote in NACOS elections with a secret ballot.</p>
                 <div class="mt-8 flex flex-wrap gap-3">
@@ -29,10 +29,12 @@
                 ['vote', 'blue', 'Elections', 'Secret ballots with live, public turnout and results.'],
                 ['shield-check', 'violet', 'Secure account', 'Matric-number login with optional two-step verification.'],
             ] as [$icon, $tone, $name, $text])
-                <li class="card p-5">
+                <li class="card flex items-start gap-4 p-5 sm:flex-col">
                     <x-icon-tile :name="$icon" :tone="$tone" />
-                    <h3 class="mt-4 text-base">{{ $name }}</h3>
-                    <p class="mt-1 text-sm text-muted">{{ $text }}</p>
+                    <div>
+                        <h3 class="text-base">{{ $name }}</h3>
+                        <p class="mt-1 text-sm text-muted">{{ $text }}</p>
+                    </div>
                 </li>
             @endforeach
         </ul>
