@@ -6,7 +6,10 @@
         @csrf
 
         <x-field name="matric_number" label="Matric number" placeholder="F/ND/24/1234567" autocomplete="username" autocapitalize="characters" spellcheck="false" required autofocus class="uppercase placeholder:normal-case" />
-        <x-field name="password" label="Password" type="password" autocomplete="current-password" required />
+        <div>
+            <x-field name="password" label="Password" type="password" autocomplete="current-password" required />
+            <p class="mt-1.5 text-right text-sm"><a href="{{ route('password.request') }}" class="link">Forgot password?</a></p>
+        </div>
 
         <label class="flex items-center gap-2.5 text-sm">
             <input type="checkbox" name="remember" value="1" class="size-4 accent-[var(--primary)]" @checked(old('remember'))>

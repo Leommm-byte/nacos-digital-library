@@ -19,6 +19,7 @@
 
     <main id="main" tabindex="-1" class="container-page flex-1 py-6 outline-none md:py-10">
         @include('partials.flash')
+        @include('partials.account-notice')
 
         {{ $slot }}
     </main>

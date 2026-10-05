@@ -7,6 +7,7 @@ use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -29,9 +30,14 @@ use Illuminate\Support\Carbon;
  * @property Role $role
  * @property UserStatus $status
  * @property bool $must_change_password
+ * @property Carbon|null $email_verified_at
+ * @property string|null $two_factor_secret
+ * @property list<string>|null $two_factor_recovery_codes
+ * @property Carbon|null $two_factor_confirmed_at
+ * @property int|null $two_factor_last_step
  * @property Carbon|null $last_login_at
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -69,6 +75,14 @@ class User extends Authenticatable
         'role' => 'student',
         'status' => 'active',
         'must_change_password' => false,
+        // Nullable columns read on every page. Declared so a model that was
+        // just created (not re-read from the database) has them too;
+        // strict mode would otherwise throw.
+        'email_verified_at' => null,
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => null,
+        'two_factor_confirmed_at' => null,
+        'two_factor_last_step' => null,
     ];
 
     protected function casts(): array
@@ -84,6 +98,7 @@ class User extends Authenticatable
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_last_step' => 'integer',
             'last_login_at' => 'datetime',
         ];
     }
@@ -101,6 +116,29 @@ class User extends Authenticatable
     public function firstName(): string
     {
         return explode(' ', trim($this->fullname))[0];
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && $this->two_factor_secret !== null;
+    }
+
+    /**
+     * Only a verified address may receive password reset links.
+     */
+    public function hasVerifiedEmailAddress(): bool
+    {
+        return $this->email !== null && $this->email_verified_at !== null;
+    }
+
+    /**
+     * Laravel's verification mail is only sent when there is an address.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        if ($this->email !== null) {
+            parent::sendEmailVerificationNotification();
+        }
     }
 
     public function hasRole(Role $role): bool
@@ -144,6 +182,14 @@ class User extends Authenticatable
     public function bookmarks(): BelongsToMany
     {
         return $this->belongsToMany(Book::class, 'bookmarks')->withPivot('created_at');
+    }
+
+    /**
+     * @return HasMany<PasswordResetCode, $this>
+     */
+    public function passwordResetCodes(): HasMany
+    {
+        return $this->hasMany(PasswordResetCode::class);
     }
 
     /**

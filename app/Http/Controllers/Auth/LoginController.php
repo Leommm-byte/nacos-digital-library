@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Support\Audit;
+use App\Support\LoginSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,9 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    /** How long the second step may take after the password was accepted. */
+    public const TWO_FACTOR_TIMEOUT_MINUTES = 5;
+
     public function create(): View
     {
         return view('auth.login');
@@ -21,15 +25,19 @@ class LoginController extends Controller
     {
         $user = $request->authenticate();
 
-        Auth::login($user, $request->boolean('remember'));
-        $request->session()->regenerate();
+        if ($user->hasTwoFactorEnabled()) {
+            // Not signed in yet: the password is right, but the second step
+            // (TwoFactorChallengeController) still has to pass.
+            $request->session()->put('login.pending', [
+                'id' => $user->id,
+                'remember' => $request->boolean('remember'),
+                'expires_at' => now()->addMinutes(self::TWO_FACTOR_TIMEOUT_MINUTES)->getTimestamp(),
+            ]);
 
-        $user->forceFill([
-            'last_login_at' => now(),
-            'last_login_ip' => $request->ip(),
-        ])->save();
+            return redirect()->route('two-factor.login');
+        }
 
-        Audit::record('login', $user);
+        LoginSession::start($request, $user, $request->boolean('remember'));
 
         // Accounts created by an admin start with a temporary password; the
         // EnforceAccountState middleware sends them to change it.

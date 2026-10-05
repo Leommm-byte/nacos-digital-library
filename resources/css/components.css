@@ -509,6 +509,25 @@
         }
     }
 
+    /* QR codes stay dark-on-white in dark mode so phones can scan them. */
+    .qr-code {
+        display: none;
+        width: 11rem;
+        height: 11rem;
+        padding: 0.625rem;
+        border-radius: var(--radius-md);
+        background: #ffffff;
+
+        .js & {
+            display: block;
+        }
+
+        & svg {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
     .skeleton {
         border-radius: var(--radius-sm);
         background: var(--surface-2);
