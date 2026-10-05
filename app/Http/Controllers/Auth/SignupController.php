@@ -27,10 +27,11 @@ class SignupController extends Controller
     public function store(SignupRequest $request): RedirectResponse
     {
         $user = User::create($request->safe()->only([
-            'fullname', 'matric_number', 'department_id', 'level', 'programme', 'password',
+            'fullname', 'matric_number', 'email', 'department_id', 'level', 'programme', 'password',
         ]));
 
         Audit::record('user_registered', $user, userId: $user->id);
+        $user->sendEmailVerificationNotification();
 
         Auth::login($user);
         $request->session()->regenerate();

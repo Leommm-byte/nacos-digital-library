@@ -7,12 +7,7 @@
         @method('PUT')
 
         <x-field name="password" label="New password" type="password" autocomplete="new-password" required autofocus aria-describedby="password-rules">
-            <ul id="password-rules" class="password-rules" data-password-rules="password">
-                <li data-rule="length">At least 8 characters</li>
-                <li data-rule="case">Upper and lower case letters</li>
-                <li data-rule="number">A number</li>
-                <li data-rule="symbol">A symbol, like ! or #</li>
-            </ul>
+            <x-password-rules for="password" />
         </x-field>
         <x-field name="password_confirmation" label="Confirm new password" type="password" autocomplete="new-password" required />
 

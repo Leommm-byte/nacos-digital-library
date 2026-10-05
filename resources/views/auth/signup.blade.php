@@ -8,6 +8,8 @@
         <x-field name="fullname" label="Full name" autocomplete="name" required autofocus />
         <x-field name="matric_number" label="Matric number" placeholder="F/ND/24/1234567" hint="As printed on your school ID card." autocomplete="username" autocapitalize="characters" spellcheck="false" required class="uppercase placeholder:normal-case" />
 
+        <x-field name="email" label="Email (optional)" type="email" autocomplete="email" hint="Lets you reset your password yourself if you forget it. We'll send a link to confirm it." />
+
         <x-select name="department_id" label="Department" placeholder="Choose your department" required
             :options="$departments->pluck('name', 'id')->all()" />
 
@@ -19,12 +21,7 @@
         </div>
 
         <x-field name="password" label="Password" type="password" autocomplete="new-password" required aria-describedby="password-rules">
-            <ul id="password-rules" class="password-rules" data-password-rules="password">
-                <li data-rule="length">At least 8 characters</li>
-                <li data-rule="case">Upper and lower case letters</li>
-                <li data-rule="number">A number</li>
-                <li data-rule="symbol">A symbol, like ! or #</li>
-            </ul>
+            <x-password-rules for="password" />
         </x-field>
         <x-field name="password_confirmation" label="Confirm password" type="password" autocomplete="new-password" required />
 

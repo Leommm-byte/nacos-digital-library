@@ -1,13 +1,14 @@
 {{--
     Labelled input with its validation error:
     <x-field name="email" label="Email" type="email" autocomplete="email" />
-    Password fields get a show/hide button.
+    Password fields get a show/hide button. `bag` picks a named error bag
+    when a page has several forms.
 --}}
-@props(['name', 'label', 'type' => 'text', 'hint' => null])
+@props(['name', 'label', 'type' => 'text', 'hint' => null, 'bag' => 'default'])
 
 @php
     $id = $attributes->get('id', $name);
-    $error = $errors->first($name);
+    $error = $errors->getBag($bag)->first($name);
     $describedBy = collect([$attributes->get('aria-describedby'), $hint ? $id.'-hint' : null, $error ? $id.'-error' : null])->filter()->implode(' ');
 @endphp
 

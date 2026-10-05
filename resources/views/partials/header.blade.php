@@ -35,7 +35,10 @@
                         @if (Route::has('settings'))
                             <a href="{{ route('settings') }}" class="menu-item"><x-icon name="settings" /> Account settings</a>
                         @endif
-                        @if ($user->hasRole(\App\Enums\Role::Admin) && Route::has('admin.dashboard'))
+                        @can('issue-reset-codes')
+                            <a href="{{ route('reset-codes.create') }}" class="menu-item"><x-icon name="key-round" /> Reset codes</a>
+                        @endcan
+                        @if (Route::has('admin.dashboard') && Gate::allows('access-admin'))
                             <a href="{{ route('admin.dashboard') }}" class="menu-item"><x-icon name="shield-check" /> Admin panel</a>
                         @endif
                         @if (Route::has('logout'))

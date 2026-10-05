@@ -30,7 +30,10 @@
    SESSION_SECURE_COOKIE=true
    LOG_LEVEL=warning
    ```
-   and run `php artisan key:generate`.
+   and run `php artisan key:generate`. For password reset and verification
+   emails, set the `MAIL_*` values to a DreamHost mailbox (for example
+   `no-reply@nacosyabatech.com`, SMTP `smtp.dreamhost.com`, port 465,
+   `MAIL_SCHEME=smtps`).
 4. **Cron:** *More → Cron Jobs*, add a job as `new_nacos_admin` with the
    *Custom* schedule set to every minute:
    ```

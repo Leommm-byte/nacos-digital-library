@@ -34,7 +34,7 @@ Keep:
 - [x] Roles in order (student < course rep < governor < admin) with "at least this role" checks.
 - [x] CSRF protection on every form.
 - [x] Session cookie HttpOnly, SameSite=Lax, Secure in production; HTTPS enforced in production.
-- [ ] MFA step after the password when MFA is on (PR 4).
+- [x] MFA step after the password when MFA is on (PR 4).
 
 Fix:
 
@@ -56,21 +56,27 @@ Drop:
 
 Keep:
 
-- [ ] Forgot password by matric number, generic response either way.
-- [ ] Reset token valid for 1 hour, single use.
-- [ ] TOTP MFA (6 digits, 30 seconds, ±1 step tolerance) with a QR code and manual secret.
-- [ ] Enabling MFA requires a valid code; 8 single-use backup codes.
-- [ ] MFA login accepts a TOTP code or a backup code; "cancel" logs out.
+- [x] Forgot password by matric number, generic response either way.
+- [x] Reset link valid for 1 hour, single use.
+- [x] TOTP MFA (6 digits, 30 seconds, ±1 step tolerance) with a QR code and manual secret, plus an "open in authenticator app" button for setting up on the same phone.
+- [x] Enabling MFA requires a valid code; 8 single-use recovery codes.
+- [x] MFA login accepts a TOTP code or a recovery code; "start again" goes back to login.
 
 Fix:
 
-- [ ] The reset link was printed on the page ("Dev Link"), so anyone could reset any account; links are now emailed, with admin/rep codes as a fallback.
-- [ ] No rate limit on forgot password or MFA verification.
-- [ ] A reset didn't end other sessions or clear the temporary-password flag.
-- [ ] The MFA secret was saved before it was confirmed.
-- [ ] Backup codes were stored in plain text and shown on every visit; they are now hashed and shown once.
-- [ ] Disabling MFA needed no code or password.
-- [ ] The QR code came from the deprecated third-party Google Charts API; it is now generated locally.
+- [x] The reset link was printed on the page ("Dev Link"), so anyone could reset any account; links are now emailed to a verified address only, with course rep/admin codes as a fallback.
+- [x] No rate limit on forgot password or MFA verification.
+- [x] A reset didn't end other sessions or clear the temporary-password flag.
+- [x] The MFA secret was saved before it was confirmed; it now stays in the session until a code from the app works.
+- [x] Backup codes were stored in plain text and shown on every visit; they are now hashed and shown once.
+- [x] Disabling MFA needed no code or password; it now needs a current code or a recovery code.
+- [x] The QR code came from the deprecated third-party Google Charts API; it is now drawn in the browser by a self-hosted library.
+- [x] A TOTP code could be used more than once within its 30 seconds; each is now single use.
+
+New in the rebuild:
+
+- [x] Email collected (optionally) at signup and in Account settings, with verification; signed-in users without a verified email see a reminder.
+- [x] One-time reset codes (30 minutes, single use, hashed): admins for anyone, course reps for students in their own department and level.
 
 ## Profile and settings (PR 5)
 
@@ -228,6 +234,7 @@ Keep:
 - [ ] Books list with status and permanent delete (with confirmation).
 - [ ] Users list (name, matric, level, department, role, status).
 - [ ] Suspend and reactivate users; promote to course rep and demote.
+- [ ] Turn off a user's two-step verification when they lose their phone and recovery codes (needed since PR 4).
 - [ ] Bulk student import from CSV (comma or semicolon) or XLSX, up to 5 MB.
 - [ ] Bulk import columns: `matric_number` (or `matric`/`username`) and `surname` (or `last_name`) required; full name, department, level and programme optional with defaults.
 - [ ] Per-row import results ("Imported N, skipped M"); duplicates skipped.
@@ -299,3 +306,11 @@ Fix:
 3. **Election eligibility.** Legacy let every account vote, including
    admins. Should voting be limited (for example to students, by level, or
    to dues-paying members)?
+4. **Matric numbers that don't exist.** Signup checks the *format*
+   (legacy rule: entry year 19 or later, so `F/HD/18/…` is refused), but a
+   format check can't tell a real number from an invented one. Options to
+   decide later: keep open signup; only allow matric numbers on an
+   official list the admin imports (bulk import, PR 12) and treat that as
+   an allow-list; or let anyone sign up but hold new accounts until a
+   course rep confirms them. The entry-year rule itself (19+, any year, or
+   a rolling window) can be settled at the same time.

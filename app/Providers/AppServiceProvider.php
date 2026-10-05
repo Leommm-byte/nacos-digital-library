@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -40,6 +43,34 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->defineGates();
+        $this->customizeAuthEmails();
+    }
+
+    private function customizeAuthEmails(): void
+    {
+        ResetPassword::toMailUsing(function (mixed $user, string $token): MailMessage {
+            assert($user instanceof User);
+            $url = route('password.reset', ['token' => $token, 'email' => $user->getEmailForPasswordReset()]);
+
+            return (new MailMessage)
+                ->subject('Reset your '.config('app.name').' password')
+                ->greeting('Hello '.$user->firstName().',')
+                ->line('We received a request to reset the password for '.$user->matric_number.'.')
+                ->action('Choose a new password', $url)
+                ->line('The link works for 60 minutes and only once.')
+                ->line("If you didn't ask for this, you can ignore this email. Your password won't change.");
+        });
+
+        VerifyEmail::toMailUsing(function (mixed $user, string $url): MailMessage {
+            assert($user instanceof User);
+
+            return (new MailMessage)
+                ->subject('Verify your email for '.config('app.name'))
+                ->greeting('Hello '.$user->firstName().',')
+                ->line('Confirm this is your email address so you can reset your password by email if you ever forget it.')
+                ->action('Verify email address', $url)
+                ->line("If you didn't add this address to a NACOS YabaTech account, you can ignore this email.");
+        });
     }
 
     /**
@@ -50,5 +81,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('access-admin', fn (User $user) => $user->hasRole(Role::Admin));
         Gate::define('review-uploads', fn (User $user) => $user->hasRole(Role::Governor));
+        // Who may open the reset-code page; which students they may issue
+        // codes for is UserPolicy::issueResetCode.
+        Gate::define('issue-reset-codes', fn (User $user) => $user->hasRole(Role::CourseRep));
     }
 }

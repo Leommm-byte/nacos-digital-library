@@ -97,6 +97,13 @@ php artisan test           # test suite
   request.
 - Accounts flagged `must_change_password` (temporary passwords) can only
   change their password or log out.
+- **Forgot password:** a reset link goes to the account's *verified* email
+  (add or change it in Account settings). Students without one get a
+  one-time code from a course rep (their own class) or an admin at
+  `/reset-codes`, and use it at `/reset-with-code`. Locally, every email
+  lands in Mailpit at http://localhost:8025.
+- **Two-step verification:** optional, in Account settings. Works with any
+  authenticator app (TOTP); 8 recovery codes are shown once.
 
 ## Front end
 
