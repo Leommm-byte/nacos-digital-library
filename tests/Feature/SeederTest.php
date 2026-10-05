@@ -10,12 +10,21 @@ use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SeederTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Demo books get generated PDFs; keep them out of real storage.
+        Storage::fake('private');
+    }
 
     #[Test]
     public function production_seeding_only_creates_reference_data(): void
@@ -42,6 +51,12 @@ class SeederTest extends TestCase
         $admin = User::where('role', Role::Admin)->firstOrFail();
         $this->assertTrue(Hash::check(DemoSeeder::PASSWORD, $admin->password));
         $this->assertGreaterThan(0, Book::approved()->count());
+
+        // Every approved demo book can be opened in the reader.
+        $this->assertSame(0, Book::approved()->doesntHave('currentFile')->count());
+        $file = Book::approved()->firstOrFail()->currentFile;
+        $this->assertNotNull($file);
+        Storage::disk('private')->assertExists($file->path);
     }
 
     #[Test]

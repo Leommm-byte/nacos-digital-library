@@ -26,10 +26,16 @@
             </div>
 
             <div class="mt-6 flex flex-wrap gap-3">
-                @if (Route::has('books.read'))
-                    <x-button href="{{ route('books.read', $book) }}" icon="book-open">Read</x-button>
+                @if ($book->currentFile)
+                    <x-button href="{{ route('books.read', $book) }}" icon="book-open">
+                        @if ($progress && $progress->current_page > 1)
+                            Continue reading <span class="font-normal opacity-80">· page {{ $progress->current_page }}</span>
+                        @else
+                            Read
+                        @endif
+                    </x-button>
                 @else
-                    <x-button type="button" icon="book-open" disabled title="The reader arrives in the next update">Read</x-button>
+                    <x-button type="button" icon="book-open" disabled>Not available yet</x-button>
                 @endif
                 @if ($approved)
                     <x-bookmark-button :book="$book" :saved="isset($bookmarked[$book->id])" />
@@ -40,6 +46,16 @@
                 <div class="mt-8 max-w-prose">
                     <h2 class="text-base">About this book</h2>
                     <p class="mt-2 whitespace-pre-line text-muted">{{ $book->description }}</p>
+                </div>
+            @endif
+
+            @if ($progress && $progress->progress_percent > 0)
+                <div class="reading-meter">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="font-medium">{{ $progress->completed_at ? 'Finished' : 'Your progress' }}</span>
+                        <span class="text-muted">{{ $progress->progress_percent }}%</span>
+                    </div>
+                    <progress max="100" value="{{ $progress->progress_percent }}" aria-label="Reading progress">{{ $progress->progress_percent }}%</progress>
                 </div>
             @endif
 

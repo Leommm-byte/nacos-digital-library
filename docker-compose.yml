@@ -57,13 +57,15 @@ services:
   assets:
     image: node:22-alpine
     working_dir: /app
-    command: ["sh", "-c", "npm ci --no-audit --no-fund && npx vite build --watch"]
+    # The old build is removed first, so the healthcheck below waits for a
+    # build of the current code instead of passing on a stale manifest.
+    command: ["sh", "-c", "rm -rf public/build && npm ci --no-audit --no-fund && npx vite build --watch"]
     volumes:
       - .:/app
       # Container-only node_modules, so native binaries never clash with the host's.
       - /app/node_modules
-    # Healthy once the first build has written its manifest; pages can't
-    # render before that.
+    # Healthy once this run's first build has written its manifest; pages
+    # can't render before that.
     healthcheck:
       test: ["CMD", "test", "-f", "/app/public/build/manifest.json"]
       interval: 3s

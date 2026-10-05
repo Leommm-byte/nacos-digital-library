@@ -38,7 +38,7 @@ Every legacy behaviour, bug to avoid and open question is tracked in
 - [x] **4. Password reset and MFA.** Email links plus admin/rep codes; email collection; TOTP with a locally generated QR code and hashed recovery codes; a code required to disable it.
 - [x] **5. Profile and account settings.**
 - [x] **6. Catalog.** Paging, full-text search and filters, book detail page, bookmarks, covers served through controllers, lazy-loaded covers.
-- [ ] **6.5. UI and UX overhaul.** Audit against the legacy UI and a design standard for every later PR (`docs/design-overhaul.md`); real home pages for guests and students; brand auth layout; shared page header, section, icon tile and empty state components; quieter placeholder covers; settings layout; toasts and busy buttons; CI screenshots of every screen (`scripts/screenshots.mjs`).
+- [x] **6.5. UI and UX overhaul.** Audit against the legacy UI and a design standard for every later PR (`docs/design-overhaul.md`); real home pages for guests and students; brand auth layout; shared page header, section, icon tile and empty state components; quieter placeholder covers; settings layout; toasts and busy buttons; CI screenshots of every screen (`scripts/screenshots.mjs`).
 - [ ] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
 - [ ] **8. Uploads.** Resumable uploads, OCR as a queued job with progress, virus scanning, per-user limits.
 - [ ] **9. Moderation.** Reasons sent to uploaders, notifications, approvals history.

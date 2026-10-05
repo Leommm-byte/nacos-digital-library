@@ -24,13 +24,21 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
+# PDF.js ships its worker as .mjs, which some servers don't know is
+# JavaScript (module workers refuse anything else).
+<IfModule mod_mime.c>
+    AddType text/javascript .mjs
+    AddType application/wasm .wasm
+</IfModule>
+
 # Built assets have content hashes in their names, so they never change:
-# cache them for a year. Everything else (images, favicon) for a week.
+# cache them for a year. Everything else (images, favicon, the reader's
+# PDF.js data files) for a week.
 <IfModule mod_headers.c>
-    <FilesMatch "\.(css|js|woff2)$">
+    <FilesMatch "\.(css|js|mjs|woff2)$">
         Header set Cache-Control "public, max-age=31536000, immutable" "expr=%{REQUEST_URI} =~ m#^/build/#"
     </FilesMatch>
-    <FilesMatch "\.(ico|png|webp|svg)$">
+    <FilesMatch "\.(ico|png|webp|svg|bcmap|pfb|ttf|wasm|icc)$">
         Header set Cache-Control "public, max-age=604800"
     </FilesMatch>
 </IfModule>

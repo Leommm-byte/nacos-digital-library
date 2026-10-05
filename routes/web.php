@@ -4,6 +4,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
 use App\Http\Controllers\Library\LibraryController;
+use App\Http\Controllers\Reader\BookFileController;
+use App\Http\Controllers\Reader\ReaderController;
+use App\Http\Controllers\Reader\ReadingProgressController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -14,6 +17,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
     Route::get('/library/{book}', [LibraryController::class, 'show'])->name('library.show');
     Route::get('/library/{book}/cover', BookCoverController::class)->name('library.cover');
+
+    Route::get('/library/{book}/read', [ReaderController::class, 'show'])->name('books.read');
+    // PDF.js asks for the file in many small ranges, so the limit is generous.
+    Route::get('/library/{book}/file', BookFileController::class)
+        ->middleware('throttle:600,1')
+        ->name('books.file');
+    Route::post('/library/{book}/progress', [ReadingProgressController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('books.progress');
 
     Route::get('/saved', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/library/{book}/bookmark', [BookmarkController::class, 'store'])

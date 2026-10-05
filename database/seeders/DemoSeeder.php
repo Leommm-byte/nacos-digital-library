@@ -57,11 +57,14 @@ class DemoSeeder extends Seeder
         $students = User::factory()->count(20)->for($cs)->create();
         $uploaders = $students->push($users['course_rep']);
 
+        // Each approved book gets a short generated PDF, so the reader works.
         Book::factory()->count(36)->for($cs)->approved()
+            ->withPdf()
             ->sequence(fn ($sequence) => ['uploader_id' => $uploaders[$sequence->index % $uploaders->count()]->id])
             ->create();
 
         Book::factory()->count(5)->for($cs)->status(BookStatus::Pending)
+            ->withPdf(4)
             ->sequence(fn ($sequence) => ['uploader_id' => $uploaders[$sequence->index % $uploaders->count()]->id])
             ->create();
 
