@@ -18,7 +18,7 @@ class Navigation
     {
         $items = [
             ['route' => 'home', 'label' => 'Home', 'icon' => 'house', 'match' => 'home'],
-            ['route' => 'library.index', 'label' => 'Library', 'icon' => 'library-big', 'match' => 'library.*'],
+            ['route' => 'library.index', 'label' => 'Library', 'icon' => 'library-big', 'match' => 'library.*', 'auth' => true],
             ['route' => 'bookmarks.index', 'label' => 'Saved', 'icon' => 'bookmark', 'match' => 'bookmarks.*', 'auth' => true],
             ['route' => 'elections.index', 'label' => 'Elections', 'icon' => 'vote', 'match' => 'elections.*'],
             ['route' => 'profile.edit', 'label' => 'Profile', 'icon' => 'user', 'match' => 'profile.*', 'auth' => true],

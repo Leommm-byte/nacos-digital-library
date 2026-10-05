@@ -528,6 +528,173 @@
         }
     }
 
+    /* Elements only needed without JavaScript (e.g. a filter "Search" button). */
+    .js .js-hidden {
+        display: none;
+    }
+
+    /* Books */
+    .book-card {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+        transition: transform var(--duration-base) var(--ease-out);
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+    }
+
+    /* The whole card is clickable through the title link. */
+    .book-card-link {
+        font-weight: 600;
+
+        &:hover {
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+    }
+
+    .book-cover {
+        display: block;
+        aspect-ratio: 3 / 4;
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        background: var(--surface-2);
+        border-radius: var(--radius-md);
+
+        .book-card & {
+            border-radius: 0;
+        }
+    }
+
+    .book-cover-placeholder {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.875rem 0.75rem 0.75rem 1.125rem;
+        overflow: hidden;
+        color: #fff;
+        /* A spine down the left edge. */
+        box-shadow: inset 0.375rem 0 0 rgb(0 0 0 / 0.18);
+    }
+
+    .book-cover-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 5;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 0.9375rem;
+        line-height: 1.2;
+    }
+
+    .book-cover-author {
+        font-size: 0.6875rem;
+        opacity: 0.85;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .cover-tone-0 { background: var(--color-green-700); }
+    .cover-tone-1 { background: var(--color-green-900); }
+    .cover-tone-2 { background: #2f4a3e; }
+    .cover-tone-3 { background: var(--color-yellow-400); color: var(--on-accent); }
+
+    /* Save / saved toggle (components/bookmark-button). */
+    .bookmark-btn {
+        & .bookmark-icon-on,
+        & .bookmark-text-on {
+            display: none;
+        }
+
+        &[aria-pressed='true'] {
+            & .bookmark-icon-on,
+            & .bookmark-text-on {
+                display: inline;
+            }
+
+            & .bookmark-icon-off,
+            & .bookmark-text-off {
+                display: none;
+            }
+        }
+
+        &[aria-busy='true'] {
+            opacity: 0.6;
+        }
+    }
+
+    .bookmark-btn-compact {
+        display: inline-grid;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 999px;
+        color: var(--muted);
+        cursor: pointer;
+        transition:
+            color var(--duration-fast) ease,
+            background-color var(--duration-fast) ease,
+            transform var(--duration-fast) ease;
+
+        &:hover {
+            background: var(--surface-2);
+            color: var(--fg);
+        }
+
+        &:active {
+            transform: scale(0.9);
+        }
+
+        &[aria-pressed='true'] {
+            color: var(--link);
+        }
+    }
+
+    /* Short confirmation at the bottom of the screen (resources/js/toast.js). */
+    .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(1rem + env(safe-area-inset-bottom));
+        z-index: 60;
+        max-width: calc(100vw - 2rem);
+        padding: 0.625rem 1rem;
+        border-radius: var(--radius-md);
+        background: var(--fg);
+        color: var(--bg);
+        font-size: 0.875rem;
+        font-weight: 500;
+        box-shadow: var(--shadow-pop);
+        opacity: 0;
+        transform: translate(-50%, 1rem);
+        pointer-events: none;
+        transition:
+            opacity var(--duration-base) var(--ease-out),
+            transform var(--duration-base) var(--ease-out);
+
+        &.is-visible {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        .has-tabbar & {
+            bottom: calc(var(--tabbar-h) + 0.75rem + env(safe-area-inset-bottom));
+
+            @variant md {
+                bottom: 1rem;
+            }
+        }
+    }
+
     .skeleton {
         border-radius: var(--radius-sm);
         background: var(--surface-2);

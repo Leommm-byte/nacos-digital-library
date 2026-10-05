@@ -16,6 +16,11 @@
         @endif
 
         <div class="ml-auto flex items-center gap-1.5">
+            @if ($user && Route::has('library.index') && ! request()->routeIs('library.index'))
+                <a href="{{ route('library.index') }}" class="btn btn-ghost btn-icon" aria-label="Search the library" title="Search the library">
+                    <x-icon name="search" />
+                </a>
+            @endif
             <x-theme-toggle />
 
             @if ($user)

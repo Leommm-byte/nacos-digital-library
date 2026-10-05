@@ -105,6 +105,19 @@ php artisan test           # test suite
 - **Two-step verification:** optional, in Account settings. Works with any
   authenticator app (TOTP); 8 recovery codes are shown once.
 
+## Library
+
+- `/library`: approved books in open departments, 24 per page, with search,
+  level/department filters and sorting. Search uses MySQL's full-text index
+  (every word must match, word starts count: "data struct" finds "Data
+  Structures"); `App\Support\Catalog` holds the query.
+- `/library/{public id}`: book page. Unapproved books are "not found" to
+  everyone except the uploader and governors/admins (`BookPolicy`).
+- Covers live on the private disk and are served by `BookCoverController`
+  with a versioned URL, so browsers cache them for a year.
+- `/saved`: the student's bookmarks. Saving works with or without
+  JavaScript.
+
 ## Front end
 
 - **Style guide:** http://localhost:8080/styleguide shows every token and
