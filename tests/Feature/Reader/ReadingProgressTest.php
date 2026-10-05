@@ -30,12 +30,20 @@ class ReadingProgressTest extends TestCase
         $this->book = Book::factory()->for($department)->approved()->withPdf(20)->create();
     }
 
-    private function progress(?User $user = null): ?ReadingProgress
+    private function progress(): ReadingProgress
+    {
+        return ReadingProgress::query()
+            ->where('user_id', $this->student->id)
+            ->where('book_id', $this->book->id)
+            ->firstOrFail();
+    }
+
+    private function hasProgress(?User $user = null): bool
     {
         return ReadingProgress::query()
             ->where('user_id', ($user ?? $this->student)->id)
             ->where('book_id', $this->book->id)
-            ->first();
+            ->exists();
     }
 
     #[Test]
@@ -45,9 +53,9 @@ class ReadingProgressTest extends TestCase
             ->post(route('books.progress', $this->book), ['page' => 5, 'pages' => 20])
             ->assertNoContent();
 
-        $this->assertSame(5, $this->progress()?->current_page);
-        $this->assertSame(25, $this->progress()?->progress_percent);
-        $this->assertNull($this->progress()?->completed_at);
+        $this->assertSame(5, $this->progress()->current_page);
+        $this->assertSame(25, $this->progress()->progress_percent);
+        $this->assertNull($this->progress()->completed_at);
     }
 
     #[Test]
@@ -56,8 +64,8 @@ class ReadingProgressTest extends TestCase
         $this->actingAs($this->student)->post(route('books.progress', $this->book), ['page' => 10, 'pages' => 20]);
         $this->post(route('books.progress', $this->book), ['page' => 2, 'pages' => 20]);
 
-        $this->assertSame(2, $this->progress()?->current_page);
-        $this->assertSame(50, $this->progress()?->progress_percent);
+        $this->assertSame(2, $this->progress()->current_page);
+        $this->assertSame(50, $this->progress()->progress_percent);
     }
 
     #[Test]
@@ -66,21 +74,21 @@ class ReadingProgressTest extends TestCase
         // The reader claims 25 pages; the file has 20.
         $this->actingAs($this->student)->post(route('books.progress', $this->book), ['page' => 25, 'pages' => 25]);
 
-        $this->assertSame(20, $this->progress()?->current_page);
-        $this->assertSame(100, $this->progress()?->progress_percent);
+        $this->assertSame(20, $this->progress()->current_page);
+        $this->assertSame(100, $this->progress()->progress_percent);
     }
 
     #[Test]
     public function the_book_is_marked_finished_once_at_95_percent(): void
     {
         $this->actingAs($this->student)->post(route('books.progress', $this->book), ['page' => 19, 'pages' => 20]);
-        $finishedAt = $this->progress()?->completed_at;
+        $finishedAt = $this->progress()->completed_at;
         $this->assertNotNull($finishedAt);
 
         $this->travel(1)->day();
         $this->post(route('books.progress', $this->book), ['page' => 20, 'pages' => 20]);
 
-        $this->assertTrue($finishedAt->equalTo($this->progress()?->completed_at));
+        $this->assertTrue($finishedAt->equalTo($this->progress()->completed_at));
     }
 
     #[Test]
@@ -90,7 +98,7 @@ class ReadingProgressTest extends TestCase
 
         $this->actingAs($this->student)->post(route('books.progress', $this->book), ['page' => 8, 'pages' => 20]);
 
-        $this->assertNull($this->progress($other));
+        $this->assertFalse($this->hasProgress($other));
     }
 
     #[Test]
@@ -101,7 +109,7 @@ class ReadingProgressTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['page', 'pages']);
 
-        $this->assertNull($this->progress());
+        $this->assertFalse($this->hasProgress());
     }
 
     #[Test]
@@ -114,7 +122,7 @@ class ReadingProgressTest extends TestCase
             ->post(route('books.progress', $this->book), ['page' => 3, 'pages' => 20])
             ->assertNotFound();
 
-        $this->assertNull($this->progress());
+        $this->assertFalse($this->hasProgress());
     }
 
     #[Test]
