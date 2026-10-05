@@ -7,6 +7,7 @@ use App\Enums\Level;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
 use App\Models\Department;
+use App\Models\ReadingProgress;
 use App\Models\User;
 use App\Support\Catalog;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class LibraryController extends Controller
         // Not found, rather than forbidden, so unapproved books stay hidden.
         abort_unless(Gate::allows('view', $book), 404);
 
-        $book->load(['department:id,name', 'uploader:id,fullname']);
+        $book->load(['department:id,name', 'uploader:id,fullname', 'currentFile:id,book_id']);
 
         $related = $book->status === BookStatus::Approved
             ? Book::approved()
@@ -54,8 +55,15 @@ class LibraryController extends Controller
                 ->get()
             : collect();
 
+        /** @var User $user */
+        $user = $request->user();
+
         return view('library.show', [
             'book' => $book,
+            'progress' => ReadingProgress::query()
+                ->where('user_id', $user->id)
+                ->where('book_id', $book->id)
+                ->first(),
             'related' => $related,
             'bookmarked' => $this->bookmarkedIds($request, [$book->id, ...$related->pluck('id')->all()]),
         ]);

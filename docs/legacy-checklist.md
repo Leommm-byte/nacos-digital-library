@@ -149,22 +149,22 @@ New in the rebuild:
 
 Keep:
 
-- [ ] Open a book by its public id; non-approved books show "awaiting approval" to everyone except the uploader and governors/admins.
-- [ ] PDF only reachable through an authenticated, permission-checked route.
-- [ ] Page fitted to the screen; previous/next, page X of Y, zoom (0.6x to 3x), arrow keys.
-- [ ] "Unable to load document" error state.
-- [ ] Reading progress saved periodically and on leaving; "completed" recorded at 95%.
-- [ ] Right-click and print/save shortcuts discouraged on the reader (deterrent only), plus the new matric-number watermark.
+- [x] Open a book by its public id. Books not yet approved stay hidden (404) from everyone except the uploader and governors/admins, who see the status in the reader bar (same rule as the book page, PR 6).
+- [x] PDF only reachable through an authenticated, permission-checked route.
+- [x] Page fitted to the screen (width on phones, whole page on larger screens); previous/next, page X of Y with page jump, zoom (60% to 300%), arrow keys, swipe.
+- [x] "Unable to load this book" error state, with retry; a "not ready yet" state for books without a file.
+- [x] Reading progress saved shortly after each page turn and when leaving (sendBeacon); "completed" recorded once at 95%.
+- [x] Right-click and print/save shortcuts discouraged on the reader, printing blanked (deterrent only), plus the new matric-number watermark drawn on every page.
 
 Fix:
 
-- [ ] The whole PDF downloaded before page 1 showed; HTTP Range streaming now.
-- [ ] Views and history were recorded before the approval check.
-- [ ] Always opened at page 1; it now resumes at the saved position.
-- [ ] Progress could go backwards or above 100%, with no ownership check.
-- [ ] A database token row was created on every page load and never used up.
-- [ ] PDF.js came from a CDN; it is self-hosted now.
-- [ ] PDF URL with its token logged to the console; book details written to the error log on every load.
+- [x] The whole PDF downloaded before page 1 showed; HTTP Range streaming now, with auto-fetch off, so only the pages read are downloaded.
+- [x] Views and history were recorded before the approval check. Now only after it, only for approved books, and one view per book per session.
+- [x] Always opened at page 1; it now resumes at the saved position (and the book page says "Continue reading · page N").
+- [x] Progress could go backwards or above 100%, with no ownership check. The percentage only rises, is clamped to the file's page count, and is tied to the signed-in user.
+- [x] A database token row was created on every page load and never used up. No tokens: the session and the book policy guard the file.
+- [x] PDF.js came from a CDN; it is self-hosted now (6.4, legacy build for older phones), with its fonts, character maps and decoders.
+- [x] PDF URL with its token logged to the console; book details written to the error log on every load. Nothing is logged.
 
 ## Uploads and OCR (PR 8)
 

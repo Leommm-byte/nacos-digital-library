@@ -17,3 +17,8 @@ initPreview();
 initBookmarks();
 initAutosubmit();
 initToast();
+
+// The reader (and PDF.js with it) only loads on the reading page.
+if (document.querySelector('[data-reader]')) {
+    import('./reader').then(({ initReader }) => initReader());
+}

@@ -33,6 +33,10 @@ const pages = [
     ['library', '/library', 'F/ND/24/0000004'],
     ['library-empty-search', '/library?q=zzqqxx', 'F/ND/24/0000004'],
     ['book', 'FIRST_BOOK', 'F/ND/24/0000004'],
+    ['reader', 'FIRST_BOOK/read', 'F/ND/24/0000004', async (page) => {
+        // Fails the run if PDF.js never draws the page.
+        await page.locator('.reader-canvas').waitFor({ timeout: 20000 });
+    }],
     ['saved', '/saved', 'F/ND/24/0000004'],
     ['profile', '/profile', 'F/ND/24/0000004'],
     ['settings', '/settings', 'F/ND/24/0000004'],
@@ -93,7 +97,8 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
 
             const context = contexts[key];
             const page = await context.newPage();
-            const url = path === 'FIRST_BOOK' ? context.bookUrl : `${base}${path}`;
+            const url = path.startsWith('FIRST_BOOK') ? context.bookUrl + path.slice('FIRST_BOOK'.length) : `${base}${path}`;
+            page.on('pageerror', (error) => failures.push(`${name}: script error: ${error.message}`));
             try {
                 const response = await page.goto(url, { waitUntil: 'networkidle' });
                 if (response && response.status() >= 500) {
