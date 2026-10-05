@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Account\EmailController;
+use App\Http\Controllers\Account\PasswordController;
+use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\ResetCodeIssueController;
 use App\Http\Controllers\Account\SettingsController;
 use App\Http\Controllers\Account\TwoFactorController;
@@ -45,7 +47,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/password/change', [ChangePasswordController::class, 'edit'])->name('password.change');
     Route::put('/password/change', [ChangePasswordController::class, 'update'])->name('password.change.update');
 
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
     Route::get('/settings', [SettingsController::class, 'show'])->name('settings');
+    Route::put('/settings/password', [PasswordController::class, 'update'])
+        ->middleware('throttle:10,10')
+        ->name('settings.password');
 
     Route::put('/settings/email', [EmailController::class, 'update'])->name('settings.email');
     Route::get('/email/verify/{id}/{hash}', [EmailController::class, 'verify'])

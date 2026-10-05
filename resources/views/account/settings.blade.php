@@ -1,7 +1,7 @@
 <x-layouts.app title="Account settings">
     <div class="animate-enter max-w-2xl">
         <h1 class="text-2xl sm:text-3xl">Account settings</h1>
-        <p class="mt-1 text-muted">{{ $user->fullname }} · {{ $user->matric_number }}</p>
+        <p class="mt-1 text-muted">{{ $user->fullname }} · {{ $user->matric_number }} · <a href="{{ route('profile.edit') }}" class="link">Edit profile</a></p>
     </div>
 
     @if (session('recovery_codes'))
@@ -16,7 +16,27 @@
         </x-card>
     @endif
 
-    <section class="mt-8 max-w-2xl" aria-labelledby="email-heading">
+    <section class="mt-8 max-w-2xl" aria-labelledby="password-heading">
+        <x-card>
+            <h2 id="password-heading" class="text-lg">Password</h2>
+            <p class="mt-1 text-sm text-muted">Changing it logs you out on every other device.</p>
+
+            <form method="POST" action="{{ route('settings.password') }}" class="mt-5 space-y-4" novalidate>
+                @csrf
+                @method('PUT')
+                <x-field name="current_password" id="password_current_password" label="Current password" type="password" autocomplete="current-password" bag="password" required />
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <x-field name="password" id="new_password" label="New password" type="password" autocomplete="new-password" bag="password" required aria-describedby="new_password-rules">
+                        <x-password-rules for="new_password" />
+                    </x-field>
+                    <x-field name="password_confirmation" id="new_password_confirmation" label="Confirm new password" type="password" autocomplete="new-password" bag="password" required />
+                </div>
+                <x-button variant="secondary">Change password</x-button>
+            </form>
+        </x-card>
+    </section>
+
+    <section class="mt-6 max-w-2xl" aria-labelledby="email-heading">
         <x-card>
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
