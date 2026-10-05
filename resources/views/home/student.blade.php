@@ -48,11 +48,11 @@
         </x-section>
 
         <x-section title="Saved books" description="Your shortlist for revision." icon="bookmark" tone="green">
-            @if ($saved->isNotEmpty())
-                <x-slot:action>
+            <x-slot:action>
+                @if ($saved->isNotEmpty())
                     <a href="{{ route('bookmarks.index') }}" class="section-link">See all <x-icon name="arrow-right" /></a>
-                </x-slot:action>
-            @endif
+                @endif
+            </x-slot:action>
 
             @if ($saved->isEmpty())
                 <x-empty-state icon="bookmark" title="Nothing saved yet" text="Tap the bookmark on any book to keep it here.">

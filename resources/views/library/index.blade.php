@@ -1,10 +1,10 @@
 <x-layouts.app title="Library" description="Books and past questions for NACOS YabaTech students.">
     <x-page-header title="Library" :subtitle="number_format($books->total()).' '.\Illuminate\Support\Str::plural('book', $books->total()).($filtering ? ' found' : ' for NACOS students')">
-        @if (Route::has('uploads.create'))
-            <x-slot:actions>
+        <x-slot:actions>
+            @if (Route::has('uploads.create'))
                 <x-button href="{{ route('uploads.create') }}" variant="secondary" icon="upload">Upload</x-button>
-            </x-slot:actions>
-        @endif
+            @endif
+        </x-slot:actions>
     </x-page-header>
 
     <form method="GET" action="{{ route('library.index') }}" role="search" class="library-filters animate-enter" data-autosubmit>

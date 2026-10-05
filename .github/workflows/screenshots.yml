@@ -52,7 +52,7 @@ jobs:
         run: |
           php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/serve.log 2>&1 &
           for i in $(seq 30); do curl -fs http://127.0.0.1:8000/up > /dev/null && break; sleep 1; done
-          node scripts/screenshots.mjs shots
+          node scripts/screenshots.mjs shots || echo "SCREENSHOT_PROBLEMS=1" >> "$GITHUB_ENV"
       - name: Publish to screenshots/${{ github.ref_name }}
         run: |
           target="screenshots/${GITHUB_REF_NAME}"
@@ -68,5 +68,10 @@ jobs:
           git add -A
           git commit -qm "Screenshots of ${GITHUB_SHA::7}"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:refs/heads/${target}"
+      - name: Fail if any page was broken
+        if: env.SCREENSHOT_PROBLEMS == '1'
+        run: |
+          tail -n 60 storage/logs/laravel.log 2>/dev/null || true
+          exit 1
       - if: failure()
         run: tail -n 80 storage/logs/serve.log storage/logs/*.log 2>/dev/null || true

@@ -22,8 +22,8 @@
                 <p class="page-header-subtitle">{{ $subtitle }}{{ $meta ?? '' }}</p>
             @endif
         </div>
-        @isset($actions)
+        @if (isset($actions) && $actions->isNotEmpty())
             <div class="flex flex-wrap items-center gap-2">{{ $actions }}</div>
-        @endisset
+        @endif
     </div>
 </header>

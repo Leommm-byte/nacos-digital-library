@@ -52,7 +52,13 @@ async function login(context, matric) {
 async function firstBookUrl(context) {
     const page = await context.newPage();
     await page.goto(`${base}/library`);
-    const href = await page.locator('.book-card-link').first().getAttribute('href');
+    const link = page.locator('.book-card-link').first();
+    if (!(await link.count())) {
+        console.error('No book links on /library (is the page broken?)');
+        await page.close();
+        return `${base}/library`;
+    }
+    const href = await link.getAttribute('href');
     // Save two books so "Saved" has content.
     const forms = page.locator('form[data-bookmark] button');
     for (let i = 0; i < Math.min(2, await forms.count()); i++) {
@@ -65,6 +71,7 @@ async function firstBookUrl(context) {
     return href;
 }
 
+const failures = [];
 const browser = await chromium.launch();
 await mkdir(out, { recursive: true });
 
@@ -87,12 +94,19 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
             const context = contexts[key];
             const page = await context.newPage();
             const url = path === 'FIRST_BOOK' ? context.bookUrl : `${base}${path}`;
-            await page.goto(url, { waitUntil: 'networkidle' });
-            if (before) {
-                await before(page);
+            try {
+                const response = await page.goto(url, { waitUntil: 'networkidle' });
+                if (response && response.status() >= 500) {
+                    failures.push(`${name}: HTTP ${response.status()}`);
+                }
+                if (before) {
+                    await before(page);
+                }
+                await page.waitForTimeout(250);
+                await page.screenshot({ path: `${out}/${name}--${viewportName}--${theme}.png`, fullPage: true });
+            } catch (error) {
+                failures.push(`${name} (${viewportName}, ${theme}): ${error.message.split('\n')[0]}`);
             }
-            await page.waitForTimeout(250);
-            await page.screenshot({ path: `${out}/${name}--${viewportName}--${theme}.png`, fullPage: true });
             await page.close();
         }
 
@@ -104,3 +118,9 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
 
 await browser.close();
 console.log(`Saved screenshots to ${out}/`);
+
+if (failures.length) {
+    // Still publish the screenshots, but make the run fail visibly.
+    console.error(`Problems:\n- ${[...new Set(failures)].join('\n- ')}`);
+    process.exitCode = 1;
+}

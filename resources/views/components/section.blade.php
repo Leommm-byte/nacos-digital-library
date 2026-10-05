@@ -5,7 +5,8 @@
 @props(['title' => null, 'description' => null, 'icon' => null, 'tone' => 'green'])
 
 <section {{ $attributes->class(['page-section']) }}>
-    @if ($title || isset($action))
+    @php($hasAction = isset($action) && $action->isNotEmpty())
+    @if ($title || $hasAction)
         <div class="page-section-head">
             <div class="flex min-w-0 items-center gap-3">
                 @if ($icon)
@@ -20,9 +21,9 @@
                     @endif
                 </div>
             </div>
-            @isset($action)
+            @if ($hasAction)
                 <div class="shrink-0">{{ $action }}</div>
-            @endisset
+            @endif
         </div>
     @endif
     {{ $slot }}
