@@ -14,7 +14,7 @@
             <form method="GET" action="{{ route('library.index') }}" role="search" class="hero-search">
                 <label for="home-search" class="sr-only">Search the library</label>
                 <x-icon name="search" class="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted" />
-                <input id="home-search" name="q" type="search" placeholder="Search books, courses, authors" enterkeyhint="search" class="field-input pl-11">
+                <input id="home-search" name="q" type="search" placeholder="Search the library" enterkeyhint="search" class="field-input pl-11">
             </form>
         </div>
     </section>
