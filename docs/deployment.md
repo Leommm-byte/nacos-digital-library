@@ -39,6 +39,14 @@
 
 ## Each release
 
+Build the front end before uploading (`public/build` is not committed):
+
+```bash
+npm ci && npm run build
+```
+
+Then on the server:
+
 ```bash
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force

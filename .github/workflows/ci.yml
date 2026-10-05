@@ -28,6 +28,19 @@ jobs:
       - run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
       - run: composer audit
 
+  assets:
+    name: Front-end build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npm audit --audit-level=high
+
   tests:
     name: Tests (MySQL 8)
     runs-on: ubuntu-latest

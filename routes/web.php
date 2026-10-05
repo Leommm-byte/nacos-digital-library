@@ -6,11 +6,21 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
-// Temporary landing page proving the stack works end to end. Replaced by the
-// real home/dashboard in the design-system and auth PRs.
-Route::get('/', fn () => view('foundation', [
-    'database' => DB::connection()->getDriverName().' connected',
-    'departments' => Department::count(),
-    'users' => User::count(),
-    'books' => Book::count(),
-]));
+// Temporary home page. Replaced by the dashboard in the dashboard PR.
+Route::get('/', function () {
+    // Local only: proves the stack works end to end.
+    $status = app()->isLocal() ? [
+        'Environment' => app()->environment(),
+        'Database' => DB::connection()->getDriverName().' connected',
+        'Departments' => Department::count(),
+        'Users' => User::count(),
+        'Books' => Book::count(),
+    ] : null;
+
+    return view('home', ['status' => $status]);
+})->name('home');
+
+// Every component and token on one page, for building and reviewing UI.
+if (! app()->isProduction()) {
+    Route::view('/styleguide', 'styleguide')->name('styleguide');
+}
