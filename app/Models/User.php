@@ -98,6 +98,11 @@ class User extends Authenticatable
         return Attribute::make(set: fn (string $value) => strtoupper(trim($value)));
     }
 
+    public function firstName(): string
+    {
+        return explode(' ', trim($this->fullname))[0];
+    }
+
     public function hasRole(Role $role): bool
     {
         return $this->role->atLeast($role);

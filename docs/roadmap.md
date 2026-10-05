@@ -20,14 +20,19 @@ and the item is ticked off here.
 
 ## Open items for the owner
 
+- Answer the questions at the end of [`legacy-checklist.md`](legacy-checklist.md)
+  (one account per device, departments, election eligibility).
 - Rotate the legacy database password (`nacos_db`). It was committed to git.
 - Decide whether to delete the 22 scan images in `legacy/uploads/temp_scans/`
   (possibly real student documents) and whether to scrub them from history.
 
 ## PRs
 
+Every legacy behaviour, bug to avoid and open question is tracked in
+[`legacy-checklist.md`](legacy-checklist.md); each PR ticks off its part.
+
 - [x] **1. Laravel foundation.** Schema, models, Docker stack, CI.
-- [ ] **2. Design system and layout.** Tokens, dark mode, self-hosted assets, animation system, shared layout and navigation, Content-Security-Policy, compressed logo and optimised images.
+- [x] **2. Design system and layout.** Tokens, dark mode, self-hosted assets, animation system, shared layout and navigation, Content-Security-Policy, compressed logo and optimised images.
 - [ ] **3. Authentication.** Signup, login, logout; rate limiting that cannot lock other people out; enforced suspension; roles and policies.
 - [ ] **4. Password reset and MFA.** Email links plus admin/rep codes; email collection; TOTP with a locally generated QR code and hashed recovery codes; a code required to disable it.
 - [ ] **5. Profile and account settings.**

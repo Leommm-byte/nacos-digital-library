@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Enums\Role;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -35,5 +38,17 @@ class AppServiceProvider extends ServiceProvider
 
             return $production ? $rule->uncompromised() : $rule;
         });
+
+        $this->defineGates();
+    }
+
+    /**
+     * Abilities that aren't tied to one model. Model rules live in
+     * app/Policies. Roles are ordered, so "governor" includes admins.
+     */
+    private function defineGates(): void
+    {
+        Gate::define('access-admin', fn (User $user) => $user->hasRole(Role::Admin));
+        Gate::define('review-uploads', fn (User $user) => $user->hasRole(Role::Governor));
     }
 }

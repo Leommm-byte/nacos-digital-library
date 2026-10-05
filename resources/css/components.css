@@ -243,6 +243,90 @@
         }
     }
 
+    /* Native select with a custom chevron (an inline SVG, allowed by img-src data:). */
+    .field-select {
+        appearance: none;
+        padding-right: 2.5rem;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378867f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1.125rem;
+    }
+
+    /* Show/hide password button inside the field; needs JS to work. */
+    .password-toggle {
+        position: absolute;
+        inset-block: 0;
+        right: 0;
+        display: none;
+        width: 2.75rem;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+
+        .js & {
+            display: inline-flex;
+        }
+
+        &:hover {
+            color: var(--fg);
+        }
+
+        & .password-toggle-hide {
+            display: none;
+        }
+
+        &[aria-pressed='true'] .password-toggle-show {
+            display: none;
+        }
+
+        &[aria-pressed='true'] .password-toggle-hide {
+            display: block;
+        }
+    }
+
+    /* Password rules, ticked off live as the user types. */
+    .password-rules {
+        display: grid;
+        gap: 0.25rem;
+        margin-top: 0.625rem;
+        font-size: 0.8125rem;
+        color: var(--muted);
+
+        @variant sm {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        & > li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            &::before {
+                content: '';
+                width: 0.5rem;
+                height: 0.5rem;
+                flex-shrink: 0;
+                border-radius: 999px;
+                border: 1.5px solid currentColor;
+                transition:
+                    background-color var(--duration-fast) ease,
+                    transform var(--duration-base) var(--ease-out);
+            }
+
+            &.is-met {
+                color: var(--success);
+
+                &::before {
+                    background: currentColor;
+                    transform: scale(1.15);
+                }
+            }
+        }
+    }
+
     .field-error {
         margin-top: 0.375rem;
         font-size: 0.875rem;

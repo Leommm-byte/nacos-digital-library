@@ -80,6 +80,24 @@ vendor/bin/phpstan analyse # static analysis
 php artisan test           # test suite
 ```
 
+## Accounts and roles
+
+- Students sign up at `/signup` with their matric number and log in at
+  `/login`. Matric formats: `F/ND/24/1234567` (F, P or C; ND, HND or HD) and
+  the older `ND/2019/CS/1234`.
+- Roles, from least to most privileged: student, course rep, governor,
+  admin. Protect routes with `->middleware('role:governor')` (that role or
+  higher), model actions with policies in `app/Policies`, and other
+  abilities with the gates in `AppServiceProvider` (`access-admin`,
+  `review-uploads`).
+- Failed logins are limited per matric number *and* IP (5 per minute), plus
+  100 per IP per 10 minutes. Accounts are never locked, so nobody can lock a
+  classmate out by guessing their password.
+- Suspended accounts can't log in, and an active session ends on its next
+  request.
+- Accounts flagged `must_change_password` (temporary passwords) can only
+  change their password or log out.
+
 ## Front end
 
 - **Style guide:** http://localhost:8080/styleguide shows every token and
