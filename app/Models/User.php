@@ -32,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property bool $must_change_password
  * @property Carbon|null $email_verified_at
  * @property string|null $two_factor_secret
- * @property list<string>|null $two_factor_recovery_codes  HMACs of the unused recovery codes
+ * @property list<string>|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property int|null $two_factor_last_step
  * @property Carbon|null $last_login_at
