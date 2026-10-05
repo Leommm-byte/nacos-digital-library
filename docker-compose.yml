@@ -19,6 +19,15 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Apache only starts once the entrypoint has installed dependencies,
+    # generated the key, migrated and seeded, so /up answering means the
+    # first-time setup is done.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10m
 
   # Mirrors the production cron (`schedule:run` every minute), which also
   # drains the job queue.
@@ -35,8 +44,10 @@ services:
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
     depends_on:
+      # Waits for the app's first-time setup (composer install, migrations),
+      # otherwise it would race it on a fresh checkout.
       app:
-        condition: service_started
+        condition: service_healthy
 
   db:
     image: mysql:8.0
