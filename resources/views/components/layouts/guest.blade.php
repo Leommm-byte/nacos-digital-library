@@ -15,7 +15,7 @@
 
     <main id="main" tabindex="-1" class="flex flex-1 flex-col items-center justify-center px-4 pb-12 outline-none">
         <a href="{{ url('/') }}" class="animate-enter mb-6 flex flex-col items-center gap-3">
-            <img src="{{ asset('images/logo-96.webp') }}" alt="" width="64" height="64" class="size-16">
+            <img src="{{ asset('images/logo-96.webp') }}" srcset="{{ asset('images/logo-96.webp') }} 96w, {{ asset('images/logo-192.webp') }} 192w" sizes="64px" alt="" width="64" height="64" decoding="async" class="size-16">
             <span class="font-display text-xl font-extrabold tracking-tight">NACOS <span class="text-link">YabaTech</span></span>
         </a>
 

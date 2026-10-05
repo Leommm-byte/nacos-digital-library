@@ -10,7 +10,7 @@
 </head>
 <body class="flex min-h-dvh flex-col items-center justify-center px-4 text-center">
     <main class="animate-enter max-w-md">
-        <img src="{{ asset('images/logo-96.webp') }}" alt="" width="64" height="64" class="mx-auto size-16">
+        <img src="{{ asset('images/logo-96.webp') }}" srcset="{{ asset('images/logo-96.webp') }} 96w, {{ asset('images/logo-192.webp') }} 192w" sizes="64px" alt="" width="64" height="64" decoding="async" class="mx-auto size-16">
         <p class="mt-6 font-display text-6xl font-extrabold tracking-tight text-link">@yield('code')</p>
         <h1 class="mt-3 text-2xl">@yield('message')</h1>
         <p class="mt-2 text-muted">

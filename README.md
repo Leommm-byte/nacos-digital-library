@@ -94,6 +94,10 @@ php artisan test           # test suite
   one, copy it from `node_modules/lucide-static/icons`.
 - **Fonts** (Inter and Plus Jakarta Sans, Latin subset) are self-hosted from
   npm packages and bundled by Vite. Nothing loads from a third-party CDN.
+- **Images:** the logo files in `public/images`, `public/favicon.ico` and
+  `public/apple-touch-icon.png` are resized, compressed copies of
+  `legacy/assets/images/NACOS_LOGO.png` (416 KB → 6–16 KB). Always give
+  `<img>` a `width` and `height` so the page doesn't jump while it loads.
 - **Motion:** `.animate-enter`, `.stagger` and `data-reveal`
   (`resources/css/motion.css`). Only `transform` and `opacity` are animated,
   and everything is instant when the device asks for reduced motion.
