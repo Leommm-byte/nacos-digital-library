@@ -102,7 +102,9 @@ class Catalog
             ->take(8)
             ->values();
 
-        if ($query->getConnection()->getDriverName() === 'mysql' && $words->isNotEmpty()) {
+        $mysql = $query->getModel()->getConnection()->getDriverName() === 'mysql';
+
+        if ($mysql && $words->isNotEmpty()) {
             // Every word must appear, as a word or the start of one:
             // "data struct" finds "Data Structures".
             $boolean = $words->map(fn (string $word) => '+'.$word.'*')->implode(' ');
@@ -113,7 +115,7 @@ class Catalog
 
         $escape = fn (string $value) => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
 
-        if ($query->getConnection()->getDriverName() !== 'mysql') {
+        if (! $mysql) {
             // No full-text index (SQLite in local tests): every word must
             // appear somewhere in the title, author or description.
             $terms = $words->isNotEmpty() ? $words : collect([mb_strtolower($search)]);

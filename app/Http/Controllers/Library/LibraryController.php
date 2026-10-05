@@ -65,7 +65,7 @@ class LibraryController extends Controller
      * Which of these books the user has saved, in one query.
      *
      * @param  array<mixed>  $bookIds
-     * @return array<int, true>
+     * @return array<int, bool>
      */
     private function bookmarkedIds(Request $request, array $bookIds): array
     {
