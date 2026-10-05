@@ -82,14 +82,19 @@ New in the rebuild:
 
 Keep:
 
-- [ ] Profile shows name, matric, programme, department, level, role and last login.
-- [ ] Edit full name, department, level and programme; matric number is read-only.
-- [ ] Live preview card while editing.
-- [ ] Account settings: MFA (legacy "Account Settings" was only the MFA page), plus changing your own password.
+- [x] Profile shows name, matric, programme, department, level, role and previous login (time and IP, to spot sign-ins that weren't you).
+- [x] Edit full name, department, level and programme; matric number is read-only.
+- [x] Live preview card while editing.
+- [x] Account settings: MFA (legacy "Account Settings" was only the MFA page), plus changing your own password.
 
 Fix:
 
-- [ ] After saving, the header and session showed stale department and level.
+- [x] After saving, the header and session showed stale department and level (details are now read from the database on every request).
+
+New in the rebuild:
+
+- [x] Changing your password needs the current one and logs out every other device.
+- [x] Course reps and above can't move themselves to another class (department or level), since their reset-code powers depend on it; an admin does that.
 
 ## Home, dashboard and announcements (PR 10)
 

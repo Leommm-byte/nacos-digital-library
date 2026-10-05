@@ -36,6 +36,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $two_factor_confirmed_at
  * @property int|null $two_factor_last_step
  * @property Carbon|null $last_login_at
+ * @property string|null $last_login_ip
+ * @property Carbon $created_at
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
