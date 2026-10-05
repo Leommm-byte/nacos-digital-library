@@ -31,12 +31,21 @@
    LOG_LEVEL=warning
    ```
    and run `php artisan key:generate`.
-4. **Cron:** *More → Cron Jobs*, every minute:
+4. **Cron:** *More → Cron Jobs*, add a job as `new_nacos_admin` with the
+   *Custom* schedule set to every minute:
    ```
    cd ~/nacosyabatech.com && /usr/local/php83/bin/php artisan schedule:run >> /dev/null 2>&1
    ```
 
 ## Each release
+
+Build the front end before uploading (`public/build` is not committed):
+
+```bash
+npm ci && npm run build
+```
+
+Then on the server:
 
 ```bash
 composer install --no-dev --optimize-autoloader

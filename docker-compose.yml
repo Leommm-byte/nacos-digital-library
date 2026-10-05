@@ -1,5 +1,5 @@
 # Local development stack. Start with: docker compose up -d
-#   App:     http://localhost:8080
+#   App:     http://localhost:8080 (refresh after editing CSS/JS; assets rebuild on save)
 #   Mailpit: http://localhost:8025 (catches all outgoing email)
 #   MySQL:   localhost:33060 (user nacos / secret)
 services:
@@ -19,6 +19,17 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      assets:
+        condition: service_healthy
+    # Apache only starts once the entrypoint has installed dependencies,
+    # generated the key, migrated and seeded, so /up answering means the
+    # first-time setup is done.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10m
 
   # Mirrors the production cron (`schedule:run` every minute), which also
   # drains the job queue.
@@ -35,8 +46,30 @@ services:
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
     depends_on:
+      # Waits for the app's first-time setup (composer install, migrations),
+      # otherwise it would race it on a fresh checkout.
       app:
-        condition: service_started
+        condition: service_healthy
+
+  # Rebuilds CSS/JS into public/build whenever a file changes. A full build
+  # (not the Vite dev server) keeps the page identical to production,
+  # including the Content-Security-Policy.
+  assets:
+    image: node:22-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm ci --no-audit --no-fund && npx vite build --watch"]
+    volumes:
+      - .:/app
+      # Container-only node_modules, so native binaries never clash with the host's.
+      - /app/node_modules
+    # Healthy once the first build has written its manifest; pages can't
+    # render before that.
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/public/build/manifest.json"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+      start_period: 5m
 
   db:
     image: mysql:8.0

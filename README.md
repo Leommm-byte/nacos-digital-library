@@ -32,7 +32,9 @@ dependencies). After that, open:
 | MySQL | `localhost:33060`, user `nacos`, password `secret` |
 
 The container creates `.env`, generates the app key, runs migrations and
-seeds demo data automatically. Useful commands:
+seeds demo data automatically. The `scheduler` container waits until that
+setup is finished, and the `assets` container rebuilds CSS and JavaScript
+whenever you save a file (refresh the browser to see it). Useful commands:
 
 ```bash
 docker compose logs -f app                          # follow logs
@@ -44,10 +46,12 @@ docker compose down -v                              # stop and wipe the database
 
 ### Option B: Without Docker
 
-Needs PHP 8.3 (with `pdo_mysql`, `intl`, `gd`, `zip`), Composer and MySQL 8.
+Needs PHP 8.3 (with `pdo_mysql`, `intl`, `gd`, `zip`), Composer, Node 22 and
+MySQL 8.
 
 ```bash
 composer install
+npm ci && npm run build       # or `npm run dev` while editing CSS/JS
 cp .env.example .env          # then set DB_* to your local MySQL
 php artisan key:generate
 php artisan migrate --seed
@@ -75,6 +79,32 @@ vendor/bin/pint            # format code (use --test to only check)
 vendor/bin/phpstan analyse # static analysis
 php artisan test           # test suite
 ```
+
+## Front end
+
+- **Style guide:** http://localhost:8080/styleguide shows every token and
+  component in light and dark mode (not available in production).
+- **Tokens** live in `resources/css/tokens.css`. Use the semantic utilities
+  (`bg-surface`, `text-muted`, `bg-primary`, …) so dark mode works for free.
+- **Components** live in `resources/views/components`: `x-layouts.app`,
+  `x-layouts.guest`, `x-button`, `x-card`, `x-alert`, `x-badge`, `x-field`,
+  `x-icon`.
+- **Icons** are a curated subset of [Lucide](https://lucide.dev) in
+  `resources/icons`, rendered inline with `<x-icon name="book-open" />`. To add
+  one, copy it from `node_modules/lucide-static/icons`.
+- **Fonts** (Inter and Plus Jakarta Sans, Latin subset) are self-hosted from
+  npm packages and bundled by Vite. Nothing loads from a third-party CDN.
+- **Images:** the logo files in `public/images`, `public/favicon.ico` and
+  `public/apple-touch-icon.png` are resized, compressed copies of
+  `legacy/assets/images/NACOS_LOGO.png` (416 KB → 6–16 KB). Always give
+  `<img>` a `width` and `height` so the page doesn't jump while it loads.
+- **Motion:** `.animate-enter`, `.stagger` and `data-reveal`
+  (`resources/css/motion.css`). Only `transform` and `opacity` are animated,
+  and everything is instant when the device asks for reduced motion.
+- **Content-Security-Policy:** only this site's own scripts, styles, fonts and
+  images are allowed. Inline `<script>`/`<style>` blocks need
+  `nonce="{{ Vite::cspNonce() }}"`, and inline `style="…"` attributes and
+  `onclick=` handlers are blocked, so use classes and JavaScript modules.
 
 ## Architecture notes
 

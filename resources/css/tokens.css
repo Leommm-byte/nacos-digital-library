@@ -1,0 +1,171 @@
+/*
+ * Design tokens. Components use the semantic tokens (--bg, --fg, --primary…)
+ * so dark mode is just a different set of values; the raw brand scales are
+ * for the rare place that needs a specific shade.
+ *
+ * Theme selection: the system preference by default; `data-theme="light"` or
+ * `"dark"` on <html> (set from the theme toggle) overrides it.
+ */
+
+@theme {
+    --font-sans: 'Inter Variable', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans Fallback', ui-sans-serif, system-ui, sans-serif;
+
+    /* NACOS green: 600 is the logo colour. */
+    --color-green-50: #ecfdf3;
+    --color-green-100: #d3f8e0;
+    --color-green-200: #a8eec3;
+    --color-green-300: #6fdc9c;
+    --color-green-400: #34c06f;
+    --color-green-500: #14a24f;
+    --color-green-600: #0b8f3a;
+    --color-green-700: #0a7d36;
+    --color-green-800: #086a2e;
+    --color-green-900: #064f23;
+    --color-green-950: #032c14;
+
+    /* NACOS yellow: 400 is the brand yellow. */
+    --color-yellow-100: #fff6cc;
+    --color-yellow-200: #ffeb99;
+    --color-yellow-300: #ffdd4d;
+    --color-yellow-400: #ffcc00;
+    --color-yellow-500: #e6b800;
+    --color-yellow-600: #b38f00;
+
+    --radius-sm: 0.375rem;
+    --radius-md: 0.625rem;
+    --radius-lg: 0.875rem;
+    --radius-xl: 1.25rem;
+
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Semantic colours as Tailwind utilities (bg-surface, text-muted, …). */
+@theme inline {
+    --color-bg: var(--bg);
+    --color-surface: var(--surface);
+    --color-surface-2: var(--surface-2);
+    --color-border: var(--border);
+    --color-fg: var(--fg);
+    --color-muted: var(--muted);
+    --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-on-primary: var(--on-primary);
+    --color-primary-soft: var(--primary-soft);
+    --color-link: var(--link);
+    --color-accent: var(--accent);
+    --color-on-accent: var(--on-accent);
+    --color-accent-soft: var(--accent-soft);
+    --color-danger: var(--danger);
+    --color-on-danger: var(--on-danger);
+    --color-danger-soft: var(--danger-soft);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-soft);
+    --color-success: var(--success);
+    --color-success-soft: var(--success-soft);
+    --color-info: var(--info);
+    --color-info-soft: var(--info-soft);
+    --shadow-card: var(--shadow-card);
+    --shadow-pop: var(--shadow-pop);
+}
+
+:root {
+    color-scheme: light;
+
+    --bg: #f5f8f6;
+    --surface: #ffffff;
+    --surface-2: #eef3f0;
+    --border: #dfe7e2;
+    --fg: #111a15;
+    --muted: #51605a;
+
+    /* Fills use 700: white text on the logo green (600) is below 4.5:1. */
+    --primary: var(--color-green-700);
+    --primary-hover: var(--color-green-800);
+    --on-primary: #ffffff;
+    --primary-soft: var(--color-green-50);
+    --link: var(--color-green-700);
+
+    --accent: var(--color-yellow-400);
+    --on-accent: #1b1600;
+    --accent-soft: var(--color-yellow-100);
+
+    --danger: #c42121;
+    --on-danger: #ffffff;
+    --danger-soft: #fdecec;
+    --warning: #9a5b00;
+    --warning-soft: #fff4dc;
+    --success: var(--color-green-700);
+    --success-soft: var(--color-green-50);
+    --info: #1d5bd8;
+    --info-soft: #e9f0fe;
+
+    --ring: var(--color-green-600);
+    --overlay: rgb(10 20 15 / 0.45);
+
+    /* Small, cheap shadows: no large blurs on mobile GPUs. */
+    --shadow-card: 0 1px 2px rgb(16 24 20 / 0.06), 0 1px 3px rgb(16 24 20 / 0.04);
+    --shadow-pop: 0 8px 24px rgb(16 24 20 / 0.12);
+
+    --header-h: 3.75rem;
+    --tabbar-h: 4rem;
+
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+}
+
+/*
+ * Dark when the system prefers it (unless light was picked), or when dark was
+ * picked. Also powers the `dark:` utility variant.
+ */
+@custom-variant dark {
+    @media (prefers-color-scheme: dark) {
+        &:where(:root:not([data-theme='light']), :root:not([data-theme='light']) *) {
+            @slot;
+        }
+    }
+    &:where([data-theme='dark'], [data-theme='dark'] *) {
+        @slot;
+    }
+}
+
+:root {
+    @variant dark {
+        color-scheme: dark;
+
+        --bg: #0b120f;
+        --surface: #111b17;
+        --surface-2: #17241f;
+        --border: #263630;
+        --fg: #e6eee9;
+        --muted: #9bada4;
+
+        --primary: var(--color-green-700);
+        --primary-hover: var(--color-green-600);
+        --on-primary: #ffffff;
+        --primary-soft: #0f2a1c;
+        --link: var(--color-green-300);
+
+        --accent: var(--color-yellow-400);
+        --on-accent: #1b1600;
+        --accent-soft: #2b2408;
+
+        --danger: #ff7b7b;
+        --on-danger: #2a0505;
+        --danger-soft: #2e1414;
+        --warning: #ffc266;
+        --warning-soft: #2c2210;
+        --success: var(--color-green-300);
+        --success-soft: #0f2a1c;
+        --info: #8db4ff;
+        --info-soft: #141f36;
+
+        --ring: var(--color-yellow-400);
+        --overlay: rgb(0 0 0 / 0.6);
+
+        --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+        --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.5);
+    }
+}

@@ -14,3 +14,11 @@ the decisions already made with the owner, and PR status.
 - Models are strict outside production; fix N+1 queries with eager loading
   instead of relaxing strict mode.
 - Do not add links between `election_voters` and `election_votes`.
+- Front end: use the semantic colour tokens (`bg-surface`, `text-muted`,
+  `bg-primary`…) and the Blade components in `resources/views/components`;
+  check new UI in light and dark mode on `/styleguide`.
+- The Content-Security-Policy blocks inline `style=""` attributes, inline
+  event handlers and third-party hosts. Inline `<script>`/`<style>` blocks
+  need `nonce="{{ Vite::cspNonce() }}"`. Self-host every asset.
+- Animate only `transform` and `opacity`; `prefers-reduced-motion` must still
+  work. No `backdrop-filter` or large shadows.

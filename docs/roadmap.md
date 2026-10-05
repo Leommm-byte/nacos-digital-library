@@ -10,7 +10,7 @@ and the item is ticked off here.
 |---|---|
 | Stack | Laravel 12, PHP 8.3, MySQL 8. No framework-free rewrite. |
 | Hosting | DreamHost shared ("Web Hosting Growth"), user `new_nacos_admin`, PHP 8.3, SSH enabled. No Redis or long-running processes; database-backed session, cache and queue. |
-| Cron | Not yet confirmed whether DreamHost allows every-minute cron. If not, run background work after the response is sent instead of relying on cron. The cron must run as `new_nacos_admin`. |
+| Cron | Confirmed: DreamHost's custom cron schedule allows every minute. The cron runs `schedule:run` every minute as `new_nacos_admin`, which also drains the job queue. |
 | Launch state | Not launched yet. No live data to migrate; the legacy app does not need patching. |
 | Password reset | Both: email reset links (collect email at signup or next login) and one-time codes issued by an admin or course rep as a fallback. |
 | Election results | Public and live during voting, for transparency. Serve a small static `live.json` snapshot rebuilt at most every few seconds; clients poll it with conditional requests (ETag/304), pause when the tab is hidden, and add jitter. No WebSockets/SSE on shared hosting. Leave a hook to switch to Pusher/Ably later. Show totals and turnout only; release updates in batches so individual votes cannot be inferred. |
@@ -26,12 +26,12 @@ and the item is ticked off here.
 
 ## PRs
 
-- [ ] **1. Laravel foundation.** Schema, models, Docker stack, CI.
-- [ ] **2. Design system and layout.** Tokens, dark mode, self-hosted assets, animation system, shared layout and navigation, Content-Security-Policy.
+- [x] **1. Laravel foundation.** Schema, models, Docker stack, CI.
+- [ ] **2. Design system and layout.** Tokens, dark mode, self-hosted assets, animation system, shared layout and navigation, Content-Security-Policy, compressed logo and optimised images.
 - [ ] **3. Authentication.** Signup, login, logout; rate limiting that cannot lock other people out; enforced suspension; roles and policies.
 - [ ] **4. Password reset and MFA.** Email links plus admin/rep codes; email collection; TOTP with a locally generated QR code and hashed recovery codes; a code required to disable it.
 - [ ] **5. Profile and account settings.**
-- [ ] **6. Catalog.** Paging, full-text search and filters, book detail page, bookmarks, covers served through controllers.
+- [ ] **6. Catalog.** Paging, full-text search and filters, book detail page, bookmarks, covers served through controllers, lazy-loaded covers.
 - [ ] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
 - [ ] **8. Uploads.** Resumable uploads, OCR as a queued job with progress, virus scanning, per-user limits.
 - [ ] **9. Moderation.** Reasons sent to uploaders, notifications, approvals history.
