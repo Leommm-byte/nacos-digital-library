@@ -27,3 +27,8 @@ the decisions already made with the owner, and PR status.
   the rest. Never compare `$user->role` by hand in controllers or views.
 - `docs/legacy-checklist.md` lists every legacy behaviour; tick off what a
   PR delivers and keep its "Fix" items from coming back.
+- UI work follows the standard in `docs/design-overhaul.md`. Pushing to a
+  `claude/**` branch runs the Screenshots workflow, which photographs every
+  screen (phone/desktop, light/dark) into the branch `screenshots/<branch>`;
+  review those images before opening a PR, and add new screens to
+  `scripts/screenshots.mjs`.

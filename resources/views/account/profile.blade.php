@@ -1,12 +1,9 @@
 <x-layouts.app title="Profile">
-    <div class="animate-enter">
-        <h1 class="text-2xl sm:text-3xl">Your profile</h1>
-        <p class="mt-1 text-muted">Keep your class details up to date so you see the right books and elections.</p>
-    </div>
+    <x-page-header title="Your profile" subtitle="Keep your class details up to date so you see the right books and elections." />
 
-    <div class="mt-8 grid items-start gap-6 lg:grid-cols-[22rem_1fr]">
+    <div class="grid items-start gap-6 lg:grid-cols-[22rem_1fr]">
         {{-- Live preview: resources/js/preview.js updates it as the form changes. --}}
-        <x-card class="animate-enter lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
+        <x-card class="profile-card animate-enter lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
             <div class="flex items-center gap-4">
                 <span class="avatar size-14 text-xl" data-preview-initial="fullname" aria-hidden="true">{{ mb_strtoupper(mb_substr($user->fullname, 0, 1)) }}</span>
                 <div class="min-w-0">
@@ -49,6 +46,7 @@
 
         <x-card class="animate-enter">
             <h2 class="text-lg">Edit details</h2>
+            <p class="mt-1 text-sm text-muted">Changes show in the card as you type.</p>
 
             <form method="POST" action="{{ route('profile.update') }}" class="mt-5 space-y-4" novalidate>
                 @csrf

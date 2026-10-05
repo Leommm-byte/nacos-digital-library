@@ -13,6 +13,36 @@ const RULES = {
 };
 
 export function initForms() {
+    // Show that a form is being sent and stop double submissions. Forms
+    // handled in place (bookmarks) manage their own state.
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+
+        if (event.defaultPrevented || form.matches('[data-bookmark], [method="GET" i]')) {
+            return;
+        }
+
+        const button = event.submitter ?? form.querySelector('button[type="submit"]');
+        if (button) {
+            // After the browser has read the form, so the button's own value is sent.
+            window.setTimeout(() => {
+                button.setAttribute('aria-busy', 'true');
+                button.disabled = true;
+            }, 0);
+        }
+    });
+
+    // Coming back with the browser's Back button restores the page as it
+    // was, including disabled buttons; undo that.
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            document.querySelectorAll('button[aria-busy="true"]').forEach((button) => {
+                button.removeAttribute('aria-busy');
+                button.disabled = false;
+            });
+        }
+    });
+
     document.addEventListener('click', (event) => {
         const button = event.target.closest('[data-password-toggle]');
         const input = button && document.getElementById(button.dataset.passwordToggle);

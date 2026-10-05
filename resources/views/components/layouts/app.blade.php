@@ -18,7 +18,7 @@
     @include('partials.header', ['user' => $user, 'nav' => $nav])
 
     <main id="main" tabindex="-1" class="container-page flex-1 py-6 outline-none md:py-10">
-        @include('partials.flash')
+        @include('partials.flash', ['toast' => true])
         @include('partials.account-notice')
 
         {{ $slot }}
@@ -30,7 +30,7 @@
         @include('partials.tabbar', ['nav' => $nav])
     @endif
 
-    <div id="toast" class="toast" aria-hidden="true"></div>
-    <div id="live-region" class="sr-only" aria-live="polite"></div>
+    {{-- Success messages appear here and fade away (resources/js/toast.js). --}}
+    <div id="toast" @class(['toast', 'is-visible' => session('status')]) role="status" aria-live="polite">{{ session('status') }}</div>
 </body>
 </html>
