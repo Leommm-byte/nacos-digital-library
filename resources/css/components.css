@@ -641,7 +641,8 @@
             border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
         }
 
-        & > span {
+        /* The text; the icon tile is a span too, so it is excluded. */
+        & > span:not(.icon-tile) {
             display: flex;
             min-width: 0;
             flex-direction: column;
