@@ -100,7 +100,7 @@ New in the rebuild:
 
 Keep:
 
-- [ ] Greeting by Lagos time of day with the first name; role, department and level badges.
+- [x] Greeting by Lagos time of day with the first name; role, department and level badges (PR 6.5).
 - [ ] Academic profile summary.
 - [ ] Stats: books read, bookmarks, uploads.
 - [ ] Continue reading: the 2 most recent books with progress bars.
@@ -283,6 +283,8 @@ Keep:
 - [x] Shared header, footer and account menu that closes on Esc and outside click (PR 2).
 - [x] Small, compressed logo and favicon (PR 2).
 - [x] Page titles and descriptions; `noindex` on error pages (PR 2).
+- [x] Brand presence: green brand panel on auth pages, green hero on the home pages (PR 6.5).
+- [x] Coloured icon tiles, softer surfaces and section headers with "See all" links (PR 6.5).
 - [ ] Web app manifest and service worker with an offline fallback page (PR 14).
 - [ ] Install prompt: Android/desktop install button; iOS "Share, Add to Home Screen" steps; hidden when installed; dismiss for 24 h (PR 14).
 - [ ] Confirmation dialogs (legacy AppModal) for destructive actions (as features need them).
