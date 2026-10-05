@@ -33,8 +33,10 @@ class LoginTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertAuthenticatedAs($user);
-        $this->assertNotNull($user->fresh()?->last_login_at);
-        $this->assertSame('127.0.0.1', $user->fresh()?->last_login_ip);
+        $fresh = $user->fresh();
+        $this->assertNotNull($fresh);
+        $this->assertNotNull($fresh->last_login_at);
+        $this->assertSame('127.0.0.1', $fresh->last_login_ip);
         $this->assertDatabaseHas('audit_logs', ['action' => 'login', 'user_id' => $user->id]);
     }
 

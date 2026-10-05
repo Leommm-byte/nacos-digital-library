@@ -56,7 +56,7 @@ class LoginRequest extends FormRequest
         $password = $this->string('password')->toString();
         $user = User::where('matric_number', $matric)->first();
 
-        if (! Hash::check($password, $user?->password ?? self::DUMMY_HASH) || ! $user) {
+        if (! Hash::check($password, $user->password ?? self::DUMMY_HASH) || ! $user) {
             RateLimiter::hit($this->accountKey(), 60);
             RateLimiter::hit($this->ipKey(), 600);
             Audit::record('login_failed', $user, ['matric_number' => $matric]);
