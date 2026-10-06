@@ -1978,6 +1978,9 @@
     /* Your uploads (uploads/index.blade.php). */
     .upload-list {
         display: grid;
+        /* minmax(0, …) lets long one-line titles shorten with "…" instead
+           of widening the page. */
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.75rem;
     }
 
@@ -2315,6 +2318,7 @@
     /* Notifications (notifications/index.blade.php). */
     .notification-list {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.5rem;
     }
 
