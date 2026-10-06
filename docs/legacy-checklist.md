@@ -101,24 +101,24 @@ New in the rebuild:
 Keep:
 
 - [x] Greeting by Lagos time of day with the first name; role, department and level badges (PR 6.5).
-- [ ] Academic profile summary.
-- [ ] Stats: books read, bookmarks, uploads.
-- [ ] Continue reading: the 2 most recent books with progress bars.
-- [ ] Recommended books: same department and level first, then same level.
-- [ ] Recent activity (the user's own last 5 actions, in plain words).
-- [ ] Up to 3 live announcements, newest first, with an empty state.
-- [ ] Header: logo, search shortcut to the library, account menu (Profile, Saved, Elections, Library, Settings, Admin panel for admins, Logout).
+- [x] Academic profile summary (matric number, class, department, member since).
+- [x] Stats: books read (and finished), saved, uploads (and how many are in the library), new notifications; each tile links to its page.
+- [x] Continue reading: the 2 most recent unfinished books with page and progress bar, straight into the reader.
+- [x] Recommended books: same department and level first, then same level, skipping books already opened.
+- [x] Recent activity (the user's own last 5 actions, in plain words; only the latest login; failed logins on the account included as a security signal).
+- [x] Up to 3 live announcements, newest first, with an empty state and an announcements page; governors and admins post, schedule, edit and delete them.
+- [x] Header: logo, search, notifications, account menu (Profile, Your uploads, Review uploads and Announcements for reviewers, Settings, Admin panel for admins, Log out). Elections join it in PR 11.
 
 Fix:
 
-- [ ] About 14 sequential queries and `ORDER BY RAND()`; stats are cached now.
-- [ ] Recent activity printed raw audit action names without escaping.
-- [ ] Announcements expired at midnight at the start of their end date.
-- [ ] Governors had no link to the approval queue.
+- [x] About 14 sequential queries and `ORDER BY RAND()`. Now about a dozen small indexed queries, no random ordering; the shared parts (recommendations per class, live announcements) are cached and the announcement cache is cleared on every change.
+- [x] Recent activity printed raw audit action names without escaping. Actions are mapped to sentences (unknown ones are never shown) and everything is escaped.
+- [x] Announcements expired at midnight at the start of their end date. Dates are whole days in Lagos time; an announcement shows until 23:59 on its last day.
+- [x] Governors had no link to the approval queue (PR 9), plus a "waiting for review" card on their home page.
 
 Drop:
 
-- [ ] Computed but never shown: trending books, pending/approved/notification counts.
+- [x] Computed but never shown: trending books, pending/approved/notification counts.
 
 ## Library, search and bookmarks (PR 6)
 

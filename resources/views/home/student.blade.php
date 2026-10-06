@@ -19,52 +19,153 @@
         </div>
     </section>
 
-    <nav aria-label="Shortcuts" class="mt-6">
+    {{-- At a glance; each tile leads to its page. --}}
+    <nav aria-label="Your numbers" class="mt-6">
         <ul class="stagger grid grid-cols-2 gap-3 md:grid-cols-4">
-            <li><a href="{{ route('library.index') }}" class="shortcut"><x-icon-tile name="library-big" tone="green" /><span><strong>Library</strong><small>All books</small></span></a></li>
-            <li><a href="{{ route('bookmarks.index') }}" class="shortcut"><x-icon-tile name="bookmark" tone="yellow" /><span><strong>Saved</strong><small>{{ $savedCount }} {{ \Illuminate\Support\Str::plural('book', $savedCount) }}</small></span></a></li>
-            <li><a href="{{ route('profile.edit') }}" class="shortcut"><x-icon-tile name="user" tone="blue" /><span><strong>Profile</strong><small>Your details</small></span></a></li>
-            <li><a href="{{ route('settings') }}" class="shortcut"><x-icon-tile name="settings" tone="violet" /><span><strong>Settings</strong><small>Security</small></span></a></li>
+            <li><a href="{{ route('library.index') }}" class="shortcut"><x-icon-tile name="book-open" tone="green" />
+                <span><strong>{{ number_format($stats['opened']) }} {{ \Illuminate\Support\Str::plural('book', $stats['opened']) }} read</strong><small>{{ $stats['finished'] }} finished</small></span></a></li>
+            <li><a href="{{ route('bookmarks.index') }}" class="shortcut"><x-icon-tile name="bookmark" tone="yellow" />
+                <span><strong>{{ number_format($stats['saved']) }} saved</strong><small>For revision</small></span></a></li>
+            <li><a href="{{ route('uploads.index') }}" class="shortcut"><x-icon-tile name="upload" tone="blue" />
+                <span><strong>{{ number_format($stats['uploads']) }} {{ \Illuminate\Support\Str::plural('upload', $stats['uploads']) }}</strong><small>{{ $stats['approved'] }} in the library</small></span></a></li>
+            <li><a href="{{ route('notifications.index') }}" class="shortcut"><x-icon-tile name="bell" tone="violet" />
+                <span><strong>{{ $stats['unread'] ? $stats['unread'].' new' : 'No new' }}</strong><small>Notifications</small></span></a></li>
         </ul>
     </nav>
 
-    <div class="mt-10 space-y-10 md:mt-12">
-        <x-section title="New for {{ $user->level->label() }}" description="Recently added for your level in {{ $user->department->name }}." icon="sparkles" tone="yellow">
-            <x-slot:action>
-                <a href="{{ route('library.index', ['level' => $user->level->value]) }}" class="section-link">See all <x-icon name="arrow-right" /></a>
-            </x-slot:action>
-
-            @if ($forYou->isEmpty())
-                <x-empty-state icon="library-big" title="Nothing new for your level yet" text="Books shared for {{ $user->level->label() }} will show up here.">
-                    <x-button href="{{ route('library.index') }}" variant="secondary" size="sm">Browse everything</x-button>
-                </x-empty-state>
-            @else
-                <ul class="shelf">
-                    @foreach ($forYou as $book)
-                        <li><x-book-card :book="$book" :saved="isset($savedIds[$book->id])" /></li>
-                    @endforeach
-                </ul>
+    <div class="dashboard mt-10 md:mt-12">
+        <div class="min-w-0 space-y-10">
+            @if ($continue->isNotEmpty())
+                <x-section title="Continue reading" description="Pick up where you stopped." icon="book-open" tone="green">
+                    <ul class="grid gap-3 sm:grid-cols-2">
+                        @foreach ($continue as $progress)
+                            <li>
+                                <a href="{{ route('books.read', $progress->book) }}" class="continue-card">
+                                    <span class="continue-cover"><x-book-cover :book="$progress->book" /></span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="continue-title">{{ $progress->book->title }}</span>
+                                        <span class="continue-meta">Page {{ number_format($progress->current_page) }}@if ($progress->book->page_count) of {{ number_format($progress->book->page_count) }}@endif</span>
+                                        <progress max="100" value="{{ $progress->progress_percent }}" class="continue-bar" aria-label="{{ $progress->progress_percent }}% read">{{ $progress->progress_percent }}%</progress>
+                                    </span>
+                                    <x-icon name="chevron-right" class="shrink-0 text-muted" />
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </x-section>
             @endif
-        </x-section>
 
-        <x-section title="Saved books" description="Your shortlist for revision." icon="bookmark" tone="green">
-            <x-slot:action>
-                @if ($saved->isNotEmpty())
-                    <a href="{{ route('bookmarks.index') }}" class="section-link">See all <x-icon name="arrow-right" /></a>
+            <x-section title="Recommended for you" description="New for {{ $user->level->label() }}, from {{ $user->department->name }} first." icon="sparkles" tone="yellow">
+                <x-slot:action>
+                    <a href="{{ route('library.index', ['level' => $user->level->value]) }}" class="section-link">See all <x-icon name="arrow-right" /></a>
+                </x-slot:action>
+
+                @if ($recommended->isEmpty())
+                    <x-empty-state icon="library-big" title="Nothing new for your level yet" text="Books shared for {{ $user->level->label() }} will show up here.">
+                        <x-button href="{{ route('library.index') }}" variant="secondary" size="sm">Browse everything</x-button>
+                    </x-empty-state>
+                @else
+                    <ul class="shelf">
+                        @foreach ($recommended as $book)
+                            <li><x-book-card :book="$book" :saved="isset($savedIds[$book->id])" /></li>
+                        @endforeach
+                    </ul>
                 @endif
-            </x-slot:action>
+            </x-section>
 
-            @if ($saved->isEmpty())
-                <x-empty-state icon="bookmark" title="Nothing saved yet" text="Tap the bookmark on any book to keep it here.">
-                    <x-button href="{{ route('library.index') }}" variant="secondary" size="sm" icon="library-big">Browse the library</x-button>
-                </x-empty-state>
-            @else
-                <ul class="shelf">
-                    @foreach ($saved as $book)
-                        <li><x-book-card :book="$book" :saved="true" /></li>
-                    @endforeach
-                </ul>
+            <x-section title="Saved books" description="Your shortlist for revision." icon="bookmark" tone="green">
+                <x-slot:action>
+                    @if ($saved->isNotEmpty())
+                        <a href="{{ route('bookmarks.index') }}" class="section-link">See all <x-icon name="arrow-right" /></a>
+                    @endif
+                </x-slot:action>
+
+                @if ($saved->isEmpty())
+                    <x-empty-state icon="bookmark" title="Nothing saved yet" text="Tap the bookmark on any book to keep it here.">
+                        <x-button href="{{ route('library.index') }}" variant="secondary" size="sm" icon="library-big">Browse the library</x-button>
+                    </x-empty-state>
+                @else
+                    <ul class="shelf">
+                        @foreach ($saved as $book)
+                            <li><x-book-card :book="$book" :saved="true" /></li>
+                        @endforeach
+                    </ul>
+                @endif
+            </x-section>
+        </div>
+
+        <aside class="min-w-0 space-y-6">
+            @if ($waiting !== null)
+                <div class="dashboard-card dashboard-card-accent">
+                    <div class="flex items-center gap-3">
+                        <x-icon-tile name="shield-check" tone="yellow" size="sm" />
+                        <div class="min-w-0">
+                            <h2 class="text-base">{{ $waiting ? $waiting.' '.\Illuminate\Support\Str::plural('upload', $waiting).' waiting' : 'No uploads waiting' }}</h2>
+                            <p class="text-sm text-muted">{{ $waiting ? 'Oldest first. Students are waiting to hear back.' : 'You\'re all caught up on reviews.' }}</p>
+                        </div>
+                    </div>
+                    @if ($waiting)
+                        <x-button href="{{ route('review.index') }}" size="sm" class="mt-4 w-full">Review uploads</x-button>
+                    @endif
+                </div>
             @endif
-        </x-section>
+
+            <section class="dashboard-card" aria-labelledby="announcements-heading">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 id="announcements-heading" class="flex items-center gap-2 text-base"><x-icon name="bell" class="text-muted" /> Announcements</h2>
+                    @if ($announcements !== [])
+                        <a href="{{ route('announcements.index') }}" class="section-link">See all</a>
+                    @endif
+                </div>
+                @if ($announcements === [])
+                    <p class="mt-3 text-sm text-muted">No announcements right now. News from NACOS will appear here.</p>
+                @else
+                    <ul class="announcement-list">
+                        @foreach ($announcements as $announcement)
+                            <li>
+                                <h3 class="announcement-title">{{ $announcement['title'] }}</h3>
+                                <p class="announcement-body">{{ $announcement['body'] }}</p>
+                                <time class="announcement-date" datetime="{{ $announcement['date'] }}">{{ \Illuminate\Support\Carbon::parse($announcement['date'])->timezone(config('app.display_timezone'))->format('j M Y') }}</time>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                @can('manage-announcements')
+                    <a href="{{ route('announcements.manage') }}" class="section-link mt-4">Manage announcements <x-icon name="arrow-right" /></a>
+                @endcan
+            </section>
+
+            <section class="dashboard-card" aria-labelledby="profile-heading">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 id="profile-heading" class="flex items-center gap-2 text-base"><x-icon name="user" class="text-muted" /> Your details</h2>
+                    <a href="{{ route('profile.edit') }}" class="section-link">Edit</a>
+                </div>
+                <dl class="profile-summary">
+                    <div><dt>Matric number</dt><dd>{{ $user->matric_number }}</dd></div>
+                    <div><dt>Class</dt><dd>{{ $user->level->label() }} · {{ $user->programme->label() }}</dd></div>
+                    <div><dt>Department</dt><dd>{{ $user->department->name }}</dd></div>
+                    <div><dt>Member since</dt><dd>{{ $user->created_at->timezone(config('app.display_timezone'))->format('F Y') }}</dd></div>
+                </dl>
+            </section>
+
+            <section class="dashboard-card" aria-labelledby="activity-heading">
+                <h2 id="activity-heading" class="flex items-center gap-2 text-base"><x-icon name="clock" class="text-muted" /> Recent activity</h2>
+                @if ($activity === [])
+                    <p class="mt-3 text-sm text-muted">What you do here will show up in this list.</p>
+                @else
+                    <ol class="activity-list">
+                        @foreach ($activity as $item)
+                            <li>
+                                <x-icon :name="$item['icon']" class="activity-icon" />
+                                <span class="min-w-0">
+                                    <span class="block">{{ $item['text'] }}</span>
+                                    <time class="activity-time" datetime="{{ $item['at']->toIso8601String() }}">{{ $item['at']->diffForHumans() }}</time>
+                                </span>
+                            </li>
+                        @endforeach
+                    </ol>
+                @endif
+            </section>
+        </aside>
     </div>
 </x-layouts.app>

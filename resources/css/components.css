@@ -1978,6 +1978,9 @@
     /* Your uploads (uploads/index.blade.php). */
     .upload-list {
         display: grid;
+        /* minmax(0, …) lets long one-line titles shorten with "…" instead
+           of widening the page. */
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.75rem;
     }
 
@@ -2315,6 +2318,7 @@
     /* Notifications (notifications/index.blade.php). */
     .notification-list {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.5rem;
     }
 
@@ -2364,5 +2368,200 @@
         margin-top: 0.375rem;
         border-radius: 999px;
         background: var(--primary);
+    }
+    /* Student dashboard (home/student.blade.php): main column and a side
+       column of cards on large screens, one column on phones. */
+    .dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2.5rem;
+
+        @variant lg {
+            grid-template-columns: minmax(0, 1fr) 20rem;
+            align-items: start;
+        }
+    }
+
+    /* The main column is narrower than the page, so its shelves keep
+       one row of four instead of going to six on wide screens. */
+    .dashboard .shelf {
+        @variant xl {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    .dashboard-card {
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+
+        & .section-link {
+            display: inline-flex;
+        }
+    }
+
+    .dashboard-card-accent {
+        border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+        background: var(--accent-soft);
+    }
+
+    .continue-card {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        height: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+        transition: border-color var(--duration-fast) ease;
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+        }
+    }
+
+    .continue-cover {
+        flex-shrink: 0;
+        width: 3.5rem;
+
+        & .book-cover {
+            border-radius: 0.375rem;
+        }
+
+        & .book-cover-mark {
+            display: none;
+        }
+    }
+
+    .continue-title {
+        display: block;
+        overflow: hidden;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .continue-meta {
+        display: block;
+        color: var(--muted);
+        font-size: 0.8125rem;
+    }
+
+    .continue-bar {
+        display: block;
+        width: 100%;
+        height: 0.375rem;
+        margin-top: 0.5rem;
+        overflow: hidden;
+        border: 0;
+        border-radius: 999px;
+        background: var(--surface-2);
+        appearance: none;
+
+        &::-webkit-progress-bar {
+            background: var(--surface-2);
+        }
+
+        &::-webkit-progress-value {
+            border-radius: 999px;
+            background: var(--primary);
+        }
+
+        &::-moz-progress-bar {
+            border-radius: 999px;
+            background: var(--primary);
+        }
+    }
+
+    .announcement-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+
+        & > li + li {
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    .announcement-title {
+        font-family: var(--font-sans);
+        font-size: 0.9375rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        word-spacing: normal;
+    }
+
+    .announcement-body {
+        display: -webkit-box;
+        margin-top: 0.25rem;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 0.875rem;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+    }
+
+    .announcement-date {
+        display: block;
+        margin-top: 0.375rem;
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .announcement-feed {
+        display: grid;
+        gap: 1rem;
+        max-width: 48rem;
+
+        & .announcement-date {
+            margin-top: 0;
+        }
+    }
+
+    .profile-summary {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        font-size: 0.875rem;
+
+        & dt {
+            color: var(--muted);
+            font-size: 0.75rem;
+        }
+
+        & dd {
+            font-weight: 600;
+        }
+    }
+
+    .activity-list {
+        display: grid;
+        gap: 0.875rem;
+        margin-top: 1rem;
+        font-size: 0.875rem;
+
+        & > li {
+            display: flex;
+            gap: 0.75rem;
+        }
+    }
+
+    .activity-icon {
+        flex-shrink: 0;
+        width: 1rem;
+        margin-top: 0.125rem;
+        color: var(--muted);
+    }
+
+    .activity-time {
+        display: block;
+        color: var(--muted);
+        font-size: 0.75rem;
     }
 }

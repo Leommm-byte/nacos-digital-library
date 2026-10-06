@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
@@ -49,6 +50,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/review/{book}', [ReviewController::class, 'decide'])
             ->middleware('throttle:60,1')
             ->name('review.decide');
+    });
+
+    Route::get('/announcements', [AnnouncementController::class, 'index'])->name('announcements.index');
+    Route::middleware('can:manage-announcements')->group(function () {
+        Route::get('/announcements/manage', [AnnouncementController::class, 'manage'])->name('announcements.manage');
+        Route::get('/announcements/create', [AnnouncementController::class, 'create'])->name('announcements.create');
+        Route::post('/announcements', [AnnouncementController::class, 'store'])->name('announcements.store');
+        Route::get('/announcements/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('announcements.edit');
+        Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
+        Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
     });
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

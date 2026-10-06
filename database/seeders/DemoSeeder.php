@@ -12,6 +12,7 @@ use App\Models\Announcement;
 use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
+use App\Models\ReadingProgress;
 use App\Models\User;
 use App\Notifications\UploadReviewed;
 use Illuminate\Database\Seeder;
@@ -89,7 +90,32 @@ class DemoSeeder extends Seeder
             $users['student']->notify(new UploadReviewed($book, $action, $comment));
         }
 
-        Announcement::factory()->count(3)->create();
+        // Tobi is part-way through two books and has finished one, so the
+        // dashboard's "Continue reading" and stats have something to show.
+        foreach (Book::approved()->where('level', Level::ND1)->take(3)->get() as $i => $book) {
+            $pages = $book->page_count ?? 10;
+            ReadingProgress::upsert([[
+                'user_id' => $users['student']->id,
+                'book_id' => $book->id,
+                'current_page' => $i === 2 ? $pages : max(1, intdiv($pages, 3 - $i)),
+                'progress_percent' => $i === 2 ? 100 : (int) round(max(1, intdiv($pages, 3 - $i)) / $pages * 100),
+                'completed_at' => $i === 2 ? now()->subDay() : null,
+                'last_read_at' => now()->subHours($i + 1),
+            ]], ['user_id', 'book_id'], ['current_page', 'progress_percent', 'completed_at', 'last_read_at']);
+        }
+
+        Announcement::factory()->create([
+            'title' => 'First semester exams timetable is out',
+            'body' => "The timetable for first semester exams is on the departmental notice board and in the library under ND1–HND2.\n\nCheck your course codes and venues early.",
+        ]);
+        Announcement::factory()->create([
+            'title' => 'NACOS week: hackathon registration',
+            'body' => 'Teams of up to four can register with their course reps until Friday. Prizes for the top three teams.',
+        ]);
+        Announcement::factory()->create([
+            'title' => 'Library uploads are open',
+            'body' => 'Share your notes and past questions from the Upload page. Reviewers check every upload before it appears.',
+        ]);
 
         $election = new Election(['title' => 'NACOS Executive Council Election']);
         $election->status = ElectionStatus::Draft;

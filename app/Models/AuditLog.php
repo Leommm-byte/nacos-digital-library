@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Append-only record of security-relevant actions. Write via App\Support\Audit.
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $subject_id
  * @property string|null $ip_address
  * @property array<string, mixed>|null $meta
+ * @property Carbon $created_at
  */
 class AuditLog extends Model
 {

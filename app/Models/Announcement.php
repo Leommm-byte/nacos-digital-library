@@ -17,6 +17,8 @@ use Illuminate\Support\Carbon;
  * @property bool $is_published
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
+ * @property int|null $created_by
+ * @property Carbon $created_at
  */
 class Announcement extends Model
 {
