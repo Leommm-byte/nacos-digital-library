@@ -104,11 +104,11 @@ class ReviewTest extends TestCase
         $this->actingAs($this->governor)
             ->post(route('review.decide', $book), ['action' => 'rejected'])
             ->assertSessionHasErrors('comment');
-        $this->assertSame(BookStatus::Pending, $book->fresh()?->status);
+        $this->assertSame(BookStatus::Pending, Book::findOrFail($book->id)->status);
 
         $this->post(route('review.decide', $book), ['action' => 'changes_requested', 'comment' => 'Page 3 is blurry, please retake it.'])
             ->assertSessionHasNoErrors();
-        $this->assertSame(BookStatus::ChangesRequested, $book->fresh()?->status);
+        $this->assertSame(BookStatus::ChangesRequested, Book::findOrFail($book->id)->status);
     }
 
     #[Test]
@@ -134,6 +134,10 @@ class ReviewTest extends TestCase
         $book = $this->pending();
         $notification = new UploadReviewed($book, ReviewAction::Approved, null);
 
+        // No email, or one not yet verified: in the app only.
+        $this->uploader->forceFill(['email' => null, 'email_verified_at' => null])->save();
+        $this->assertSame(['database'], $notification->via($this->uploader));
+        $this->uploader->forceFill(['email' => 'ada@example.test'])->save();
         $this->assertSame(['database'], $notification->via($this->uploader));
 
         $this->uploader->forceFill(['email' => 'ada@example.test', 'email_verified_at' => now()])->save();
@@ -154,7 +158,7 @@ class ReviewTest extends TestCase
             ->post(route('review.decide', $book), ['action' => 'rejected', 'comment' => 'No.'])
             ->assertSessionHasErrors(['action' => 'Someone else has already reviewed this upload.']);
 
-        $this->assertSame(BookStatus::Approved, $book->fresh()?->status);
+        $this->assertSame(BookStatus::Approved, Book::findOrFail($book->id)->status);
         $this->assertSame(1, $book->reviews()->count());
     }
 

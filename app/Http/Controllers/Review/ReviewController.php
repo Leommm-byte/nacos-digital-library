@@ -34,9 +34,11 @@ class ReviewController extends Controller
 
     public function index(Request $request): View
     {
+        $level = Level::tryFrom($request->string('level')->toString());
+
         $filters = [
             'status' => array_key_exists($request->string('status')->toString(), self::STATUSES) ? $request->string('status')->toString() : 'pending',
-            'level' => Level::tryFrom($request->string('level')->toString())?->value ?? '',
+            'level' => $level !== null ? $level->value : '',
             'department' => $request->integer('department'),
             'q' => mb_substr(trim($request->string('q')->toString()), 0, 100),
         ];
