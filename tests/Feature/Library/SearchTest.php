@@ -47,7 +47,7 @@ class SearchTest extends TestCase
 
         // Text read from the pages of an upload (PR 8).
         Book::where('title', 'C Programming')->firstOrFail()
-            ->setSearchText("Chapter 3: pointers and memory.\n\nQuestion 4: explain recursion with databases as an example.");
+            ->setSearchText("Chapter 3: pointers and memory.\n\nQuestion 4: explain recursion, then compare two sorting algorithms.");
     }
 
     protected function tearDown(): void
@@ -84,7 +84,7 @@ class SearchTest extends TestCase
     #[Test]
     public function a_title_match_ranks_above_a_match_in_the_text(): void
     {
-        $this->assertSame(['Introduction to Databases', 'C Programming'], $this->search('databases'));
+        $this->assertSame(['Data Structures and Algorithms', 'C Programming'], $this->search('algorithms'));
     }
 
     #[Test]

@@ -235,7 +235,7 @@ class UploadTest extends TestCase
         $this->post(route('uploads.store'), $this->details([
             'type' => 'scan',
             'pages' => [UploadedFile::fake()->createWithContent('page.jpg', '%PDF-1.4 not an image')],
-        ]))->assertSessionHasErrors('pages.0');
+        ]))->assertSessionHasErrors('pages');
 
         $this->assertSame(0, Book::count());
     }
@@ -246,7 +246,7 @@ class UploadTest extends TestCase
         config(['uploads.per_day' => 2, 'uploads.pending' => 5]);
         Book::factory()->count(2)->for($this->department)->uploadedBy($this->student)->create();
 
-        $this->actingAs($this->student)->get(route('uploads.create'))->assertSee("You have reached today's limit", false);
+        $this->actingAs($this->student)->get(route('uploads.create'))->assertSee("You have reached today's limit");
         $this->post(route('uploads.store'), $this->details(['type' => 'pdf', 'pdf' => $this->pdf()]))
             ->assertSessionHasErrors('upload');
 

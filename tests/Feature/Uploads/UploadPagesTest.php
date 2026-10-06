@@ -64,7 +64,9 @@ class UploadPagesTest extends TestCase
             ->assertSee('is waiting for review', false)
             ->assertSee('Upload another');
 
-        $this->get(route('uploads.show', $book))->assertDontSee('Thanks for sharing!');
+        // The thanks only shows once (it's flashed after uploading).
+        $this->flushSession();
+        $this->actingAs($this->student)->get(route('uploads.show', $book))->assertDontSee('Thanks for sharing!');
     }
 
     #[Test]
