@@ -1991,10 +1991,19 @@
         }
     }
 
+    /* A wrapper, so the cover's percentage padding is measured against
+       the thumbnail, not the whole row. */
     .upload-row-cover {
         flex-shrink: 0;
         width: 3rem;
-        border-radius: 0.375rem;
+
+        & .book-cover {
+            border-radius: 0.375rem;
+        }
+
+        & .book-cover-mark {
+            display: none;
+        }
     }
 
     .upload-row-title {

@@ -14,7 +14,7 @@
             @foreach ($books as $book)
                 <li>
                     <a href="{{ route('uploads.show', $book) }}" class="upload-row">
-                        <x-book-cover :book="$book" class="upload-row-cover" />
+                        <span class="upload-row-cover"><x-book-cover :book="$book" /></span>
                         <span class="min-w-0 flex-1">
                             <span class="upload-row-title">{{ $book->title }}</span>
                             <span class="upload-row-meta">{{ $book->author }} · {{ $book->level->label() }} · {{ $book->created_at->timezone(config('app.display_timezone'))->format('j M Y') }}</span>
