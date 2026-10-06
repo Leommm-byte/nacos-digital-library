@@ -203,19 +203,25 @@ New:
 
 Keep:
 
-- [ ] Governors and admins review pending uploads (not their own).
-- [ ] Review page with details and an inline preview.
-- [ ] Approve, reject or request changes, each with a comment.
-- [ ] Admin list filtered by department, level and status, with preview, approve, reject and delete.
-- [ ] Pending count badge in the admin sidebar.
+- [x] Governors and admins review pending uploads (not their own).
+- [x] Review page with details, an inline preview of the first pages (PDF.js) and a link to read the whole book.
+- [x] Approve, reject or request changes; a note is required to reject or request changes, optional to approve.
+- [x] Review list filtered by status, department, level and title/author, with counts per status; admins can delete from the review page.
+- [x] Pending count next to "Review uploads" in the account menu (the admin sidebar comes with PR 12).
 
 Fix:
 
-- [ ] Review comments only went to the audit log; uploaders were never told. Reasons now reach the uploader by notification.
-- [ ] "Returned for edit" had no way to edit and resubmit, and admin lists showed it as "Rejected".
-- [ ] No check that a book was still pending when reviewed.
-- [ ] Deleting a book left covers, thumbnails, bookmarks and history behind.
-- [ ] No link anywhere to the approval queue.
+- [x] Review comments only went to the audit log; uploaders were never told. The decision and note now reach the uploader in the app (bell with unread count, notifications page) and by email when their address is verified.
+- [x] "Returned for edit" had no way to edit and resubmit, and admin lists showed it as "Rejected". Uploaders see the reviewer's note, edit the details, cover or PDF, and resubmit; it shows as "Changes requested".
+- [x] No check that a book was still pending when reviewed. The book is locked and checked; a second reviewer gets "someone else has already reviewed this upload".
+- [x] Deleting a book left covers, thumbnails, bookmarks and history behind. Files, cover, scanned pages, text, bookmarks and reading history are all removed.
+- [x] No link anywhere to the approval queue.
+
+New:
+
+- [x] History on each upload (uploaded, decisions with notes, resubmissions) and in the audit log.
+- [x] After a decision, the next waiting upload opens; the queue is oldest first.
+- [x] Uploaders can delete their upload until it's in the library (also after a rejection).
 
 ## Elections (PR 11)
 

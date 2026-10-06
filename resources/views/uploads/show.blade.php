@@ -2,6 +2,7 @@
     $file = $book->currentFile;
     $approved = $book->status === \App\Enums\BookStatus::Approved;
     $pending = $book->status === \App\Enums\BookStatus::Pending;
+    $decision = $book->reviews->first();
 @endphp
 
 <x-layouts.app :title="$book->title">
@@ -15,6 +16,22 @@
             <div>
                 <h1 class="page-header-title">Thanks for sharing!</h1>
                 <p class="mt-1 text-muted">"{{ $book->title }}" is waiting for review. We'll add it to the library once a reviewer approves it.</p>
+            </div>
+        </div>
+    @endif
+
+    {{-- The reviewer's decision and note, when there is one. --}}
+    @if ($decision && in_array($book->status, [\App\Enums\BookStatus::ChangesRequested, \App\Enums\BookStatus::Rejected], true))
+        <div @class(['review-note mt-6', 'review-note-warning' => $book->status === \App\Enums\BookStatus::ChangesRequested, 'review-note-danger' => $book->status === \App\Enums\BookStatus::Rejected])>
+            <x-icon-tile :name="$book->status === \App\Enums\BookStatus::Rejected ? 'x' : 'triangle-alert'" :tone="$book->status === \App\Enums\BookStatus::Rejected ? 'red' : 'yellow'" />
+            <div class="min-w-0">
+                <h2 class="text-base">{{ $book->status === \App\Enums\BookStatus::Rejected ? 'This upload wasn\'t approved' : 'A reviewer asked for changes' }}</h2>
+                @if ($decision->comment)
+                    <blockquote class="mt-2">{{ $decision->comment }}</blockquote>
+                @endif
+                @if ($book->status === \App\Enums\BookStatus::ChangesRequested)
+                    <p class="mt-2 text-sm text-muted">Make the changes, then save to send it back for review.</p>
+                @endif
             </div>
         </div>
     @endif
@@ -81,7 +98,12 @@
                 @elseif ($file)
                     <x-button href="{{ route('books.read', $book) }}" icon="book-open" variant="secondary">Preview</x-button>
                 @endif
-                <x-button href="{{ route('uploads.create') }}" icon="upload" :variant="$approved ? 'secondary' : 'primary'">Upload another</x-button>
+                @can('update', $book)
+                    <x-button href="{{ route('uploads.edit', $book) }}" :variant="$book->status === \App\Enums\BookStatus::ChangesRequested ? 'primary' : 'secondary'" icon="file-up">
+                        {{ $book->status === \App\Enums\BookStatus::ChangesRequested ? 'Make changes' : 'Edit' }}
+                    </x-button>
+                @endcan
+                <x-button href="{{ route('uploads.create') }}" icon="upload" :variant="$approved || $justUploaded ? 'primary' : 'secondary'">Upload another</x-button>
                 @if ($justUploaded)
                     <x-button href="{{ route('home') }}" variant="ghost" icon="house">Go home</x-button>
                 @endif
@@ -90,6 +112,15 @@
             @if ($pending)
                 <p class="mt-6 max-w-prose text-sm text-muted">Only you and reviewers can see this book until it's approved.</p>
             @endif
+
+            @can('delete', $book)
+                <form method="POST" action="{{ route('uploads.destroy', $book) }}" class="mt-6"
+                    data-confirm="Delete &quot;{{ $book->title }}&quot;? This can't be undone.">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="link text-sm text-danger">Delete this upload</button>
+                </form>
+            @endcan
         </div>
     </div>
 </x-layouts.app>

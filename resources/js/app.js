@@ -30,3 +30,8 @@ if (document.querySelector('[data-upload], [data-upload-status]')) {
         initUploadStatus();
     });
 }
+
+// The page previews on the review page.
+if (document.querySelector('[data-pdf-preview]')) {
+    import('./review').then(({ initReviewPreview }) => initReviewPreview());
+}

@@ -54,6 +54,7 @@
                             <x-icon-tile name="file-up" tone="green" size="lg" />
                             <span class="dropzone-title">Choose a PDF <span class="hidden sm:inline">or drop it here</span></span>
                             <span class="dropzone-hint">One file, up to {{ config('uploads.pdf_max_kb') / 1024 }} MB</span>
+                            <span class="btn btn-secondary btn-sm dropzone-button" aria-hidden="true"><x-icon name="file-up" /> Choose PDF</span>
                         </label>
                         <ul class="upload-files" data-upload-pdf-list aria-live="polite"></ul>
                         @error('pdf')
@@ -68,6 +69,7 @@
                             <x-icon-tile name="camera" tone="blue" size="lg" />
                             <span class="dropzone-title">Add photos of the pages</span>
                             <span class="dropzone-hint">In page order · JPG, PNG or WebP · up to {{ config('uploads.max_pages') }} pages</span>
+                            <span class="btn btn-secondary btn-sm dropzone-button" aria-hidden="true"><x-icon name="camera" /> Choose photos</span>
                         </label>
                         <ol class="upload-pages" data-upload-page-list aria-label="Pages"></ol>
                         @if ($pagesError)

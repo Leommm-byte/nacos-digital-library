@@ -50,8 +50,73 @@ const pages = [
     ['uploads-empty', '/uploads', 'F/ND/24/0000004'],
     ['uploads', '/uploads', 'F/ND/23/0000003'],
     ['upload-status', 'FIRST_UPLOAD', 'F/ND/23/0000003'],
+    ['upload-changes', 'LINK /uploads .upload-row:has-text("Changes requested")', 'F/ND/24/0000004'],
+    ['upload-edit', 'LINK /uploads .upload-row:has-text("Changes requested") /edit', 'F/ND/24/0000004'],
+    ['notifications', '/notifications', 'F/ND/24/0000004'],
+    ['review-queue', '/review', 'F/HD/22/0000002'],
+    ['review-book', 'LINK /review .upload-row', 'F/HD/22/0000002', async (page) => {
+        // The page previews are drawn by PDF.js.
+        await page.locator('.review-preview canvas').first().waitFor({ timeout: 20000 });
+    }],
+    ['review-approved', 'LINK /review?status=approved .upload-row', 'F/HD/22/0000002'],
+    // End to end: these really upload, and fail the run if they don't land
+    // on the thank-you page.
+    ['upload-pdf-chosen', '/upload', 'F/ND/24/0000004', async (page) => {
+        await page.setInputFiles('#pdf', { name: 'past-questions.pdf', mimeType: 'application/pdf', buffer: samplePdf() });
+    }],
+    ['upload-pdf-done', '/upload', 'F/ND/24/0000004', async (page) => {
+        await page.setInputFiles('#pdf', { name: 'past-questions.pdf', mimeType: 'application/pdf', buffer: samplePdf() });
+        await fillDetails(page, 'Operating Systems Past Questions');
+        await page.click('[data-upload-submit]');
+        await page.waitForURL(/\/uploads\/[^/]+$/, { timeout: 30000 });
+    }],
+    ['upload-photos-chosen', '/upload', 'F/ND/24/0000004', async (page) => {
+        await page.click('label:has(input[name="type"][value="scan"])');
+        await page.setInputFiles('#pages', [samplePhoto('page-1.png'), samplePhoto('page-2.png')]);
+    }],
+    ['upload-photos-done', '/upload', 'F/ND/24/0000004', async (page) => {
+        await page.click('label:has(input[name="type"][value="scan"])');
+        await page.setInputFiles('#pages', [samplePhoto('page-1.png'), samplePhoto('page-2.png')]);
+        await fillDetails(page, 'Networks Lecture Notes');
+        await page.click('[data-upload-submit]');
+        await page.waitForURL(/\/uploads\/[^/]+$/, { timeout: 90000 });
+    }],
     ['styleguide', '/styleguide', 'F/ND/24/0000004'],
 ];
+
+// A minimal valid one-page PDF.
+function samplePdf() {
+    const content = 'BT /F1 28 Tf 72 760 Td (Past Questions 2024) Tj ET';
+    const objects = [
+        '<< /Type /Catalog /Pages 2 0 R >>',
+        '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+        `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    ];
+    let pdf = '%PDF-1.4\n';
+    const offsets = objects.map((body, i) => {
+        const offset = pdf.length;
+        pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
+        return offset;
+    });
+    const xref = pdf.length;
+    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+    pdf += offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('');
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+    return Buffer.from(pdf, 'latin1');
+}
+
+// A small page-like PNG (grey lines on white) standing in for a photo.
+function samplePhoto(name) {
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAlgAAAMgCAIAAABwAouTAAAKEklEQVR42u3X0Q1dMQhEwefIvVHzVrepAsVXmakAwccRp+0PAP5Xf6wAACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEACEEQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgBQAgB4F+5Xxx6ZlwO4E1JfIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAsOu0tQUAfIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAsOZ+ceiZcTmANyXxEQKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEALArtPWFgDwEQKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEALAmvvFoWfG5QDelMRHCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCAC7TltbAMBHCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABr7heHnhmXA3hTEh8hAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAOw6bW0BAB8hAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAKy5Xxx6ZlwO4E1JfIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAsOu0tQUAfIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAsOZ+ceiZcTmANyXxEQKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEALArtPWFgDwEQKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEALAmvvFoWfG5QDelMRHCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCAC7TltbAMBHCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABr7heHnhmXA3hTEh8hAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAOw6bW0BAB8hAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAKy5Xxx6ZlwO4E1JfIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAsOu0tQUAfIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAsOZ+ceiZcTmANyXxEQKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEALArtPWFgDwEQKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEAKAEALAmvvFoWfG5QDelMRHCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCAC7TltbAMBHCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABr7heHnhmXA3hTEh8hAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAOw6bW0BAB8hAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAAghAEJoBQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQAIIQBCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCABCCAC/3+/3+wv4g1ElwCke0wAAAABJRU5ErkJggg==';
+    return { name, mimeType: 'image/png', buffer: Buffer.from(png, 'base64') };
+}
+
+async function fillDetails(page, title) {
+    await page.fill('#title', title);
+    await page.fill('#author', 'Screenshot Bot');
+}
 
 async function login(context, matric) {
     const page = await context.newPage();
@@ -92,6 +157,20 @@ async function firstUploadUrl(context) {
     return href ?? `${base}/uploads`;
 }
 
+// 'LINK <page> <selector> [suffix]': the first matching link on that page.
+async function linkUrl(context, spec) {
+    const [, from, ...rest] = spec.split(' ');
+    const suffix = rest.at(-1)?.startsWith('/') ? rest.pop() : '';
+    const page = await context.newPage();
+    await page.goto(`${base}${from}`);
+    const href = await page.locator(rest.join(' ')).first().getAttribute('href', { timeout: 5000 }).catch(() => null);
+    await page.close();
+    if (!href) {
+        failures.push(`${spec}: no link found`);
+    }
+    return (href ?? `${base}${from}`) + suffix;
+}
+
 const failures = [];
 const browser = await chromium.launch();
 await mkdir(out, { recursive: true });
@@ -114,7 +193,9 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
 
             const context = contexts[key];
             const page = await context.newPage();
-            const url = path === 'FIRST_UPLOAD'
+            const url = path.startsWith('LINK ')
+                ? await linkUrl(context, path)
+                : path === 'FIRST_UPLOAD'
                 ? await firstUploadUrl(context)
                 : path.startsWith('FIRST_BOOK') ? context.bookUrl + path.slice('FIRST_BOOK'.length) : `${base}${path}`;
             page.on('pageerror', (error) => failures.push(`${name}: script error: ${error.message}`));

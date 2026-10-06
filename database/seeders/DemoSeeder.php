@@ -6,12 +6,14 @@ use App\Enums\BookStatus;
 use App\Enums\ElectionStatus;
 use App\Enums\Level;
 use App\Enums\Programme;
+use App\Enums\ReviewAction;
 use App\Enums\Role;
 use App\Models\Announcement;
 use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
 use App\Models\User;
+use App\Notifications\UploadReviewed;
 use Illuminate\Database\Seeder;
 
 /**
@@ -67,6 +69,25 @@ class DemoSeeder extends Seeder
             ->withPdf(4)
             ->sequence(fn ($sequence) => ['uploader_id' => $uploaders[$sequence->index % $uploaders->count()]->id])
             ->create();
+
+        // Two of Tobi's uploads already reviewed, with notes and notifications,
+        // so the uploader side of moderation can be tried straight away.
+        foreach ([
+            [ReviewAction::ChangesRequested, 'Data Communication Lecture Notes', 'Pages 4 and 5 are blurry. Please retake them in better light and add the course code (COM 213) to the title.'],
+            [ReviewAction::Rejected, 'Random Screenshots', 'These are screenshots of a chat, not study material.'],
+        ] as [$action, $title, $comment]) {
+            $book = Book::factory()->for($cs)->withPdf(3)->create(['title' => $title, 'level' => Level::ND1]);
+            $book->uploader_id = $users['student']->id;
+            $book->status = $action->resultingStatus();
+            $book->reviewed_by = $users['governor']->id;
+            $book->save();
+
+            $review = $book->reviews()->make(['action' => $action, 'comment' => $comment]);
+            $review->reviewer_id = $users['governor']->id;
+            $review->save();
+
+            $users['student']->notify(new UploadReviewed($book, $action, $comment));
+        }
 
         Announcement::factory()->count(3)->create();
 
