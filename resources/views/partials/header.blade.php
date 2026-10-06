@@ -42,6 +42,9 @@
                         @if (Route::has('profile.edit'))
                             <a href="{{ route('profile.edit') }}" class="menu-item"><x-icon name="user" /> Profile</a>
                         @endif
+                        @if (Route::has('uploads.index'))
+                            <a href="{{ route('uploads.index') }}" class="menu-item"><x-icon name="upload" /> Your uploads</a>
+                        @endif
                         @if (Route::has('settings'))
                             <a href="{{ route('settings') }}" class="menu-item"><x-icon name="settings" /> Account settings</a>
                         @endif

@@ -44,6 +44,10 @@ class SearchTest extends TestCase
                 'description' => $description,
             ]);
         }
+
+        // Text read from the pages of an upload (PR 8).
+        Book::where('title', 'C Programming')->firstOrFail()
+            ->setSearchText("Chapter 3: pointers and memory.\n\nQuestion 4: explain recursion, then compare two sorting algorithms.");
     }
 
     protected function tearDown(): void
@@ -69,6 +73,18 @@ class SearchTest extends TestCase
         $this->assertSame(['Data Structures and Algorithms'], $this->search('data struct'));
         $this->assertSame(['Data Structures and Algorithms'], $this->search('algorithms structures'));
         $this->assertSame([], $this->search('data chemistry'));
+    }
+
+    #[Test]
+    public function the_text_inside_a_book_is_searched(): void
+    {
+        $this->assertSame(['C Programming'], $this->search('pointers recursion'));
+    }
+
+    #[Test]
+    public function a_title_match_ranks_above_a_match_in_the_text(): void
+    {
+        $this->assertSame(['Data Structures and Algorithms', 'C Programming'], $this->search('algorithms'));
     }
 
     #[Test]

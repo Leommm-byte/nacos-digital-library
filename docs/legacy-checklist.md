@@ -170,28 +170,34 @@ Fix:
 
 Keep:
 
-- [ ] Any signed-in user can upload (all roles).
-- [ ] Title, author, level, optional cover image (JPG, PNG, WebP).
-- [ ] PDF upload, checked by content type, up to 10 MB.
-- [ ] Scanned upload: several JPG/PNG pages (up to 5 MB each), compressed and compiled into a PDF.
-- [ ] OCR of scanned pages (legacy used OpenAI vision; skipped when no API key).
-- [ ] Cover generated from page 1 when none is given.
-- [ ] Uploads start as pending review.
-- [ ] Success page with the title, "awaiting review" and links to upload another or go home.
-- [ ] PDF/Scanned tabs, drag and drop, file name and size shown, size errors before uploading.
+- [x] Any signed-in user can upload (all roles).
+- [x] Title, author, level (and department when more than one is active), optional description and cover image (JPG, PNG, WebP, up to 2 MB).
+- [x] PDF upload, checked by content (`%PDF-` and its detected type), up to 10 MB.
+- [x] Scanned upload: up to 60 photos of pages (5 MB each after shrinking), turned upright and shrunk on the phone, re-encoded on the server, and compiled into one PDF (pure PHP, JPEGs embedded as-is).
+- [x] OCR of scanned pages: on the phone with self-hosted Tesseract (free, no key). Optional AI pass on the server when `ANTHROPIC_API_KEY` is set (queued, one page per job).
+- [x] Cover generated from page 1 when none is given (photos: first page; PDFs: drawn by PDF.js on the phone).
+- [x] Uploads start as pending review.
+- [x] Success page with the title, "waiting for review" and links to upload another or go home; plus a "Your uploads" list with each upload's status.
+- [x] PDF/Photos choice, drag and drop, file name and size shown, page thumbnails with remove, size errors before uploading, upload progress bar.
 
 Fix:
 
-- [ ] Cover images had no size limit.
-- [ ] Any unknown upload type was treated as a scan.
-- [ ] Scanned PNG pages produced broken PDFs in the fallback compiler.
-- [ ] Covers were never generated for scanned uploads.
-- [ ] Orphaned files left behind on failure.
-- [ ] The OCR endpoint could be called directly by any signed-in user.
-- [ ] OCR text was stored but never shown or searched; it is now searchable.
-- [ ] The page said "approved automatically" while uploads were pending.
-- [ ] The OCR preview on the success page never appeared.
-- [ ] OCR ran during the upload request; it is now a queued job with progress.
+- [x] Cover images had no size limit (2 MB now, re-encoded).
+- [x] Any unknown upload type was treated as a scan. The type is explicit and validated.
+- [x] Scanned PNG pages produced broken PDFs in the fallback compiler. Every page is re-encoded as JPEG first (transparency becomes white).
+- [x] Covers were never generated for scanned uploads.
+- [x] Orphaned files left behind on failure. Everything is written in one transaction and written files are deleted if it fails.
+- [x] The OCR endpoint could be called directly by any signed-in user. There is no OCR endpoint: OCR runs on the phone, and the AI pass only from the queue.
+- [x] OCR text was stored but never shown or searched; it is now searchable (its own full-text index; title matches rank higher).
+- [x] The page said "approved automatically" while uploads were pending.
+- [x] The OCR preview on the success page never appeared. The status page shows how much of the text is ready.
+- [x] OCR ran during the upload request; it is now on the phone, with the optional AI pass queued and shown with progress.
+
+New:
+
+- [x] Per-user caps: 10 uploads per 24 hours and 20 waiting for review (governors and admins exempt).
+- [x] Optional ClamAV scan (`UPLOADS_CLAMAV`); without it, files are still checked by content, images re-encoded and everything served behind login with `nosniff`.
+- [x] Photos lose their metadata (such as GPS location) when re-encoded.
 
 ## Moderation and approvals (PR 9)
 

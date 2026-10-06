@@ -22,3 +22,11 @@ initToast();
 if (document.querySelector('[data-reader]')) {
     import('./reader').then(({ initReader }) => initReader());
 }
+
+// The upload form and upload status pages.
+if (document.querySelector('[data-upload], [data-upload-status]')) {
+    import('./upload').then(({ initUpload, initUploadStatus }) => {
+        initUpload();
+        initUploadStatus();
+    });
+}

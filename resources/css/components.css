@@ -1698,4 +1698,372 @@
             }
         }
     }
+    /* Upload form (uploads/create.blade.php). */
+    .upload-step {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        font-family: var(--font-sans);
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        word-spacing: normal;
+
+        & > span:first-child {
+            display: inline-grid;
+            place-items: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            font-size: 0.8125rem;
+        }
+    }
+
+    .upload-types {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .upload-type {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        cursor: pointer;
+        transition: border-color var(--duration-fast) ease;
+
+        @variant sm {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        & > span:last-child {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        & strong {
+            font-size: 0.9375rem;
+        }
+
+        & small {
+            color: var(--muted);
+            font-size: 0.8125rem;
+        }
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+        }
+
+        &:has(input:checked) {
+            border-color: var(--primary);
+            background: color-mix(in srgb, var(--primary-soft) 55%, var(--surface));
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+    }
+
+    /* Only the chosen kind of upload is shown (both, without :has()). */
+    .upload-form:has(input[name='type'][value='pdf']:checked) .upload-panel-scan,
+    .upload-form:has(input[name='type'][value='scan']:checked) .upload-panel-pdf {
+        display: none;
+    }
+
+    .dropzone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 2rem 1rem;
+        border: 2px dashed var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--bg);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+
+        &:hover,
+        &.is-dragging {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        &:has(input[aria-invalid='true']) {
+            border-color: var(--danger);
+        }
+
+        & .icon-tile {
+            margin-bottom: 0.25rem;
+        }
+    }
+
+    .dropzone-title {
+        font-weight: 600;
+    }
+
+    .dropzone-hint {
+        color: var(--muted);
+        font-size: 0.8125rem;
+    }
+
+    .upload-files:not(:empty) {
+        margin-top: 0.75rem;
+    }
+
+    .upload-file {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        font-size: 0.875rem;
+
+        & .icon {
+            color: var(--primary);
+        }
+
+        &.is-invalid {
+            border-color: var(--danger);
+
+            & .icon {
+                color: var(--danger);
+            }
+        }
+    }
+
+    .upload-pages {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+        gap: 0.75rem;
+
+        &:not(:empty) {
+            margin-top: 0.75rem;
+        }
+
+        & > li {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 3 / 4;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--surface-2);
+
+            &.is-invalid {
+                border: 2px solid var(--danger);
+            }
+        }
+
+        & img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .upload-page-number {
+        position: absolute;
+        bottom: 0.375rem;
+        left: 0.375rem;
+        padding: 0.0625rem 0.4375rem;
+        border-radius: 999px;
+        background: rgb(0 0 0 / 0.65);
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .upload-page-remove {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.25rem;
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        background: rgb(0 0 0 / 0.65);
+        color: #ffffff;
+
+        & .icon {
+            width: 1rem;
+        }
+
+        &:hover {
+            background: var(--danger);
+        }
+    }
+
+    .field-textarea {
+        min-height: 6rem;
+        padding-block: 0.75rem;
+        resize: vertical;
+    }
+
+    .field-file {
+        padding-block: 0.625rem;
+        font-size: 0.875rem;
+
+        &::file-selector-button {
+            margin-right: 0.75rem;
+            padding: 0.375rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            color: var(--fg);
+            font: inherit;
+            font-weight: 600;
+        }
+    }
+
+    .upload-progress {
+        padding: 1rem 1.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .upload-bar {
+        overflow: hidden;
+        height: 0.5rem;
+        margin-top: 0.75rem;
+        border-radius: 999px;
+        background: var(--surface-2);
+
+        & > span {
+            display: block;
+            height: 100%;
+            background: var(--primary);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform var(--duration-base) var(--ease-out);
+        }
+    }
+
+    .upload-tips {
+        display: grid;
+        gap: 0.5rem;
+        padding-left: 1.125rem;
+        color: var(--muted);
+        font-size: 0.875rem;
+        list-style: disc;
+    }
+
+    /* Your uploads (uploads/index.blade.php). */
+    .upload-list {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .upload-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1rem 0.75rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+        transition: border-color var(--duration-fast) ease;
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+        }
+    }
+
+    /* A wrapper, so the cover's percentage padding is measured against
+       the thumbnail, not the whole row. */
+    .upload-row-cover {
+        flex-shrink: 0;
+        width: 3rem;
+
+        & .book-cover {
+            border-radius: 0.375rem;
+        }
+
+        & .book-cover-mark {
+            display: none;
+        }
+    }
+
+    .upload-row-title {
+        display: block;
+        overflow: hidden;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .upload-row-meta {
+        display: block;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 0.8125rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* An upload's status page (uploads/show.blade.php). */
+    .upload-done {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+        border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+        border-radius: var(--radius-xl);
+        background: var(--primary-soft);
+    }
+
+    .upload-text {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.875rem;
+        max-width: 32rem;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+
+        & progress {
+            height: 0.5rem;
+            overflow: hidden;
+            border: 0;
+            border-radius: 999px;
+            background: var(--surface-2);
+            appearance: none;
+
+            &::-webkit-progress-bar {
+                background: var(--surface-2);
+            }
+
+            &::-webkit-progress-value {
+                background: var(--primary);
+            }
+
+            &::-moz-progress-bar {
+                background: var(--primary);
+            }
+        }
+    }
 }

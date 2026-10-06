@@ -39,6 +39,20 @@
    ```
    cd ~/nacosyabatech.com && /usr/local/php83/bin/php artisan schedule:run >> /dev/null 2>&1
    ```
+5. **PHP limits for uploads:** create `~/.php/8.3/phprc` (DreamHost's
+   per-user php.ini) with:
+   ```
+   upload_max_filesize = 64M
+   post_max_size = 64M
+   max_file_uploads = 80
+   memory_limit = 256M
+   ```
+   Scanned books are sent as one file per page (up to 60 pages plus a
+   cover); PHP's default of 20 files per request would silently drop pages.
+6. **Optional, AI text for scanned uploads:** set `ANTHROPIC_API_KEY` in
+   `.env`. Pages are then re-read by AI in the background (via the cron
+   above) to make scans more searchable. Without a key, the text read on
+   the student's phone is kept.
 
 ## Each release
 

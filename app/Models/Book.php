@@ -136,6 +136,30 @@ class Book extends Model
     }
 
     /**
+     * The text read from the book's pages, for search.
+     *
+     * @return HasOne<BookText, $this>
+     */
+    public function text(): HasOne
+    {
+        return $this->hasOne(BookText::class);
+    }
+
+    /**
+     * Stores (or clears) the book's searchable text.
+     */
+    public function setSearchText(?string $text): void
+    {
+        if ($text === null || $text === '') {
+            BookText::where('book_id', $this->id)->delete();
+
+            return;
+        }
+
+        BookText::upsert([['book_id' => $this->id, 'text' => $text]], ['book_id'], ['text']);
+    }
+
+    /**
      * @return HasMany<BookReview, $this>
      */
     public function reviews(): HasMany
