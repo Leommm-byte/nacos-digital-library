@@ -54,6 +54,10 @@ const pages = [
     ['upload-edit', 'LINK /uploads .upload-row:has-text("Changes requested") /edit', 'F/ND/24/0000004'],
     ['notifications', '/notifications', 'F/ND/24/0000004'],
     ['review-queue', '/review', 'F/HD/22/0000002'],
+    ['home-reviewer', '/', 'F/HD/22/0000002'],
+    ['announcements', '/announcements', 'F/ND/24/0000004'],
+    ['announcements-manage', '/announcements/manage', 'F/HD/22/0000002'],
+    ['announcement-new', '/announcements/create', 'F/HD/22/0000002'],
     ['review-book', 'LINK /review .upload-row', 'F/HD/22/0000002', async (page) => {
         // The page previews are drawn by PDF.js.
         await page.locator('.review-preview canvas').first().waitFor({ timeout: 20000 });

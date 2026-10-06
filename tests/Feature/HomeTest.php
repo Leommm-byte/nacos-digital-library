@@ -38,7 +38,8 @@ class HomeTest extends TestCase
             ->assertOk()
             ->assertSee('Good morning')
             ->assertSee('Ada')
-            ->assertSee('New for ND2')
+            ->assertSee('Recommended for you')
+            ->assertSee('New for ND2, from Computer Science first.')
             ->assertSee('For My Level')
             ->assertDontSee('Another Level')
             ->assertSee('Nothing saved yet');
@@ -55,6 +56,6 @@ class HomeTest extends TestCase
         $this->actingAs($user)
             ->get('/')
             ->assertSee('My Saved Book')
-            ->assertSee('1 book');
+            ->assertSee('1 saved');
     }
 }
