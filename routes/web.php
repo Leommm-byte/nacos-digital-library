@@ -7,6 +7,7 @@ use App\Http\Controllers\Library\LibraryController;
 use App\Http\Controllers\Reader\BookFileController;
 use App\Http\Controllers\Reader\ReaderController;
 use App\Http\Controllers\Reader\ReadingProgressController;
+use App\Http\Controllers\Uploads\UploadController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -26,6 +27,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/library/{book}/progress', [ReadingProgressController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('books.progress');
+
+    Route::get('/upload', [UploadController::class, 'create'])->name('uploads.create');
+    Route::post('/upload', [UploadController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('uploads.store');
+    Route::get('/uploads', [UploadController::class, 'index'])->name('uploads.index');
+    Route::get('/uploads/{book}', [UploadController::class, 'show'])->name('uploads.show');
+    Route::get('/uploads/{book}/status', [UploadController::class, 'status'])
+        ->middleware('throttle:60,1')
+        ->name('uploads.status');
 
     Route::get('/saved', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/library/{book}/bookmark', [BookmarkController::class, 'store'])

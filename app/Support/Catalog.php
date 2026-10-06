@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * The library catalog query: approved books in active departments, with
- * search, filters and sorting. Search uses the MySQL full-text index on
- * title, author and description (no `LIKE '%…%'` table scans); other
+ * search, filters and sorting. Search uses MySQL full-text indexes on the
+ * title, author and description and on the text read from the pages (no
+ * `LIKE '%…%'` table scans); other
  * databases (SQLite in local tests) fall back to simple matching.
  */
 class Catalog
@@ -63,7 +64,11 @@ class Catalog
         }
 
         return match ($sort) {
-            'relevance' => $query->orderByRaw('MATCH (title, author, description) AGAINST (? IN BOOLEAN MODE) DESC', [$relevance])->orderByDesc('id'),
+            // A match in the title, author or description outranks one in the
+            // book's text.
+            'relevance' => $query
+                ->orderByRaw('(MATCH (books.title, books.author, books.description) AGAINST (? IN BOOLEAN MODE) * 3 + COALESCE(MATCH (book_texts.text) AGAINST (? IN BOOLEAN MODE), 0)) DESC', [$relevance, $relevance])
+                ->orderByDesc('books.id'),
             'popular' => $query->orderByDesc('views_count')->orderByDesc('id'),
             'title' => $query->orderBy('title')->orderBy('id'),
             default => $query->orderByDesc('approved_at')->orderByDesc('id'),
@@ -104,11 +109,16 @@ class Catalog
 
         $mysql = $query->getModel()->getConnection()->getDriverName() === 'mysql';
 
+        // The page text lives in its own table, joined only when searching.
+        $query->leftJoin('book_texts', 'book_texts.book_id', '=', 'books.id')->select('books.*');
+
         if ($mysql && $words->isNotEmpty()) {
             // Every word must appear, as a word or the start of one:
             // "data struct" finds "Data Structures".
             $boolean = $words->map(fn (string $word) => '+'.$word.'*')->implode(' ');
-            $query->whereFullText(['title', 'author', 'description'], $boolean, ['mode' => 'boolean']);
+            $query->where(fn (Builder $q) => $q
+                ->whereFullText(['books.title', 'books.author', 'books.description'], $boolean, ['mode' => 'boolean'])
+                ->orWhereFullText(['book_texts.text'], $boolean, ['mode' => 'boolean']));
 
             return $boolean;
         }
@@ -117,7 +127,7 @@ class Catalog
 
         if (! $mysql) {
             // No full-text index (SQLite in local tests): every word must
-            // appear somewhere in the title, author or description.
+            // appear somewhere in the title, author, description or text.
             $terms = $words->isNotEmpty() ? $words : collect([mb_strtolower($search)]);
 
             foreach ($terms as $term) {
@@ -125,7 +135,8 @@ class Catalog
                 $query->where(fn (Builder $q) => $q
                     ->where('title', 'like', $like)
                     ->orWhere('author', 'like', $like)
-                    ->orWhere('description', 'like', $like));
+                    ->orWhere('description', 'like', $like)
+                    ->orWhere('book_texts.text', 'like', $like));
             }
 
             return null;

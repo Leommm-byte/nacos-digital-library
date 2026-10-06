@@ -39,8 +39,8 @@ Every legacy behaviour, bug to avoid and open question is tracked in
 - [x] **5. Profile and account settings.**
 - [x] **6. Catalog.** Paging, full-text search and filters, book detail page, bookmarks, covers served through controllers, lazy-loaded covers.
 - [x] **6.5. UI and UX overhaul.** Audit against the legacy UI and a design standard for every later PR (`docs/design-overhaul.md`); real home pages for guests and students; brand auth layout; shared page header, section, icon tile and empty state components; quieter placeholder covers; settings layout; toasts and busy buttons; CI screenshots of every screen (`scripts/screenshots.mjs`).
-- [ ] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
-- [ ] **8. Uploads.** Resumable uploads, OCR as a queued job with progress, virus scanning, per-user limits.
+- [x] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
+- [ ] **8. Uploads.** PDF or photos of pages; on-device OCR (Tesseract) with an optional queued AI pass; per-user limits; optional virus scanning. Decided with the owner: OCR runs on the phone (free), AI only if a key is set; legacy size limits. Uploads are single requests with progress and clear retry messages rather than resumable: with a 10 MB cap and photos shrunk on the phone, chunking added complexity without benefit.
 - [ ] **9. Moderation.** Reasons sent to uploaders, notifications, approvals history.
 - [ ] **10. Dashboard and announcements**, with cached stats.
 - [ ] **11. Elections.** Eligibility, single ballot enforced by the database, live public results as described above, audit trail.

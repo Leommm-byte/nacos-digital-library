@@ -41,6 +41,15 @@ const pages = [
     ['profile', '/profile', 'F/ND/24/0000004'],
     ['settings', '/settings', 'F/ND/24/0000004'],
     ['reset-codes', '/reset-codes', 'F/ND/23/0000003'],
+    ['upload', '/upload', 'F/ND/24/0000004'],
+    ['upload-errors', '/upload', 'F/ND/24/0000004', async (page) => {
+        // Submitting with nothing chosen shows the inline error.
+        await page.click('[data-upload-submit]');
+        await page.waitForTimeout(300);
+    }],
+    ['uploads-empty', '/uploads', 'F/ND/24/0000004'],
+    ['uploads', '/uploads', 'F/ND/23/0000003'],
+    ['upload-status', 'FIRST_UPLOAD', 'F/ND/23/0000003'],
     ['styleguide', '/styleguide', 'F/ND/24/0000004'],
 ];
 
@@ -75,6 +84,14 @@ async function firstBookUrl(context) {
     return href;
 }
 
+async function firstUploadUrl(context) {
+    const page = await context.newPage();
+    await page.goto(`${base}/uploads`);
+    const href = await page.locator('.upload-row').first().getAttribute('href').catch(() => null);
+    await page.close();
+    return href ?? `${base}/uploads`;
+}
+
 const failures = [];
 const browser = await chromium.launch();
 await mkdir(out, { recursive: true });
@@ -97,7 +114,9 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
 
             const context = contexts[key];
             const page = await context.newPage();
-            const url = path.startsWith('FIRST_BOOK') ? context.bookUrl + path.slice('FIRST_BOOK'.length) : `${base}${path}`;
+            const url = path === 'FIRST_UPLOAD'
+                ? await firstUploadUrl(context)
+                : path.startsWith('FIRST_BOOK') ? context.bookUrl + path.slice('FIRST_BOOK'.length) : `${base}${path}`;
             page.on('pageerror', (error) => failures.push(`${name}: script error: ${error.message}`));
             try {
                 const response = await page.goto(url, { waitUntil: 'networkidle' });
