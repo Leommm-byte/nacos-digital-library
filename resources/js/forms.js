@@ -3,6 +3,7 @@
  *  - [data-password-toggle="<input id>"]: show/hide a password.
  *  - [data-password-rules="<input id>"]: tick off password rules while typing
  *    (the same rules the server enforces).
+ *  - form[data-confirm="<question>"]: ask before sending (deletions).
  */
 // Mirrors Laravel's Password::min(8)->mixedCase()->numbers()->symbols().
 const RULES = {
@@ -13,6 +14,18 @@ const RULES = {
 };
 
 export function initForms() {
+    // Runs first (capture), so a cancelled form never shows as busy.
+    document.addEventListener(
+        'submit',
+        (event) => {
+            const question = event.target.dataset?.confirm;
+            if (question && !window.confirm(question)) {
+                event.preventDefault();
+            }
+        },
+        true,
+    );
+
     // Show that a form is being sent and stop double submissions. Forms
     // handled in place (bookmarks) manage their own state.
     document.addEventListener('submit', (event) => {

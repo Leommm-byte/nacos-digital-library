@@ -1,3 +1,12 @@
+@php
+    // Small counts for the header: unread notifications for everyone,
+    // uploads waiting for review for reviewers.
+    $unread = $user && Route::has('notifications.index') ? $user->unreadNotifications()->count() : 0;
+    $waiting = $user && Route::has('review.index') && Gate::allows('review-uploads')
+        ? \App\Models\Book::where('status', \App\Enums\BookStatus::Pending)->count()
+        : null;
+@endphp
+
 <header class="app-header">
     <div class="container-page flex h-full items-center gap-4">
         <a href="{{ url('/') }}" class="flex shrink-0 items-center gap-2.5" aria-label="{{ config('app.name') }} home">
@@ -26,7 +35,18 @@
                     <x-icon name="search" />
                 </a>
             @endif
-            <x-theme-toggle />
+            {{-- On phones the theme button lives in the account menu, to make room. --}}
+            <div @class(['hidden sm:block' => (bool) $user])><x-theme-toggle /></div>
+
+            @if ($user && Route::has('notifications.index'))
+                <a href="{{ route('notifications.index') }}" class="btn btn-ghost btn-icon relative"
+                    aria-label="Notifications{{ $unread ? ' ('.$unread.' unread)' : '' }}" @if (request()->routeIs('notifications.*')) aria-current="page" @endif>
+                    <x-icon name="bell" />
+                    @if ($unread)
+                        <span class="count-badge" aria-hidden="true">{{ $unread > 9 ? '9+' : $unread }}</span>
+                    @endif
+                </a>
+            @endif
 
             @if ($user)
                 <details class="menu">
@@ -42,6 +62,11 @@
                         @if (Route::has('profile.edit'))
                             <a href="{{ route('profile.edit') }}" class="menu-item"><x-icon name="user" /> Profile</a>
                         @endif
+                        @if ($waiting !== null)
+                            <a href="{{ route('review.index') }}" class="menu-item"><x-icon name="shield-check" /> Review uploads
+                                @if ($waiting)<span class="menu-count">{{ $waiting }}</span>@endif
+                            </a>
+                        @endif
                         @if (Route::has('uploads.index'))
                             <a href="{{ route('uploads.index') }}" class="menu-item"><x-icon name="upload" /> Your uploads</a>
                         @endif
@@ -54,6 +79,10 @@
                         @if (Route::has('admin.dashboard') && Gate::allows('access-admin'))
                             <a href="{{ route('admin.dashboard') }}" class="menu-item"><x-icon name="shield-check" /> Admin panel</a>
                         @endif
+                        <div class="menu-item justify-between sm:hidden">
+                            <span>Theme</span>
+                            <x-theme-toggle />
+                        </div>
                         @if (Route::has('logout'))
                             <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-border pt-1">
                                 @csrf

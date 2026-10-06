@@ -4,9 +4,11 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
 use App\Http\Controllers\Library\LibraryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Reader\BookFileController;
 use App\Http\Controllers\Reader\ReaderController;
 use App\Http\Controllers\Reader\ReadingProgressController;
+use App\Http\Controllers\Review\ReviewController;
 use App\Http\Controllers\Uploads\UploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,9 +36,26 @@ Route::middleware('auth')->group(function () {
         ->name('uploads.store');
     Route::get('/uploads', [UploadController::class, 'index'])->name('uploads.index');
     Route::get('/uploads/{book}', [UploadController::class, 'show'])->name('uploads.show');
+    Route::get('/uploads/{book}/edit', [UploadController::class, 'edit'])->name('uploads.edit');
+    Route::put('/uploads/{book}', [UploadController::class, 'update'])->name('uploads.update');
+    Route::delete('/uploads/{book}', [UploadController::class, 'destroy'])->name('uploads.destroy');
     Route::get('/uploads/{book}/status', [UploadController::class, 'status'])
         ->middleware('throttle:60,1')
         ->name('uploads.status');
+
+    Route::middleware('can:review-uploads')->group(function () {
+        Route::get('/review', [ReviewController::class, 'index'])->name('review.index');
+        Route::get('/review/{book}', [ReviewController::class, 'show'])->name('review.show');
+        Route::post('/review/{book}', [ReviewController::class, 'decide'])
+            ->middleware('throttle:60,1')
+            ->name('review.decide');
+    });
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('/notifications/{id}', [NotificationController::class, 'open'])
+        ->whereUuid('id')
+        ->name('notifications.open');
 
     Route::get('/saved', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/library/{book}/bookmark', [BookmarkController::class, 'store'])

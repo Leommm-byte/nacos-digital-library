@@ -50,6 +50,15 @@ const pages = [
     ['uploads-empty', '/uploads', 'F/ND/24/0000004'],
     ['uploads', '/uploads', 'F/ND/23/0000003'],
     ['upload-status', 'FIRST_UPLOAD', 'F/ND/23/0000003'],
+    ['upload-changes', 'LINK /uploads .upload-row:has-text("Changes requested")', 'F/ND/24/0000004'],
+    ['upload-edit', 'LINK /uploads .upload-row:has-text("Changes requested") /edit', 'F/ND/24/0000004'],
+    ['notifications', '/notifications', 'F/ND/24/0000004'],
+    ['review-queue', '/review', 'F/HD/22/0000002'],
+    ['review-book', 'LINK /review .upload-row', 'F/HD/22/0000002', async (page) => {
+        // The page previews are drawn by PDF.js.
+        await page.locator('.review-preview canvas').first().waitFor({ timeout: 20000 });
+    }],
+    ['review-approved', 'LINK /review?status=approved .upload-row', 'F/HD/22/0000002'],
     // End to end: these really upload, and fail the run if they don't land
     // on the thank-you page.
     ['upload-pdf-chosen', '/upload', 'F/ND/24/0000004', async (page) => {
@@ -148,6 +157,20 @@ async function firstUploadUrl(context) {
     return href ?? `${base}/uploads`;
 }
 
+// 'LINK <page> <selector> [suffix]': the first matching link on that page.
+async function linkUrl(context, spec) {
+    const [, from, ...rest] = spec.split(' ');
+    const suffix = rest.at(-1)?.startsWith('/') ? rest.pop() : '';
+    const page = await context.newPage();
+    await page.goto(`${base}${from}`);
+    const href = await page.locator(rest.join(' ')).first().getAttribute('href', { timeout: 5000 }).catch(() => null);
+    await page.close();
+    if (!href) {
+        failures.push(`${spec}: no link found`);
+    }
+    return (href ?? `${base}${from}`) + suffix;
+}
+
 const failures = [];
 const browser = await chromium.launch();
 await mkdir(out, { recursive: true });
@@ -170,7 +193,9 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
 
             const context = contexts[key];
             const page = await context.newPage();
-            const url = path === 'FIRST_UPLOAD'
+            const url = path.startsWith('LINK ')
+                ? await linkUrl(context, path)
+                : path === 'FIRST_UPLOAD'
                 ? await firstUploadUrl(context)
                 : path.startsWith('FIRST_BOOK') ? context.bookUrl + path.slice('FIRST_BOOK'.length) : `${base}${path}`;
             page.on('pageerror', (error) => failures.push(`${name}: script error: ${error.message}`));

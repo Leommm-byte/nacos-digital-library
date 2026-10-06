@@ -41,7 +41,7 @@ Every legacy behaviour, bug to avoid and open question is tracked in
 - [x] **6.5. UI and UX overhaul.** Audit against the legacy UI and a design standard for every later PR (`docs/design-overhaul.md`); real home pages for guests and students; brand auth layout; shared page header, section, icon tile and empty state components; quieter placeholder covers; settings layout; toasts and busy buttons; CI screenshots of every screen (`scripts/screenshots.mjs`).
 - [x] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
 - [x] **8. Uploads.** PDF or photos of pages; on-device OCR (Tesseract) with an optional queued AI pass; per-user limits; optional virus scanning. Decided with the owner: OCR runs on the phone (free), AI only if a key is set; legacy size limits. Uploads are single requests with progress and clear retry messages rather than resumable: with a 10 MB cap and photos shrunk on the phone, chunking added complexity without benefit.
-- [ ] **9. Moderation.** Reasons sent to uploaders, notifications, approvals history.
+- [ ] **9. Moderation.** Review queue and page with preview; approve, request changes or reject with a note; uploaders notified (in the app, and by email if verified) and able to edit and resubmit; approvals history; full clean-up on delete.
 - [ ] **10. Dashboard and announcements**, with cached stats.
 - [ ] **11. Elections.** Eligibility, single ballot enforced by the database, live public results as described above, audit trail.
 - [ ] **12. Admin panel.** Users, bulk import with random temporary passwords and printable slips, books, reports, audit log viewer, settings in the database.

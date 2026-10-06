@@ -40,9 +40,17 @@ class BookPolicy
             && in_array($book->status, [BookStatus::Pending, BookStatus::ChangesRequested], true);
     }
 
+    /**
+     * Admins can delete any book; uploaders can delete theirs until it's in
+     * the library (including after it was rejected).
+     */
     public function delete(User $user, Book $book): bool
     {
-        return $this->update($user, $book);
+        if ($user->hasRole(Role::Admin)) {
+            return true;
+        }
+
+        return $this->isUploader($user, $book) && $book->status !== BookStatus::Approved;
     }
 
     /**

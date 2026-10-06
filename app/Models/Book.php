@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $cover_path
  * @property int|null $page_count
  * @property int $views_count
+ * @property int|null $reviewed_by
  * @property Carbon|null $approved_at
  * @property Carbon $created_at
  */
