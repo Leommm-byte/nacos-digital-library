@@ -75,6 +75,7 @@ class UploadController extends Controller
 
         $data = $request->validate($this->rules(), [
             'pdf.max' => 'The PDF must be '.$size('uploads.pdf_max_kb').' or smaller.',
+            'pdf.required' => 'Choose a PDF to upload.',
             'pdf.mimetypes' => 'Choose a PDF file.',
             'pages.required' => 'Add at least one photo of a page.',
             'pages.max' => 'Add at most :max pages. Split longer books into parts.',

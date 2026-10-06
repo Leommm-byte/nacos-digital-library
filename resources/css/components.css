@@ -1821,6 +1821,12 @@
         font-size: 0.8125rem;
     }
 
+    /* Looks like a button so it's clear the box opens the file picker. */
+    .dropzone-button {
+        margin-top: 0.5rem;
+        pointer-events: none;
+    }
+
     .upload-files:not(:empty) {
         margin-top: 0.75rem;
     }

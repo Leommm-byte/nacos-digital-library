@@ -57,9 +57,9 @@ services:
   assets:
     image: node:22-alpine
     working_dir: /app
-    # The old build is removed first, so the healthcheck below waits for a
-    # build of the current code instead of passing on a stale manifest.
-    command: ["sh", "-c", "rm -rf public/build && npm ci --no-audit --no-fund && npx vite build --watch"]
+    # Reinstalls packages whenever package-lock.json changes (after a pull)
+    # and starts from a clean build, so the page never shows stale CSS/JS.
+    command: ["sh", "docker/assets/watch.sh"]
     volumes:
       - .:/app
       # Container-only node_modules, so native binaries never clash with the host's.
