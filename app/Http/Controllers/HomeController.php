@@ -26,7 +26,8 @@ use Illuminate\View\View;
  */
 class HomeController extends Controller
 {
-    public const RECOMMENDED = 6;
+    /** Books per shelf on the dashboard: one row of four. */
+    public const SHELF = 4;
 
     public function __invoke(Request $request): View
     {
@@ -48,7 +49,7 @@ class HomeController extends Controller
         $continue = $reading->whereNull('completed_at')->take(2)->values();
         $opened = $reading->pluck('book_id')->all();
 
-        $saved = $user->bookmarks()->approved()->orderByPivot('created_at', 'desc')->limit(6)->get();
+        $saved = $user->bookmarks()->approved()->orderByPivot('created_at', 'desc')->limit(self::SHELF)->get();
         $savedCount = $user->bookmarks()->approved()->count();
 
         $uploads = Book::where('uploader_id', $user->id)
@@ -104,7 +105,7 @@ class HomeController extends Controller
                 ->all();
         });
 
-        $ids = array_slice(array_values(array_diff($ids, $opened)), 0, self::RECOMMENDED);
+        $ids = array_slice(array_values(array_diff($ids, $opened)), 0, self::SHELF);
 
         if ($ids === []) {
             return collect();

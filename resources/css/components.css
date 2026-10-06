@@ -2382,6 +2382,14 @@
         }
     }
 
+    /* The main column is narrower than the page, so its shelves keep
+       one row of four instead of going to six on wide screens. */
+    .dashboard .shelf {
+        @variant xl {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
     .dashboard-card {
         padding: 1.25rem;
         border: 1px solid var(--border);
