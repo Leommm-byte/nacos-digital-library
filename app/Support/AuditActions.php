@@ -38,6 +38,8 @@ class AuditActions
         'election_closed' => 'Closed voting',
         'election_voted' => 'Voted',
         'roll_imported' => 'Uploaded a class to the roll',
+        'roll_student_added' => 'Added a student to the roll',
+        'roll_student_removed' => 'Removed a student from the roll',
         'accounts_created' => 'Created accounts',
         'user_role_changed' => 'Changed a role',
         'user_suspended' => 'Suspended an account',

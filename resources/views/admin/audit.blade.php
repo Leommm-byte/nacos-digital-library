@@ -2,7 +2,7 @@
     $zone = config('app.display_timezone');
     $actionOptions = ['' => 'Every action'] + $actions;
     // Meta keys worth showing, in plain words.
-    $metaLabels = ['title' => 'Title', 'name' => 'Name', 'class' => 'Class', 'from' => 'From', 'to' => 'To', 'count' => 'Count', 'total' => 'Total', 'added' => 'Added', 'removed' => 'Removed', 'file' => 'File', 'hours' => 'Hours', 'position' => 'Position', 'candidate' => 'Candidate', 'automatic' => 'Automatic'];
+    $metaLabels = ['title' => 'Title', 'name' => 'Name', 'class' => 'Class', 'from' => 'From', 'to' => 'To', 'count' => 'Count', 'total' => 'Total', 'added' => 'Added', 'removed' => 'Removed', 'file' => 'File', 'hours' => 'Hours', 'position' => 'Position', 'candidate' => 'Candidate', 'automatic' => 'Automatic', 'matric' => 'Matric', 'mode' => 'Mode'];
 @endphp
 
 <x-layouts.admin title="Audit log">

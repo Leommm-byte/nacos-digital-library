@@ -107,16 +107,17 @@ class RollImport
     }
 
     /**
-     * Makes the rows the whole list for one class. Students no longer on it
-     * are removed from the roll; students listed under another class move
-     * to this one.
+     * Saves rows into one class. With $replace they become the whole list
+     * for the class and students no longer on it are removed from the roll;
+     * without, they are added and nobody is removed. Either way students
+     * listed under another class move to this one.
      *
      * @param  array<string, array{matric_number: string, fullname: string|null, email: string|null}>  $rows
      * @return array{total: int, added: int, removed: int, moved: int}
      */
-    public static function saveClass(array $rows, Programme $programme, Level $level): array
+    public static function saveClass(array $rows, Programme $programme, Level $level, bool $replace = true): array
     {
-        return DB::transaction(function () use ($rows, $programme, $level) {
+        return DB::transaction(function () use ($rows, $programme, $level, $replace) {
             $incoming = array_keys($rows);
             $inClass = RollEntry::query()->where('programme', $programme)->where('level', $level)->pluck('matric_number')->all();
 
@@ -128,7 +129,7 @@ class RollImport
                     ->count();
             }
 
-            $removed = array_values(array_diff($inClass, $incoming));
+            $removed = $replace ? array_values(array_diff($inClass, $incoming)) : [];
             foreach (array_chunk($removed, 500) as $chunk) {
                 RollEntry::query()->whereIn('matric_number', $chunk)->delete();
             }
@@ -149,7 +150,7 @@ class RollImport
             }
 
             return [
-                'total' => count($incoming),
+                'total' => $replace ? count($incoming) : count(array_unique([...$inClass, ...$incoming])),
                 'added' => count(array_diff($incoming, $inClass)) - $moved,
                 'removed' => count($removed),
                 'moved' => $moved,
