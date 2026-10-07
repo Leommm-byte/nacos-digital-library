@@ -11,7 +11,7 @@
     }
 @endphp
 
-<x-layouts.app :title="$election->title">
+<x-layouts.admin :title="$election->title">
     <x-page-header :title="$election->title" :subtitle="$election->description" eyebrow="Manage election" :back="route('elections.manage')" back-label="Manage elections">
         <x-slot:actions>
             @if ($draft)
@@ -212,4 +212,4 @@
             @endif
         </aside>
     </div>
-</x-layouts.app>
+</x-layouts.admin>

@@ -3338,4 +3338,278 @@
             outline-offset: 2px;
         }
     }
+
+    /* Admin area ---------------------------------------------------------- */
+
+    .admin {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+
+        @variant lg {
+            grid-template-columns: 13.5rem minmax(0, 1fr);
+            gap: 2.5rem;
+            align-items: start;
+        }
+    }
+
+    .admin-nav {
+        margin-inline: -1rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        @variant lg {
+            position: sticky;
+            top: calc(var(--header-h) + 1.5rem);
+            margin-inline: 0;
+            overflow: visible;
+        }
+
+        & > ul {
+            display: flex;
+            gap: 0.375rem;
+            padding: 0 1rem 0.25rem;
+
+            @variant lg {
+                flex-direction: column;
+                gap: 0.125rem;
+                padding: 0;
+            }
+        }
+    }
+
+    .admin-nav-title {
+        display: none;
+        margin: 0 0 0.5rem 0.75rem;
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+
+        @variant lg {
+            display: block;
+        }
+    }
+
+    .admin-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-height: 2.75rem;
+        padding: 0 0.875rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+
+        @variant lg {
+            border-color: transparent;
+            border-radius: var(--radius-md);
+            background: transparent;
+        }
+
+        & .icon {
+            width: 1.125rem;
+            height: 1.125rem;
+            flex-shrink: 0;
+        }
+
+        &:hover {
+            color: var(--fg);
+
+            @variant lg {
+                background: var(--surface-2);
+            }
+        }
+
+        &.is-active {
+            border-color: var(--primary);
+            background: var(--primary-soft);
+            color: var(--success);
+            font-weight: 600;
+
+            @variant lg {
+                border-color: transparent;
+            }
+        }
+    }
+
+    .admin-table {
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        font-size: 0.875rem;
+        border-collapse: separate;
+        border-spacing: 0;
+
+        & th {
+            padding: 0.625rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        & td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+        }
+
+        & tr + tr td {
+            border-top: 1px solid var(--border);
+        }
+
+        & .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .table-scroll {
+        overflow-x: auto;
+        border-radius: var(--radius-lg);
+    }
+
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 0.75rem;
+
+        & > * {
+            flex: 1 1 10rem;
+        }
+
+        & > .filter-search {
+            flex: 3 1 16rem;
+        }
+
+        & > .filter-actions {
+            flex: 0 0 auto;
+        }
+    }
+
+    .user-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .user-initial {
+        display: inline-grid;
+        flex-shrink: 0;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--success);
+        font-weight: 700;
+    }
+
+    .bar-list {
+        display: grid;
+        gap: 0.625rem;
+
+        & > li {
+            display: grid;
+            grid-template-columns: 6.5rem minmax(0, 1fr) 3rem;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        & .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+    }
+
+    .audit-meta {
+        color: var(--muted);
+        font-size: 0.75rem;
+        overflow-wrap: anywhere;
+    }
+
+    /* Printable account slips: four to a page, cut along the dashed lines. */
+    .slips {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+        gap: 0.75rem;
+    }
+
+    .slip {
+        padding: 1rem 1.125rem;
+        border: 1.5px dashed var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        break-inside: avoid;
+
+        & dt {
+            color: var(--muted);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        & dd {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+    }
+
+    .slip-password {
+        font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        font-size: 1.125rem;
+        letter-spacing: 0.06em;
+    }
+}
+
+@media print {
+    .app-header,
+    .tabbar,
+    .admin-nav,
+    .site-footer,
+    .page-header,
+    .no-print,
+    .toast,
+    .skip-link {
+        display: none !important;
+    }
+
+    body {
+        background: #fff;
+    }
+
+    .admin {
+        display: block;
+    }
+
+    .slips {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0;
+    }
+
+    .slip {
+        border-color: #999;
+        border-radius: 0;
+        color: #000;
+    }
 }

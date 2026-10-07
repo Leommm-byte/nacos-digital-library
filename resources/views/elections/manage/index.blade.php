@@ -2,7 +2,7 @@
     $zone = config('app.display_timezone');
 @endphp
 
-<x-layouts.app title="Manage elections">
+<x-layouts.admin title="Manage elections">
     <x-page-header title="Manage elections" subtitle="Set up an election, choose who can vote, then open voting for a set time." :back="route('elections.index')" back-label="Elections">
         <x-slot:actions>
             <x-button href="{{ route('roll.index') }}" variant="secondary" icon="users">Nominal roll</x-button>
@@ -49,4 +49,4 @@
 
         {{ $elections->links('partials.pagination') }}
     @endif
-</x-layouts.app>
+</x-layouts.admin>

@@ -262,28 +262,33 @@ New:
 
 Keep:
 
-- [ ] Admin-only area with sidebar navigation (Dashboard, Moderation, Books, Users, Bulk register, Announcements, Elections, Settings, Reports) that works on phones.
-- [ ] Dashboard: pending, approved, users and uploads-today counts; recent actions; recent uploads.
-- [ ] Books list with status and permanent delete (with confirmation).
-- [ ] Users list (name, matric, level, department, role, status).
-- [ ] Suspend and reactivate users; promote to course rep and demote.
-- [ ] Opening or closing a department clears the catalog's cached department list (`catalog:active-departments`).
-- [ ] Turn off a user's two-step verification when they lose their phone and recovery codes (needed since PR 4).
-- [ ] Bulk student import from CSV (comma or semicolon) or XLSX, up to 5 MB.
-- [ ] Bulk import columns: `matric_number` (or `matric`/`username`) and `surname` (or `last_name`) required; full name, department, level and programme optional with defaults.
-- [ ] Per-row import results ("Imported N, skipped M"); duplicates skipped.
-- [ ] Imported accounts must change their password on first login.
-- [ ] Announcements: create, edit and delete with title, message, start/end dates and active/draft.
-- [ ] Settings: site title, max upload size, allowed file types, academic session.
-- [ ] Reports: books per department and per month.
+- [x] Admin-only area with sidebar navigation (Dashboard, Users, Create accounts, Nominal roll, Books, Review uploads, Announcements, Elections, Reports, Audit log, Settings) that works on phones (a row of tabs).
+- [x] Dashboard: pending, approved, users and uploads-today counts; recent actions; recent uploads.
+- [x] Books list with status and permanent delete (with confirmation).
+- [x] Users list (name, matric, level, programme, role, status) with search and filters.
+- [x] Suspend and reactivate users; promote to course rep and demote.
+- [x] Opening or closing a department clears the catalog's cached department list (`catalog:active-departments`).
+- [x] Turn off a user's two-step verification when they lose their phone and recovery codes (needed since PR 4).
+- [x] Bulk student import from CSV or XLSX, up to 5 MB: class lists go onto the nominal roll (one class at a time), then accounts are created from the roll.
+- [x] Per-row import results (added, removed, moved, skipped lines); duplicates skipped.
+- [x] Imported accounts must change their password on first login.
+- [x] Announcements: create, edit and delete with title, message, start/end dates and active/draft (PR 10).
+- [x] Settings: site name, max upload size, uploads per day and waiting, academic session (allowed file types stay fixed: PDF and photos).
+- [x] Reports: books per department and per month.
 
 Fix:
 
-- [ ] Temporary password was the student's surname. Now random passwords with printable slips.
-- [ ] No way to make someone a governor or admin; an admin could suspend themselves.
-- [ ] Settings were saved to a file and never read; they are stored in the database and applied now.
-- [ ] Reports merged months across years and hard-coded department names.
-- [ ] "Recent logins" computed but never shown (audit log viewer replaces it).
+- [x] Temporary password was the student's surname. Now random passwords with printable slips.
+- [x] No way to make someone a governor or admin; an admin could suspend themselves.
+- [x] Settings were saved to a file and never read; they are stored in the database and applied now.
+- [x] Reports merged months across years and hard-coded department names.
+- [x] "Recent logins" computed but never shown (audit log viewer replaces it).
+
+New:
+
+- [x] Nominal roll kept per class (programme and level), uploaded as Excel or CSV from a template with the class at the top; the admin can download each class's template with the class filled in. The class in the file must match, and matric numbers that don't fit the class (programme letter, ND/HND) need confirming.
+- [x] Elections can be limited by programme too, so a class election is "programme + level".
+- [x] A new password slip for one person from their page (lost password, no email).
 
 ## Assistant (PR 13)
 

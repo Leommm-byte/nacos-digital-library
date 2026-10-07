@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class UserPolicy
 {
@@ -27,5 +28,21 @@ class UserPolicy
             && ! $target->hasRole(Role::CourseRep)
             && $actor->department_id === $target->department_id
             && $actor->level === $target->level;
+    }
+
+    /**
+     * Admins manage other people's accounts (role, suspension, class,
+     * two-step, a new password). Never their own here: an admin can't lock
+     * themselves out or demote themselves by accident.
+     */
+    public function manage(User $actor, User $target): Response
+    {
+        if (! $actor->hasRole(Role::Admin)) {
+            return Response::deny();
+        }
+
+        return $actor->is($target)
+            ? Response::deny('You can\'t change your own account here. Ask another admin.')
+            : Response::allow();
     }
 }

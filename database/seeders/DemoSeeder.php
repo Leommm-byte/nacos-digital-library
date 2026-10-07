@@ -18,6 +18,7 @@ use App\Notifications\UploadReviewed;
 use App\Support\Elections\BallotBox;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
+use App\Support\Settings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
 
@@ -122,6 +123,26 @@ class DemoSeeder extends Seeder
         ]);
 
         $this->seedElections($users, $students);
+
+        // Students on the roll without an account yet, three per class, so
+        // "Create accounts" has someone to create.
+        $waiting = [];
+        foreach ([[Programme::PartTime, Level::HND1], [Programme::PartTime, Level::ND2], [Programme::Codfel, Level::ND1], [Programme::Codfel, Level::HND2]] as $c => [$programme, $level]) {
+            for ($i = 1; $i <= 3; $i++) {
+                $waiting[] = [
+                    'matric_number' => sprintf('%s/%s/24/%07d', $programme->matricLetter(), str_starts_with($level->value, 'HND') ? 'HD' : 'ND', 9000000 + $c * 10 + $i),
+                    'fullname' => strtoupper(fake()->lastName()).' '.fake()->firstName(),
+                    'email' => null,
+                    'programme' => $programme->value,
+                    'level' => $level->value,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+        RollEntry::query()->insert($waiting);
+
+        Settings::put(['academic_session' => '2026/2027']);
     }
 
     /**

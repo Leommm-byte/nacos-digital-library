@@ -6,7 +6,7 @@
     $rollOnly = $errors->any() ? (bool) old('roll_only') : $election->roll_only;
 @endphp
 
-<x-layouts.app :title="$editing ? 'Edit election' : 'New election'">
+<x-layouts.admin :title="$editing ? 'Edit election' : 'New election'">
     <x-page-header :title="$editing ? 'Edit election' : 'New election'" subtitle="Positions and candidates come next. Nothing is public until you launch it."
         :back="$editing ? route('elections.manage.show', $election) : route('elections.manage')" :back-label="$editing ? $election->title : 'Manage elections'" />
 
@@ -96,4 +96,4 @@
             <x-button href="{{ $editing ? route('elections.manage.show', $election) : route('elections.manage') }}" variant="ghost">Cancel</x-button>
         </div>
     </form>
-</x-layouts.app>
+</x-layouts.admin>

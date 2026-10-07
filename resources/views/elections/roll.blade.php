@@ -10,7 +10,7 @@
     $levelOptions = ['' => 'Choose…'] + collect($levels)->mapWithKeys(fn ($l) => [$l->value => $l->label()])->all();
 @endphp
 
-<x-layouts.app title="Nominal roll">
+<x-layouts.admin title="Nominal roll">
     <x-page-header title="Nominal roll" subtitle="The official list of current students, class by class. Elections can be limited to students on it, so graduates and made-up matric numbers can't vote."
         :back="route('elections.manage')" back-label="Manage elections" />
 
@@ -159,4 +159,4 @@
             </x-card>
         </aside>
     </div>
-</x-layouts.app>
+</x-layouts.admin>

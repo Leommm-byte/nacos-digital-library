@@ -154,7 +154,8 @@ class SpreadsheetRows
 
         if ($workbook !== null && $relations !== null) {
             $sheet = $workbook->children('http://schemas.openxmlformats.org/spreadsheetml/2006/main')->sheets->sheet[0] ?? null;
-            $id = $sheet !== null ? (string) $sheet->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships')['id'] : '';
+            $attributes = $sheet?->attributes('http://schemas.openxmlformats.org/officeDocument/2006/relationships');
+            $id = $attributes !== null ? (string) ($attributes['id'] ?? '') : '';
 
             foreach ($relations->children('http://schemas.openxmlformats.org/package/2006/relationships')->Relationship as $relation) {
                 if (self::attribute($relation, 'Id') === $id) {
