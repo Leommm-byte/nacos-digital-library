@@ -52,7 +52,7 @@
                                     <span><strong>{{ number_format($result['ballots']) }}</strong> <span class="text-muted">of {{ number_format($result['electorate']) }} voted</span></span>
                                     <span class="font-semibold">{{ $percent($result['turnout']) }}%</span>
                                 </div>
-                                <progress class="result-bar" max="100" value="{{ $result['turnout'] }}" aria-label="Turnout {{ $percent($result['turnout']) }}%">{{ $result['turnout'] }}%</progress>
+                                <progress class="result-bar result-bar-strong" max="100" value="{{ $result['turnout'] }}" aria-label="Turnout {{ $percent($result['turnout']) }}%">{{ $result['turnout'] }}%</progress>
                             </div>
                         @endif
 

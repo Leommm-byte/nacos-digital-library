@@ -70,6 +70,7 @@ const pages = [
         for (const position of (await page.locator('.ballot-position').all()).slice(0, 2)) {
             await position.locator('.ballot-option').first().click();
         }
+        await page.evaluate(() => window.scrollTo(0, 0));
     }],
     ['election-results', 'LINK /elections .upload-row', 'F/ND/24/0000004'],
     // End to end: the governor votes on the first run; later runs show the

@@ -3052,12 +3052,14 @@
         }
 
         .is-leading > &::-webkit-progress-value,
-        .results-turnout > &::-webkit-progress-value {
+        .results-turnout > &::-webkit-progress-value,
+        &.result-bar-strong::-webkit-progress-value {
             background: var(--primary);
         }
 
         .is-leading > &::-moz-progress-bar,
-        .results-turnout > &::-moz-progress-bar {
+        .results-turnout > &::-moz-progress-bar,
+        &.result-bar-strong::-moz-progress-bar {
             background: var(--primary);
         }
 
