@@ -61,6 +61,7 @@ class AccountCreationTest extends TestCase
         $this->assertDatabaseMissing('users', ['matric_number' => 'P/ND/24/0000004']);
 
         // The slips show each password once; it works and isn't the surname.
+        /** @var list<array{name: string, matric: string, password: string, class: string}> $slips */
         $slips = session('slips')['slips'];
         $this->assertCount(2, $slips);
         $adaSlip = collect($slips)->firstWhere('matric', 'F/HD/24/0000001');

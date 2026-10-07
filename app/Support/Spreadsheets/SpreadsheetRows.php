@@ -40,7 +40,7 @@ class SpreadsheetRows
         $rows = [];
 
         while (count($rows) < self::MAX_ROWS && ($cells = fgetcsv($handle, 0, $delimiter, '"', '')) !== false) {
-            $rows[] = array_map(fn ($cell) => self::clean((string) $cell), array_values($cells));
+            $rows[] = array_map(fn ($cell) => self::clean((string) $cell), $cells);
         }
 
         fclose($handle);

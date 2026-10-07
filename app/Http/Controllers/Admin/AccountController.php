@@ -77,17 +77,18 @@ class AccountController extends Controller
         // Cheaper hashing for first passwords (changed at first login), so
         // a batch stays quick; never above the configured cost.
         $rounds = min(10, (int) config('hashing.bcrypt.rounds', 12));
-        $takenEmails = User::query()->whereIn('email', $batch->pluck('email')->filter()->all())->pluck('email')->flip();
+        /** @var array<string, true> $takenEmails */
+        $takenEmails = array_fill_keys(User::query()->whereIn('email', $batch->pluck('email')->filter()->all())->pluck('email')->all(), true);
         $slips = [];
 
-        DB::transaction(function () use ($batch, $data, $rounds, $takenEmails, &$slips) {
+        DB::transaction(function () use ($batch, $data, $rounds, &$takenEmails, &$slips) {
             foreach ($batch as $entry) {
                 $password = TemporaryPassword::make();
                 // An address already used (by an account, or twice on the
                 // roll) is left off; they can add theirs later.
-                $email = $entry->email !== null && ! $takenEmails->has($entry->email) ? $entry->email : null;
+                $email = $entry->email !== null && ! isset($takenEmails[$entry->email]) ? $entry->email : null;
                 if ($email !== null) {
-                    $takenEmails->put($email, true);
+                    $takenEmails[$email] = true;
                 }
 
                 $user = new User([
