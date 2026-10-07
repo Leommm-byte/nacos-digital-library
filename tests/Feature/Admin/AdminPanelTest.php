@@ -52,7 +52,7 @@ class AdminPanelTest extends TestCase
 
         $this->actingAs($this->admin)->get(route('admin.dashboard'))
             ->assertSee('2 waiting')
-            ->assertSee('1 books')
+            ->assertSee('1 book</strong>', false)
             ->assertSee('Admin panel');
     }
 

@@ -8,11 +8,11 @@
             <li><a href="{{ route('review.index') }}" class="shortcut"><x-icon-tile name="shield-check" tone="yellow" />
                 <span><strong>{{ number_format($stats['pending']) }} waiting</strong><small>Uploads to review</small></span></a></li>
             <li><a href="{{ route('admin.books.index') }}" class="shortcut"><x-icon-tile name="library-big" tone="green" />
-                <span><strong>{{ number_format($stats['approved']) }} books</strong><small>{{ number_format($stats['uploadsToday']) }} uploaded today</small></span></a></li>
+                <span><strong>{{ number_format($stats['approved']) }} {{ \Illuminate\Support\Str::plural('book', $stats['approved']) }}</strong><small>{{ number_format($stats['uploadsToday']) }} uploaded today</small></span></a></li>
             <li><a href="{{ route('admin.users.index') }}" class="shortcut"><x-icon-tile name="users" tone="blue" />
                 <span><strong>{{ number_format($stats['users']) }} accounts</strong><small>{{ number_format($stats['suspended']) }} suspended</small></span></a></li>
             <li><a href="{{ route('admin.accounts.index') }}" class="shortcut"><x-icon-tile name="clipboard-list" tone="violet" />
-                <span><strong>{{ number_format($stats['roll']) }} on the roll</strong><small>{{ number_format($stats['rollWithoutAccount']) }} without an account</small></span></a></li>
+                <span><strong>{{ number_format($stats['roll']) }} on the roll</strong><small>{{ number_format($stats['rollWithoutAccount']) }} need an account</small></span></a></li>
         </ul>
     </nav>
 

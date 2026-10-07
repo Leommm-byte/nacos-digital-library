@@ -104,6 +104,11 @@
         }
     }
 
+    /* In a grid, the gap spaces the sections. */
+    .grid > .page-section + .page-section {
+        margin-top: 0;
+    }
+
     .page-section-head {
         display: flex;
         align-items: center;
@@ -3154,6 +3159,21 @@
 
         @variant sm {
             grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        /* Beside the admin sidebar and the upload card there's less room. */
+        @variant lg {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @variant 2xl {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        & p {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 
