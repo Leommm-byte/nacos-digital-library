@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Announcements\AnnouncementController;
+use App\Http\Controllers\Elections\BallotSetupController;
+use App\Http\Controllers\Elections\ElectionController;
+use App\Http\Controllers\Elections\ManageElectionController;
+use App\Http\Controllers\Elections\NominalRollController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
@@ -16,6 +20,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 require __DIR__.'/auth.php';
+
+// Election pages and results are public, for transparency; voting needs an
+// account.
+Route::get('/elections', [ElectionController::class, 'index'])->name('elections.index');
+Route::get('/elections/{election}', [ElectionController::class, 'show'])->whereNumber('election')->name('elections.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
@@ -60,6 +69,41 @@ Route::middleware('auth')->group(function () {
         Route::get('/announcements/{announcement}/edit', [AnnouncementController::class, 'edit'])->name('announcements.edit');
         Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    });
+
+    Route::post('/elections/{election}/ballot', [ElectionController::class, 'vote'])
+        ->whereNumber('election')
+        ->middleware('throttle:10,1')
+        ->name('elections.vote');
+
+    Route::middleware('can:manage-elections')->group(function () {
+        Route::get('/nominal-roll', [NominalRollController::class, 'index'])->name('roll.index');
+        Route::post('/nominal-roll', [NominalRollController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('roll.store');
+    });
+
+    Route::middleware('can:manage-elections')->prefix('elections/manage')->name('elections.manage')->group(function () {
+        Route::get('/', [ManageElectionController::class, 'index'])->name('');
+        Route::get('/create', [ManageElectionController::class, 'create'])->name('.create');
+        Route::post('/', [ManageElectionController::class, 'store'])->name('.store');
+
+        Route::scopeBindings()->prefix('{election}')->group(function () {
+            Route::get('/', [ManageElectionController::class, 'show'])->name('.show');
+            Route::get('/edit', [ManageElectionController::class, 'edit'])->name('.edit');
+            Route::put('/', [ManageElectionController::class, 'update'])->name('.update');
+            Route::delete('/', [ManageElectionController::class, 'destroy'])->name('.destroy');
+            Route::post('/launch', [ManageElectionController::class, 'launch'])->name('.launch');
+            Route::post('/close', [ManageElectionController::class, 'close'])->name('.close');
+
+            Route::post('/positions', [BallotSetupController::class, 'storePosition'])->name('.positions.store');
+            Route::put('/positions/{position}', [BallotSetupController::class, 'updatePosition'])->name('.positions.update');
+            Route::post('/positions/{position}/move', [BallotSetupController::class, 'movePosition'])->name('.positions.move');
+            Route::delete('/positions/{position}', [BallotSetupController::class, 'destroyPosition'])->name('.positions.destroy');
+            Route::post('/positions/{position}/candidates', [BallotSetupController::class, 'storeCandidate'])->name('.candidates.store');
+            Route::put('/positions/{position}/candidates/{candidate}', [BallotSetupController::class, 'updateCandidate'])->name('.candidates.update');
+            Route::delete('/positions/{position}/candidates/{candidate}', [BallotSetupController::class, 'destroyCandidate'])->name('.candidates.destroy');
+        });
     });
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

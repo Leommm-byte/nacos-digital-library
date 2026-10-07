@@ -20,7 +20,9 @@ if [ "$1" = "apache2-foreground" ]; then
     php artisan migrate --force
     php artisan db:seed --force
 
-    chown -R www-data:www-data storage bootstrap/cache
+    # Live election results are written here by the app.
+    mkdir -p public/live
+    chown -R www-data:www-data storage bootstrap/cache public/live
 fi
 
 exec "$@"

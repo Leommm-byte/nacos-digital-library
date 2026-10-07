@@ -13,3 +13,6 @@ Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
     ->runInBackground();
 
 Schedule::command('queue:prune-failed --hours=168')->daily();
+
+// Elections close at their end time even if nobody opens the page.
+Schedule::command('elections:close')->everyMinute()->withoutOverlapping();

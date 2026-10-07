@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\BookStatus;
-use App\Enums\ElectionStatus;
 use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\ReviewAction;
@@ -13,8 +12,13 @@ use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
 use App\Models\ReadingProgress;
+use App\Models\RollEntry;
 use App\Models\User;
 use App\Notifications\UploadReviewed;
+use App\Support\Elections\BallotBox;
+use App\Support\Elections\ElectionLifecycle;
+use App\Support\Elections\LiveResults;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
 
 /**
@@ -117,21 +121,116 @@ class DemoSeeder extends Seeder
             'body' => 'Share your notes and past questions from the Upload page. Reviewers check every upload before it appears.',
         ]);
 
-        $election = new Election(['title' => 'NACOS Executive Council Election']);
-        $election->status = ElectionStatus::Draft;
-        $election->save();
+        $this->seedElections($users, $students);
+    }
 
-        foreach (['President', 'Vice President', 'General Secretary'] as $order => $title) {
-            $position = $election->positions()->create(['title' => $title, 'sort_order' => $order]);
+    /**
+     * An open election part-way through voting (Tobi hasn't voted yet), a
+     * closed one with final results, and a draft being set up.
+     *
+     * @param  array<string, User>  $users
+     * @param  Collection<int, User>  $students
+     */
+    private function seedElections(array $users, Collection $students): void
+    {
+        // Every demo account is a current student on the nominal roll.
+        RollEntry::query()->insert(User::query()->get()->map(fn (User $user) => [
+            'matric_number' => $user->matric_number,
+            'fullname' => $user->fullname,
+            'level' => $user->level->value,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->all());
 
-            foreach ($students->random(2) as $i => $candidate) {
+        // Closed yesterday, with final results.
+        $past = Election::create([
+            'title' => 'NACOS Week Planning Committee',
+            'description' => 'Three students to plan NACOS week with the executives.',
+        ]);
+        $past->created_by = $users['admin']->id;
+        $past->save();
+        $this->seedBallot($past, ['Committee Chair' => 3, 'Secretary' => 2], $students);
+        ElectionLifecycle::launch($past, 6);
+        $this->seedVotes($past, $students->random(15));
+        ElectionLifecycle::close($past);
+        $past->forceFill(['starts_at' => now()->subDays(2), 'ends_at' => now()->subDay(), 'closed_at' => now()->subDay()])->save();
+        LiveResults::publish($past, true);
+
+        // Open now, closing tomorrow.
+        $open = Election::create([
+            'title' => 'NACOS Executive Council Election 2026',
+            'description' => 'Choose the executives who will lead NACOS YabaTech for the 2026/2027 session.',
+        ]);
+        $open->created_by = $users['admin']->id;
+        $open->save();
+        $this->seedBallot($open, ['President' => 3, 'Vice President' => 2, 'General Secretary' => 2, 'Financial Secretary' => 2], $students);
+        ElectionLifecycle::launch($open, 24);
+        $this->seedVotes($open, $students->random(12));
+        LiveResults::publish($open, true);
+
+        // Still being set up.
+        $draft = Election::create([
+            'title' => 'HND Class Representatives',
+            'description' => 'Class representatives for HND1 and HND2.',
+            'levels' => [Level::HND1->value, Level::HND2->value],
+            'entry_year_from' => 2022,
+            'entry_year_to' => 2025,
+        ]);
+        $draft->created_by = $users['admin']->id;
+        $draft->save();
+        $this->seedBallot($draft, ['HND1 Representative' => 2, 'HND2 Representative' => 0], $students);
+    }
+
+    /**
+     * @param  array<string, int>  $positions  title => number of candidates
+     * @param  Collection<int, User>  $students
+     */
+    private function seedBallot(Election $election, array $positions, Collection $students): void
+    {
+        $manifestos = [
+            'A library that works on every phone, past questions for every course, and monthly tech talks with alumni.',
+            'Fair dues, a transparent budget published every semester, and a laptop repair day each term.',
+            'More hackathons and study groups, and a NACOS week that every level can take part in.',
+            'Quick answers on WhatsApp, clear minutes after every meeting, and timetables shared on time.',
+            'Bring back the coding bootcamp for ND1 and get internships listed in one place.',
+            'Every student heard: monthly town halls and a suggestion box that gets a reply.',
+        ];
+        $order = 0;
+
+        foreach ($positions as $title => $count) {
+            $position = $election->positions()->create(['title' => $title, 'sort_order' => $order++]);
+
+            foreach ($students->random($count)->values() as $i => $candidate) {
                 $position->candidates()->create([
                     'user_id' => $candidate->id,
                     'name' => $candidate->fullname,
                     'matric_number' => $candidate->matric_number,
-                    'manifesto' => fake()->sentence(12),
+                    'manifesto' => $manifestos[($order + $i) % count($manifestos)],
                     'sort_order' => $i,
                 ]);
+            }
+        }
+    }
+
+    /**
+     * @param  Collection<int, User>  $voters
+     */
+    private function seedVotes(Election $election, Collection $voters): void
+    {
+        $positions = $election->positions()->with('candidates')->get();
+
+        foreach ($voters as $voter) {
+            $choices = [];
+
+            foreach ($positions as $position) {
+                // Some voters skip a position.
+                if ($position->candidates->isNotEmpty() && fake()->boolean(90)) {
+                    $choices[$position->id] = $position->candidates->random()->id;
+                }
+            }
+
+            if ($choices !== []) {
+                BallotBox::cast($election, $voter, $choices);
             }
         }
     }

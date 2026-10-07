@@ -2,9 +2,10 @@
     Labelled input with its validation error:
     <x-field name="email" label="Email" type="email" autocomplete="email" />
     Password fields get a show/hide button. `bag` picks a named error bag
-    when a page has several forms.
+    when a page has several forms; `:old="false"` keeps another form's old
+    input out of this one.
 --}}
-@props(['name', 'label', 'type' => 'text', 'hint' => null, 'bag' => 'default'])
+@props(['name', 'label', 'type' => 'text', 'hint' => null, 'bag' => 'default', 'old' => true])
 
 @php
     $id = $attributes->get('id', $name);
@@ -19,7 +20,7 @@
             id="{{ $id }}"
             name="{{ $name }}"
             type="{{ $type }}"
-            @if ($type !== 'password') value="{{ old($name, $attributes->get('value')) }}" @endif
+            @if ($type !== 'password') value="{{ $old ? old($name, $attributes->get('value')) : $attributes->get('value') }}" @endif
             @if ($error) aria-invalid="true" @endif
             @if ($describedBy) aria-describedby="{{ $describedBy }}" @endif
             {{ $attributes->except(['id', 'value', 'aria-describedby'])->class(['field-input', 'pr-12' => $type === 'password']) }}

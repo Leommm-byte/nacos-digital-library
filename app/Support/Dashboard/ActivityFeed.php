@@ -14,7 +14,8 @@ use Illuminate\Support\Carbon;
 class ActivityFeed
 {
     /**
-     * action => [icon, sentence]; ":book" is replaced with the book's title.
+     * action => [icon, sentence]; ":title" is replaced with the book's or
+     * election's title.
      */
     private const ACTIONS = [
         'login' => ['log-in', 'You logged in'],
@@ -28,13 +29,14 @@ class ActivityFeed
         'email_verified' => ['circle-check', 'You confirmed your email address'],
         'two_factor_enabled' => ['shield-check', 'You turned on two-step verification'],
         'two_factor_disabled' => ['shield-check', 'You turned off two-step verification'],
-        'book_uploaded' => ['upload', 'You shared ":book"'],
-        'book_edited' => ['file-up', 'You edited ":book"'],
-        'book_resubmitted' => ['upload', 'You sent ":book" back for review'],
-        'book_deleted' => ['x', 'You deleted ":book"'],
-        'book_approved' => ['circle-check', 'You approved ":book"'],
-        'book_changes_requested' => ['triangle-alert', 'You asked for changes to ":book"'],
-        'book_rejected' => ['x', 'You rejected ":book"'],
+        'book_uploaded' => ['upload', 'You shared ":title"'],
+        'book_edited' => ['file-up', 'You edited ":title"'],
+        'book_resubmitted' => ['upload', 'You sent ":title" back for review'],
+        'book_deleted' => ['x', 'You deleted ":title"'],
+        'book_approved' => ['circle-check', 'You approved ":title"'],
+        'book_changes_requested' => ['triangle-alert', 'You asked for changes to ":title"'],
+        'book_rejected' => ['x', 'You rejected ":title"'],
+        'election_voted' => ['vote', 'You voted in ":title"'],
     ];
 
     /**
@@ -66,11 +68,12 @@ class ActivityFeed
 
         return $entries->map(function (AuditLog $entry) use ($titles) {
             [$icon, $text] = self::ACTIONS[$entry->action];
-            $title = $titles[$entry->subject_id] ?? ($entry->meta['title'] ?? 'a book');
+            $title = ($entry->subject_type === 'Book' ? ($titles[$entry->subject_id] ?? null) : null)
+                ?? ($entry->meta['title'] ?? ($entry->subject_type === 'Election' ? 'an election' : 'a book'));
 
             return [
                 'icon' => $icon,
-                'text' => str_replace(':book', (string) $title, $text),
+                'text' => str_replace(':title', (string) $title, $text),
                 'at' => $entry->created_at,
             ];
         })->values()->all();

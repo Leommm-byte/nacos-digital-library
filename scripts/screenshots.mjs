@@ -63,6 +63,34 @@ const pages = [
         await page.locator('.review-preview canvas').first().waitFor({ timeout: 20000 });
     }],
     ['review-approved', 'LINK /review?status=approved .upload-row', 'F/HD/22/0000002'],
+    ['elections', '/elections', 'F/ND/24/0000004'],
+    ['election-guest', 'LINK /elections .election-card a', null],
+    ['election-ballot', 'LINK /elections .election-card a', 'F/ND/24/0000004', async (page) => {
+        // Pick a candidate in the first two positions.
+        for (const position of (await page.locator('.ballot-position').all()).slice(0, 2)) {
+            await position.locator('.ballot-option').first().click();
+        }
+        await page.evaluate(() => window.scrollTo(0, 0));
+    }],
+    ['election-results', 'LINK /elections .upload-row', 'F/ND/24/0000004'],
+    // End to end: the governor votes on the first run; later runs show the
+    // "you have voted" state. Fails the run if the vote isn't recorded.
+    ['election-voted', 'LINK /elections .election-card a', 'F/HD/22/0000002', async (page) => {
+        if (await page.locator('[data-ballot]').count()) {
+            for (const position of await page.locator('.ballot-position').all()) {
+                await position.locator('.ballot-option').first().click();
+            }
+            page.once('dialog', (dialog) => dialog.accept());
+            await page.click('[data-ballot] button[type=submit]');
+            await page.waitForLoadState('networkidle');
+        }
+        await page.locator('.vote-done').waitFor({ timeout: 10000 });
+    }],
+    ['elections-manage', '/elections/manage', 'F/HD/21/0000001'],
+    ['election-new', '/elections/manage/create', 'F/HD/21/0000001'],
+    ['nominal-roll', '/nominal-roll', 'F/HD/21/0000001'],
+    ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/21/0000001'],
+    ['election-monitor', 'LINK /elections/manage .upload-row:has-text("Voting open")', 'F/HD/21/0000001'],
     // End to end: these really upload, and fail the run if they don't land
     // on the thank-you page.
     ['upload-pdf-chosen', '/upload', 'F/ND/24/0000004', async (page) => {
