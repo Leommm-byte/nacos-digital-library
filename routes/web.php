@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\BookController as AdminBookController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\Elections\BallotSetupController;
 use App\Http\Controllers\Elections\ElectionController;
@@ -78,6 +85,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('can:manage-elections')->group(function () {
         Route::get('/nominal-roll', [NominalRollController::class, 'index'])->name('roll.index');
+        Route::get('/nominal-roll/template', [NominalRollController::class, 'template'])->name('roll.template');
         Route::post('/nominal-roll', [NominalRollController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('roll.store');
@@ -104,6 +112,32 @@ Route::middleware('auth')->group(function () {
             Route::put('/positions/{position}/candidates/{candidate}', [BallotSetupController::class, 'updateCandidate'])->name('.candidates.update');
             Route::delete('/positions/{position}/candidates/{candidate}', [BallotSetupController::class, 'destroyCandidate'])->name('.candidates.destroy');
         });
+    });
+
+    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', AdminDashboardController::class)->name('dashboard');
+
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
+        Route::put('/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('users.role');
+        Route::put('/users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.status');
+        Route::put('/users/{user}/class', [AdminUserController::class, 'updateClass'])->name('users.class');
+        Route::delete('/users/{user}/two-factor', [AdminUserController::class, 'resetTwoFactor'])->name('users.two-factor');
+        Route::post('/users/{user}/password', [AdminUserController::class, 'resetPassword'])->name('users.password');
+
+        Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
+        Route::post('/accounts', [AccountController::class, 'store'])->middleware('throttle:20,1')->name('accounts.store');
+        Route::get('/accounts/slips', [AccountController::class, 'slips'])->name('accounts.slips');
+
+        Route::get('/books', [AdminBookController::class, 'index'])->name('books.index');
+        Route::delete('/books/{book}', [AdminBookController::class, 'destroy'])->name('books.destroy');
+
+        Route::get('/reports', ReportController::class)->name('reports');
+        Route::get('/audit', AuditLogController::class)->name('audit');
+
+        Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
+        Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::put('/settings/departments/{department}', [SettingController::class, 'department'])->name('settings.department');
     });
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

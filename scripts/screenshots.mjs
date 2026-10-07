@@ -89,6 +89,20 @@ const pages = [
     ['elections-manage', '/elections/manage', 'F/HD/21/0000001'],
     ['election-new', '/elections/manage/create', 'F/HD/21/0000001'],
     ['nominal-roll', '/nominal-roll', 'F/HD/21/0000001'],
+    ['admin-dashboard', '/admin', 'F/HD/21/0000001'],
+    ['admin-users', '/admin/users', 'F/HD/21/0000001'],
+    ['admin-user', 'LINK /admin/users?q=Tobi .user-cell', 'F/HD/21/0000001'],
+    ['admin-accounts', '/admin/accounts', 'F/HD/21/0000001'],
+    // End to end: creates the accounts of one class and lands on its slips.
+    ['admin-slips', '/admin/accounts', 'F/HD/21/0000001', async (page) => {
+        await page.locator('input[name="classes[]"]:not([disabled])').first().check();
+        await page.click('form[action$="/admin/accounts"] button[type=submit]');
+        await page.waitForURL(/\/admin\/accounts\/slips$/, { timeout: 30000 });
+    }],
+    ['admin-books', '/admin/books', 'F/HD/21/0000001'],
+    ['admin-reports', '/admin/reports', 'F/HD/21/0000001'],
+    ['admin-audit', '/admin/audit', 'F/HD/21/0000001'],
+    ['admin-settings', '/admin/settings', 'F/HD/21/0000001'],
     ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/21/0000001'],
     ['election-monitor', 'LINK /elections/manage .upload-row:has-text("Voting open")', 'F/HD/21/0000001'],
     // End to end: these really upload, and fail the run if they don't land

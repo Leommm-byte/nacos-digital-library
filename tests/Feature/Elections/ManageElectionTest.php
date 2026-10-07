@@ -174,14 +174,13 @@ class ManageElectionTest extends TestCase
     #[Test]
     public function stopping_early_closes_for_good_and_publishes_the_final_results(): void
     {
-        config(['elections.batch' => 50]);
         $election = Election::factory()->open()->withBallot(['President' => 2])->create();
         $position = $election->positions()->firstOrFail();
         $student = User::factory()->create();
-        LiveResults::publish($election, true);
+        LiveResults::publish($election);
 
         $this->actingAs($student)->post(route('elections.vote', $election), ['choices' => [$position->id => $position->candidates()->firstOrFail()->id]]);
-        $this->assertSame(0, LiveResults::read($election)['ballots'] ?? null);
+        $this->assertFalse(LiveResults::read($election)['final'] ?? true);
 
         $this->actingAs($this->admin)->post(route('elections.manage.close', $election))->assertRedirect(route('elections.manage.show', $election));
 

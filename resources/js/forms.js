@@ -14,6 +14,13 @@ const RULES = {
 };
 
 export function initForms() {
+    // Print buttons (inline handlers are blocked by the Content-Security-Policy).
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('[data-print]')) {
+            window.print();
+        }
+    });
+
     // Runs first (capture), so a cancelled form never shows as busy.
     document.addEventListener(
         'submit',

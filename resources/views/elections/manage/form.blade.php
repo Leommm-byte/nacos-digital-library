@@ -1,11 +1,12 @@
 @php
     $editing = $election->exists;
     $levels = old('levels', $election->levels ?? []);
+    $programmes = old('programmes', $election->programmes ?? []);
     $yearOptions = ['' => 'Any year'] + $years;
     $rollOnly = $errors->any() ? (bool) old('roll_only') : $election->roll_only;
 @endphp
 
-<x-layouts.app :title="$editing ? 'Edit election' : 'New election'">
+<x-layouts.admin :title="$editing ? 'Edit election' : 'New election'">
     <x-page-header :title="$editing ? 'Edit election' : 'New election'" subtitle="Positions and candidates come next. Nothing is public until you launch it."
         :back="$editing ? route('elections.manage.show', $election) : route('elections.manage')" :back-label="$editing ? $election->title : 'Manage elections'" />
 
@@ -49,6 +50,22 @@
             </label>
 
             <fieldset>
+                <legend class="field-label">Programmes</legend>
+                <div class="chip-options">
+                    @foreach (\App\Enums\Programme::cases() as $programme)
+                        <label class="chip-option">
+                            <input type="checkbox" name="programmes[]" value="{{ $programme->value }}" class="sr-only" @checked(in_array($programme->value, (array) $programmes, true))>
+                            <span>{{ $programme->label() }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="mt-1.5 text-sm text-muted">None ticked means every programme. For a class election, tick its programme and level.</p>
+                @error('programmes')
+                    <p class="field-error">{{ $message }}</p>
+                @enderror
+            </fieldset>
+
+            <fieldset>
                 <legend class="field-label">Levels</legend>
                 <div class="chip-options">
                     @foreach (\App\Enums\Level::cases() as $level)
@@ -58,7 +75,7 @@
                         </label>
                     @endforeach
                 </div>
-                <p class="mt-1.5 text-sm text-muted">None ticked means all levels. The level on the nominal roll counts when it has one.</p>
+                <p class="mt-1.5 text-sm text-muted">None ticked means all levels. The class on the nominal roll counts over the one students chose at signup.</p>
                 @error('levels')
                     <p class="field-error">{{ $message }}</p>
                 @enderror
@@ -79,4 +96,4 @@
             <x-button href="{{ $editing ? route('elections.manage.show', $election) : route('elections.manage') }}" variant="ghost">Cancel</x-button>
         </div>
     </form>
-</x-layouts.app>
+</x-layouts.admin>

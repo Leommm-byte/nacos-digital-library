@@ -24,7 +24,6 @@ class VotingTest extends TestCase
     {
         parent::setUp();
 
-        config(['elections.batch' => 1]);
         $this->student = User::factory()->create(['level' => Level::ND2, 'matric_number' => 'F/ND/24/1234567']);
     }
 
@@ -208,11 +207,10 @@ class VotingTest extends TestCase
     }
 
     #[Test]
-    public function results_are_published_in_batches_from_a_static_file(): void
+    public function every_ballot_updates_the_static_results_file(): void
     {
-        config(['elections.batch' => 3]);
         $election = $this->election();
-        LiveResults::publish($election, true);
+        LiveResults::publish($election);
         $president = $this->position($election, 'President');
         $choice = $this->candidate($election, 'President');
 
@@ -223,8 +221,8 @@ class VotingTest extends TestCase
 
             $published = LiveResults::read($election);
             $this->assertNotNull($published);
-            // Nothing shows until a whole batch is in.
-            $this->assertSame($i < 2 ? 0 : 3, $published['ballots']);
+            // Voters see their own vote counted straight away.
+            $this->assertSame($i + 1, $published['ballots']);
         }
 
         $json = (string) file_get_contents(LiveResults::path($election));

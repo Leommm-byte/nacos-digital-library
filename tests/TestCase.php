@@ -19,7 +19,7 @@ abstract class TestCase extends BaseTestCase
         // Live election results go to a folder of their own per test, not
         // into public/.
         $this->livePath = storage_path('framework/testing/live/'.bin2hex(random_bytes(6)));
-        config(['elections.live_path' => $this->livePath, 'elections.min_interval' => 0]);
+        config(['elections.live_path' => $this->livePath]);
     }
 
     protected function tearDown(): void

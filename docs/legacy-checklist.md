@@ -24,7 +24,7 @@ Keep:
 - [x] On success: session regenerated, last login time and IP recorded.
 - [x] Audit log of logins, failed logins (with matric), throttling, logouts and signups.
 - [x] Signup: full name (3+ characters), matric number, department, level (ND1 to HND3), programme (Full-time, Part-time, CODFEL), password and confirmation.
-- [x] Matric formats: `F|P|C/ND|HND|HD/YY/digits` (year 19 onwards) and the older `ND|HND/YYYY/DEPT/digits`.
+- [x] Matric formats: `F|P|D/ND|HND|HD/YY/digits` (F full-time, P part-time, D CODFEL; corrected by the owner in PR 12) (year 19 onwards) and the older `ND|HND/YYYY/DEPT/digits`.
 - [x] Password rule: 8+ characters with upper and lower case, a number and a symbol (plus a known-breach check in production).
 - [x] Duplicate matric numbers are rejected with a clear message.
 - [x] Password show/hide button on login, signup and password forms.
@@ -252,7 +252,7 @@ New:
 
 - [x] Eligibility per election: every active account by default, or limited to some levels and to a range of matric entry years (F/ND/**24**/… entered in 2024).
 - [x] Nominal roll: admins import the official list of current students (CSV of matric numbers, optional name and level; replace the whole roll or add to it). Elections are limited to students on it by default, so graduates and made-up matric numbers can't vote, and the level on the roll beats the one chosen at signup. An election limited to an empty roll can't launch.
-- [x] Results are published in batches of ballots (5 by default), so a change in the totals can't be tied to one voter; closing publishes the final count.
+- [x] Results update after every ballot, so voters see their vote counted (decided with the owner); closing publishes the final count.
 - [x] Polling the results is a static file with an ETag (a 304 when nothing changed), paused in hidden tabs, with jitter.
 - [x] Results are public, including to guests; voting needs an account.
 - [x] Students who can still vote see a "Vote now" card on their dashboard; voting shows in their recent activity.
@@ -262,28 +262,33 @@ New:
 
 Keep:
 
-- [ ] Admin-only area with sidebar navigation (Dashboard, Moderation, Books, Users, Bulk register, Announcements, Elections, Settings, Reports) that works on phones.
-- [ ] Dashboard: pending, approved, users and uploads-today counts; recent actions; recent uploads.
-- [ ] Books list with status and permanent delete (with confirmation).
-- [ ] Users list (name, matric, level, department, role, status).
-- [ ] Suspend and reactivate users; promote to course rep and demote.
-- [ ] Opening or closing a department clears the catalog's cached department list (`catalog:active-departments`).
-- [ ] Turn off a user's two-step verification when they lose their phone and recovery codes (needed since PR 4).
-- [ ] Bulk student import from CSV (comma or semicolon) or XLSX, up to 5 MB.
-- [ ] Bulk import columns: `matric_number` (or `matric`/`username`) and `surname` (or `last_name`) required; full name, department, level and programme optional with defaults.
-- [ ] Per-row import results ("Imported N, skipped M"); duplicates skipped.
-- [ ] Imported accounts must change their password on first login.
-- [ ] Announcements: create, edit and delete with title, message, start/end dates and active/draft.
-- [ ] Settings: site title, max upload size, allowed file types, academic session.
-- [ ] Reports: books per department and per month.
+- [x] Admin-only area with sidebar navigation (Dashboard, Users, Create accounts, Nominal roll, Books, Review uploads, Announcements, Elections, Reports, Audit log, Settings) that works on phones (a row of tabs).
+- [x] Dashboard: pending, approved, users and uploads-today counts; recent actions; recent uploads.
+- [x] Books list with status and permanent delete (with confirmation).
+- [x] Users list (name, matric, level, programme, role, status) with search and filters.
+- [x] Suspend and reactivate users; promote to course rep and demote.
+- [x] Opening or closing a department clears the catalog's cached department list (`catalog:active-departments`).
+- [x] Turn off a user's two-step verification when they lose their phone and recovery codes (needed since PR 4).
+- [x] Bulk student import from CSV or XLSX, up to 5 MB: class lists go onto the nominal roll (one class at a time), then accounts are created from the roll.
+- [x] Per-row import results (added, removed, moved, skipped lines); duplicates skipped.
+- [x] Imported accounts must change their password on first login.
+- [x] Announcements: create, edit and delete with title, message, start/end dates and active/draft (PR 10).
+- [x] Settings: site name, max upload size, uploads per day and waiting, academic session (allowed file types stay fixed: PDF and photos).
+- [x] Reports: books per department and per month.
 
 Fix:
 
-- [ ] Temporary password was the student's surname. Now random passwords with printable slips.
-- [ ] No way to make someone a governor or admin; an admin could suspend themselves.
-- [ ] Settings were saved to a file and never read; they are stored in the database and applied now.
-- [ ] Reports merged months across years and hard-coded department names.
-- [ ] "Recent logins" computed but never shown (audit log viewer replaces it).
+- [x] Temporary password was the student's surname. Now random passwords with printable slips.
+- [x] No way to make someone a governor or admin; an admin could suspend themselves.
+- [x] Settings were saved to a file and never read; they are stored in the database and applied now.
+- [x] Reports merged months across years and hard-coded department names.
+- [x] "Recent logins" computed but never shown (audit log viewer replaces it).
+
+New:
+
+- [x] Nominal roll kept per class (programme and level), uploaded as Excel or CSV from a template with the class at the top; the admin can download each class's template with the class filled in. The class in the file must match, and matric numbers that don't fit the class (programme letter, ND/HND) need confirming.
+- [x] Elections can be limited by programme too, so a class election is "programme + level".
+- [x] A new password slip for one person from their page (lost password, no email).
 
 ## Assistant (PR 13)
 
