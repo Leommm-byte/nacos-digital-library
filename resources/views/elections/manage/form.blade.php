@@ -15,7 +15,7 @@
         @endif
 
         <x-card class="space-y-4">
-            <x-field name="title" label="Title" required maxlength="200" :value="$election->title" placeholder="NACOS Executive Council Election 2026" />
+            <x-field name="title" label="Title" required maxlength="200" :value="$election->title" placeholder="Executive Council Election 2026" />
             <div>
                 <label for="description" class="field-label">Description <span class="font-normal text-muted">(optional)</span></label>
                 <textarea id="description" name="description" rows="3" maxlength="2000" class="field-input field-textarea"
