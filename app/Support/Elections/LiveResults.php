@@ -6,6 +6,7 @@ use App\Enums\ElectionStatus;
 use App\Models\Election;
 use App\Models\ElectionCandidate;
 use App\Models\ElectionPosition;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -15,35 +16,33 @@ use RuntimeException;
  * (public/live/election-{id}.json). The web server serves it with an ETag,
  * so the election page's polling costs a 304 and no PHP at all.
  *
- * While voting is open the file is only rewritten after a batch of new
- * ballots (config/elections.php), so a change in the totals can't be tied to
- * one person. Closing the election publishes the final count.
+ * The file is rewritten after every ballot (decided with the owner: voters
+ * should see their vote counted), and closing the election publishes the
+ * final count.
  *
  * The page itself is rendered from the same file, never from live counts.
  */
 class LiveResults
 {
     /**
-     * Rewrites the file if enough new ballots have come in (or always, with
-     * $force). Returns whether it was written.
+     * Rewrites the file with the current totals. Returns whether it was
+     * written.
      */
-    public static function publish(Election $election, bool $force = false): bool
+    public static function publish(Election $election): bool
     {
         if ($election->status === ElectionStatus::Draft) {
             return false;
         }
 
-        $lock = Cache::lock("elections:{$election->id}:publish", 10);
-
-        if (! $force) {
-            if (! self::due($election)) {
-                return false;
-            }
-
-            return (bool) $lock->get(fn () => self::due($election) && self::write($election));
+        // One writer at a time; a ballot waits briefly for the one before,
+        // so the last ballot always ends up in the file.
+        try {
+            return (bool) Cache::lock("elections:{$election->id}:publish", 10)->block(5, fn () => self::write($election));
+        } catch (LockTimeoutException) {
+            // Another writer is stuck; the next ballot or the scheduler
+            // catches up.
+            return false;
         }
-
-        return (bool) $lock->block(5, fn () => self::write($election));
     }
 
     /**
@@ -59,7 +58,7 @@ class LiveResults
 
         $data = self::load($election);
 
-        if ($data === null && self::publish($election, true)) {
+        if ($data === null && self::publish($election)) {
             $data = self::load($election);
         }
 
@@ -129,24 +128,6 @@ class LiveResults
                 'positions' => $positions,
             ];
         });
-    }
-
-    /**
-     * Enough new ballots since the last file, and not too soon after it.
-     */
-    private static function due(Election $election): bool
-    {
-        $current = self::load($election);
-
-        if ($current === null) {
-            return true;
-        }
-
-        $published = (int) ($current['ballots'] ?? 0);
-        $age = time() - (int) @filemtime(self::path($election));
-
-        return $election->ballotCount() - $published >= max(1, (int) config('elections.batch'))
-            && $age >= (int) config('elections.min_interval');
     }
 
     private static function write(Election $election): bool

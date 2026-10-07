@@ -48,7 +48,7 @@ class ElectionLifecycle
         $election->ends_at = now()->addHours($hours);
         $election->save();
 
-        LiveResults::publish($election, true);
+        LiveResults::publish($election);
         Audit::record('election_launched', $election, ['title' => $election->title, 'hours' => $hours]);
     }
 
@@ -86,7 +86,7 @@ class ElectionLifecycle
 
         $election->setRawAttributes($closed->getAttributes(), true);
 
-        LiveResults::publish($election, true);
+        LiveResults::publish($election);
         Audit::record('election_closed', $election, [
             'title' => $election->title,
             'automatic' => $automatic,

@@ -22,16 +22,17 @@ class UserFactory extends Factory
     public function definition(): array
     {
         $level = fake()->randomElement(Level::cases());
+        $programme = fake()->randomElement(Programme::cases());
         $type = str_starts_with($level->value, 'HND') ? 'HD' : 'ND';
 
         return [
             'fullname' => fake()->name(),
-            'matric_number' => sprintf('F/%s/%02d/%07d', $type, fake()->numberBetween(20, 25), fake()->unique()->numberBetween(1000000, 9999999)),
+            'matric_number' => sprintf('%s/%s/%02d/%07d', $programme->matricLetter(), $type, fake()->numberBetween(20, 25), fake()->unique()->numberBetween(1000000, 9999999)),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'department_id' => Department::factory(),
             'level' => $level,
-            'programme' => fake()->randomElement(Programme::cases()),
+            'programme' => $programme,
             'password' => static::$password ??= Hash::make('Password1!'),
             'remember_token' => Str::random(10),
         ];

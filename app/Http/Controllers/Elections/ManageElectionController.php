@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Elections;
 
 use App\Enums\ElectionStatus;
 use App\Enums\Level;
+use App\Enums\Programme;
 use App\Http\Controllers\Controller;
 use App\Models\Election;
 use App\Models\RollEntry;
@@ -133,7 +134,7 @@ class ManageElectionController extends Controller
     }
 
     /**
-     * @return array{title: string, description: string|null, levels: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool}
+     * @return array{title: string, description: string|null, levels: list<string>|null, programmes: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool}
      */
     private function validated(Request $request): array
     {
@@ -144,6 +145,8 @@ class ManageElectionController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'levels' => ['nullable', 'array'],
             'levels.*' => [Rule::enum(Level::class)],
+            'programmes' => ['nullable', 'array'],
+            'programmes.*' => [Rule::enum(Programme::class)],
             'entry_year_from' => ['nullable', 'integer', Rule::in($years)],
             'entry_year_to' => ['nullable', 'integer', Rule::in($years)],
         ]);
@@ -151,6 +154,10 @@ class ManageElectionController extends Controller
         if (isset($data['entry_year_from'], $data['entry_year_to']) && (int) $data['entry_year_to'] < (int) $data['entry_year_from']) {
             throw ValidationException::withMessages(['entry_year_to' => 'The last entry year can\'t be before the first.']);
         }
+
+        /** @var list<string> $programmes */
+        $programmes = array_values(array_unique((array) ($data['programmes'] ?? [])));
+        $programmes = count($programmes) === count(Programme::cases()) ? [] : $programmes;
 
         /** @var list<string> $levels */
         $levels = array_values(array_unique((array) ($data['levels'] ?? [])));
@@ -161,6 +168,7 @@ class ManageElectionController extends Controller
             'title' => (string) $data['title'],
             'description' => isset($data['description']) ? (string) $data['description'] : null,
             'levels' => $levels === [] ? null : $levels,
+            'programmes' => $programmes === [] ? null : $programmes,
             'entry_year_from' => isset($data['entry_year_from']) ? (int) $data['entry_year_from'] : null,
             'entry_year_to' => isset($data['entry_year_to']) ? (int) $data['entry_year_to'] : null,
             'roll_only' => $request->boolean('roll_only'),

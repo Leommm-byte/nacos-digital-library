@@ -24,7 +24,7 @@ Keep:
 - [x] On success: session regenerated, last login time and IP recorded.
 - [x] Audit log of logins, failed logins (with matric), throttling, logouts and signups.
 - [x] Signup: full name (3+ characters), matric number, department, level (ND1 to HND3), programme (Full-time, Part-time, CODFEL), password and confirmation.
-- [x] Matric formats: `F|P|C/ND|HND|HD/YY/digits` (year 19 onwards) and the older `ND|HND/YYYY/DEPT/digits`.
+- [x] Matric formats: `F|P|D/ND|HND|HD/YY/digits` (F full-time, P part-time, D CODFEL; corrected by the owner in PR 12) (year 19 onwards) and the older `ND|HND/YYYY/DEPT/digits`.
 - [x] Password rule: 8+ characters with upper and lower case, a number and a symbol (plus a known-breach check in production).
 - [x] Duplicate matric numbers are rejected with a clear message.
 - [x] Password show/hide button on login, signup and password forms.
@@ -252,7 +252,7 @@ New:
 
 - [x] Eligibility per election: every active account by default, or limited to some levels and to a range of matric entry years (F/ND/**24**/… entered in 2024).
 - [x] Nominal roll: admins import the official list of current students (CSV of matric numbers, optional name and level; replace the whole roll or add to it). Elections are limited to students on it by default, so graduates and made-up matric numbers can't vote, and the level on the roll beats the one chosen at signup. An election limited to an empty roll can't launch.
-- [x] Results are published in batches of ballots (5 by default), so a change in the totals can't be tied to one voter; closing publishes the final count.
+- [x] Results update after every ballot, so voters see their vote counted (decided with the owner); closing publishes the final count.
 - [x] Polling the results is a static file with an ETag (a 304 when nothing changed), paused in hidden tabs, with jitter.
 - [x] Results are public, including to guests; voting needs an account.
 - [x] Students who can still vote see a "Vote now" card on their dashboard; voting shows in their recent activity.

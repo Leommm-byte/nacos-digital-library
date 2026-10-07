@@ -25,7 +25,7 @@
                     <x-icon name="lock" /> Final results
                 @else
                     <span class="live-dot" aria-hidden="true"></span>
-                    <span>Updated <time data-result-updated datetime="{{ $results['updated_at'] }}">{{ \Illuminate\Support\Carbon::parse($results['updated_at'])->timezone($zone)->format('g:i a') }}</time>. Totals update in batches, so no single vote can be traced.</span>
+                    <span>Updated <time data-result-updated datetime="{{ $results['updated_at'] }}">{{ \Illuminate\Support\Carbon::parse($results['updated_at'])->timezone($zone)->format('g:i a') }}</time>. Totals update live as votes come in.</span>
                 @endif
             </p>
         </div>

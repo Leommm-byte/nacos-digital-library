@@ -137,7 +137,9 @@ class DemoSeeder extends Seeder
         RollEntry::query()->insert(User::query()->get()->map(fn (User $user) => [
             'matric_number' => $user->matric_number,
             'fullname' => $user->fullname,
+            'email' => null,
             'level' => $user->level->value,
+            'programme' => $user->programme->value,
             'created_at' => now(),
             'updated_at' => now(),
         ])->all());
@@ -154,7 +156,7 @@ class DemoSeeder extends Seeder
         $this->seedVotes($past, $students->random(15));
         ElectionLifecycle::close($past);
         $past->forceFill(['starts_at' => now()->subDays(2), 'ends_at' => now()->subDay(), 'closed_at' => now()->subDay()])->save();
-        LiveResults::publish($past, true);
+        LiveResults::publish($past);
 
         // Open now, closing tomorrow.
         $open = Election::create([
@@ -166,7 +168,7 @@ class DemoSeeder extends Seeder
         $this->seedBallot($open, ['President' => 3, 'Vice President' => 2, 'General Secretary' => 2, 'Financial Secretary' => 2], $students);
         ElectionLifecycle::launch($open, 24);
         $this->seedVotes($open, $students->random(12));
-        LiveResults::publish($open, true);
+        LiveResults::publish($open);
 
         // Still being set up.
         $draft = Election::create([

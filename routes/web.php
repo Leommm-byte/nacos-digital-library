@@ -78,6 +78,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('can:manage-elections')->group(function () {
         Route::get('/nominal-roll', [NominalRollController::class, 'index'])->name('roll.index');
+        Route::get('/nominal-roll/template', [NominalRollController::class, 'template'])->name('roll.template');
         Route::post('/nominal-roll', [NominalRollController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('roll.store');
