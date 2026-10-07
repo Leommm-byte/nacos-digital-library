@@ -88,6 +88,7 @@ const pages = [
     }],
     ['elections-manage', '/elections/manage', 'F/HD/21/0000001'],
     ['election-new', '/elections/manage/create', 'F/HD/21/0000001'],
+    ['nominal-roll', '/nominal-roll', 'F/HD/21/0000001'],
     ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/21/0000001'],
     ['election-monitor', 'LINK /elections/manage .upload-row:has-text("Voting open")', 'F/HD/21/0000001'],
     // End to end: these really upload, and fail the run if they don't land

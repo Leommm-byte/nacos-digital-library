@@ -251,6 +251,7 @@ Fix:
 New:
 
 - [x] Eligibility per election: every active account by default, or limited to some levels and to a range of matric entry years (F/ND/**24**/… entered in 2024).
+- [x] Nominal roll: admins import the official list of current students (CSV of matric numbers, optional name and level; replace the whole roll or add to it). Elections are limited to students on it by default, so graduates and made-up matric numbers can't vote, and the level on the roll beats the one chosen at signup. An election limited to an empty roll can't launch.
 - [x] Results are published in batches of ballots (5 by default), so a change in the totals can't be tied to one voter; closing publishes the final count.
 - [x] Polling the results is a static file with an ETag (a 304 when nothing changed), paused in hidden tabs, with jitter.
 - [x] Results are public, including to guests; voting needs an account.
@@ -340,12 +341,14 @@ Fix:
    right?
 3. **Election eligibility.** *Answered (PR 11):* set per election. Every
    active account can vote unless the admin limits the election to some
-   levels and/or a range of matric entry years. Only admins run elections.
+   levels and/or a range of matric entry years, and (by default) to
+   students on the nominal roll the admin imports. Only admins run
+   elections.
 4. **Matric numbers that don't exist.** Signup checks the *format*
    (legacy rule: entry year 19 or later, so `F/HD/18/…` is refused), but a
    format check can't tell a real number from an invented one. Options to
-   decide later: keep open signup; only allow matric numbers on an
-   official list the admin imports (bulk import, PR 12) and treat that as
-   an allow-list; or let anyone sign up but hold new accounts until a
+   decide later: keep open signup; only allow matric numbers on the
+   nominal roll (the official list admins import since PR 11, which
+   already decides who can vote); or let anyone sign up but hold new accounts until a
    course rep confirms them. The entry-year rule itself (19+, any year, or
    a rolling window) can be settled at the same time.

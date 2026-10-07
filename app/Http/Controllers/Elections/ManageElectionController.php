@@ -6,6 +6,7 @@ use App\Enums\ElectionStatus;
 use App\Enums\Level;
 use App\Http\Controllers\Controller;
 use App\Models\Election;
+use App\Models\RollEntry;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\Elections\ElectionLifecycle;
@@ -43,6 +44,7 @@ class ManageElectionController extends Controller
         return view('elections.manage.form', [
             'election' => new Election(['title' => '']),
             'years' => $this->years(),
+            'rollCount' => RollEntry::query()->count(),
         ]);
     }
 
@@ -68,6 +70,7 @@ class ManageElectionController extends Controller
             'election' => $election,
             'results' => LiveResults::read($election),
             'electorate' => $election->electorate()->count(),
+            'rollCount' => RollEntry::query()->count(),
             'ballots' => $election->ballotCount(),
             'launchProblem' => $election->isDraft() ? ElectionLifecycle::launchProblem($election) : null,
         ]);
@@ -77,7 +80,7 @@ class ManageElectionController extends Controller
     {
         Gate::authorize('update', $election);
 
-        return view('elections.manage.form', ['election' => $election, 'years' => $this->years()]);
+        return view('elections.manage.form', ['election' => $election, 'years' => $this->years(), 'rollCount' => RollEntry::query()->count()]);
     }
 
     public function update(Request $request, Election $election): RedirectResponse
@@ -130,7 +133,7 @@ class ManageElectionController extends Controller
     }
 
     /**
-     * @return array{title: string, description: string|null, levels: list<string>|null, entry_year_from: int|null, entry_year_to: int|null}
+     * @return array{title: string, description: string|null, levels: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool}
      */
     private function validated(Request $request): array
     {
@@ -160,6 +163,7 @@ class ManageElectionController extends Controller
             'levels' => $levels === [] ? null : $levels,
             'entry_year_from' => isset($data['entry_year_from']) ? (int) $data['entry_year_from'] : null,
             'entry_year_to' => isset($data['entry_year_to']) ? (int) $data['entry_year_to'] : null,
+            'roll_only' => $request->boolean('roll_only'),
         ];
     }
 

@@ -3076,6 +3076,60 @@
         height: 0.625rem;
     }
 
+    /* Nominal roll */
+
+    .roll-list {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+
+        & > li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 3rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+
+            & + li {
+                border-top: 1px solid var(--border);
+            }
+        }
+    }
+
+    .roll-toggle {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1rem;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+
+        &:has(input:checked) {
+            border-color: var(--primary);
+            background: color-mix(in srgb, var(--primary-soft) 55%, var(--surface));
+        }
+    }
+
+    .roll-matric {
+        flex-shrink: 0;
+        width: 9.5rem;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+
+    .roll-sample {
+        margin-top: 0.5rem;
+        padding: 0.75rem;
+        overflow-x: auto;
+        border-radius: var(--radius-md);
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 0.75rem;
+    }
+
     /* Election setup (admins) */
 
     .setup-position {

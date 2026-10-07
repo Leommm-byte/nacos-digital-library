@@ -20,6 +20,8 @@ class ElectionFactory extends Factory
             'levels' => null,
             'entry_year_from' => null,
             'entry_year_to' => null,
+            // Tests opt in to the nominal roll where they need it.
+            'roll_only' => false,
         ];
     }
 

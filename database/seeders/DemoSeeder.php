@@ -12,6 +12,7 @@ use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
 use App\Models\ReadingProgress;
+use App\Models\RollEntry;
 use App\Models\User;
 use App\Notifications\UploadReviewed;
 use App\Support\Elections\BallotBox;
@@ -132,6 +133,15 @@ class DemoSeeder extends Seeder
      */
     private function seedElections(array $users, Collection $students): void
     {
+        // Every demo account is a current student on the nominal roll.
+        RollEntry::query()->insert(User::query()->get()->map(fn (User $user) => [
+            'matric_number' => $user->matric_number,
+            'fullname' => $user->fullname,
+            'level' => $user->level->value,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->all());
+
         // Closed yesterday, with final results.
         $past = Election::create([
             'title' => 'NACOS Week Planning Committee',

@@ -5,6 +5,7 @@
 <x-layouts.app title="Manage elections">
     <x-page-header title="Manage elections" subtitle="Set up an election, choose who can vote, then open voting for a set time." :back="route('elections.index')" back-label="Elections">
         <x-slot:actions>
+            <x-button href="{{ route('roll.index') }}" variant="secondary" icon="users">Nominal roll</x-button>
             <x-button href="{{ route('elections.manage.create') }}" icon="plus">New election</x-button>
         </x-slot:actions>
     </x-page-header>

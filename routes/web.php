@@ -4,6 +4,7 @@ use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\Elections\BallotSetupController;
 use App\Http\Controllers\Elections\ElectionController;
 use App\Http\Controllers\Elections\ManageElectionController;
+use App\Http\Controllers\Elections\NominalRollController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
@@ -74,6 +75,13 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('election')
         ->middleware('throttle:10,1')
         ->name('elections.vote');
+
+    Route::middleware('can:manage-elections')->group(function () {
+        Route::get('/nominal-roll', [NominalRollController::class, 'index'])->name('roll.index');
+        Route::post('/nominal-roll', [NominalRollController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('roll.store');
+    });
 
     Route::middleware('can:manage-elections')->prefix('elections/manage')->name('elections.manage')->group(function () {
         Route::get('/', [ManageElectionController::class, 'index'])->name('');

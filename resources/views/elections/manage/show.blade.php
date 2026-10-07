@@ -150,7 +150,10 @@
                     <h2 class="text-base">Who can vote</h2>
                 </div>
                 <p class="text-sm">{{ $election->eligibilitySummary() }}.</p>
-                <p class="text-sm text-muted">{{ number_format($electorate) }} active {{ \Illuminate\Support\Str::plural('account', $electorate) }} can vote{{ $draft ? ' right now' : '' }}.@if ($draft) <a href="{{ route('elections.manage.edit', $election) }}" class="link">Change</a>@endif</p>
+                <p class="text-sm text-muted">{{ number_format($electorate) }} {{ \Illuminate\Support\Str::plural('account', $electorate) }} can vote{{ $draft ? ' right now' : '' }}.@if ($draft) <a href="{{ route('elections.manage.edit', $election) }}" class="link">Change</a>@endif</p>
+                @if ($election->roll_only)
+                    <p class="text-sm text-muted">{{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the <a href="{{ route('roll.index') }}" class="link">nominal roll</a>; only those with an account can vote.</p>
+                @endif
             </x-card>
 
             @if ($draft)

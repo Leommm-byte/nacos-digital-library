@@ -2,6 +2,7 @@
     $editing = $election->exists;
     $levels = old('levels', $election->levels ?? []);
     $yearOptions = ['' => 'Any year'] + $years;
+    $rollOnly = $errors->any() ? (bool) old('roll_only') : $election->roll_only;
 @endphp
 
 <x-layouts.app :title="$editing ? 'Edit election' : 'New election'">
@@ -32,9 +33,20 @@
                 <x-icon-tile name="users" tone="blue" size="sm" />
                 <div>
                     <h2 class="text-base">Who can vote</h2>
-                    <p class="text-sm text-muted">Leave everything as it is to let every active account vote.</p>
+                    <p class="text-sm text-muted">Every active account, unless you limit it below.</p>
                 </div>
             </div>
+
+            <label class="roll-toggle">
+                <input type="checkbox" name="roll_only" value="1" class="mt-1 size-4 shrink-0 accent-[var(--primary)]" @checked($rollOnly)>
+                <span>
+                    <strong>Only students on the nominal roll</strong>
+                    <span class="block text-sm text-muted">
+                        Graduates and made-up matric numbers can't vote. {{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the roll now.
+                        <a href="{{ route('roll.index') }}" class="link">{{ $rollCount ? 'See the roll' : 'Import the roll' }}</a>
+                    </span>
+                </span>
+            </label>
 
             <fieldset>
                 <legend class="field-label">Levels</legend>
@@ -46,7 +58,7 @@
                         </label>
                     @endforeach
                 </div>
-                <p class="mt-1.5 text-sm text-muted">None ticked means all levels.</p>
+                <p class="mt-1.5 text-sm text-muted">None ticked means all levels. The level on the nominal roll counts when it has one.</p>
                 @error('levels')
                     <p class="field-error">{{ $message }}</p>
                 @enderror

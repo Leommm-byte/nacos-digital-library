@@ -21,8 +21,10 @@ use Illuminate\Support\Facades\DB;
  * for a fixed time) → closed. Positions, candidates and eligibility can only
  * change while it's a draft.
  *
- * Eligibility: every active account, optionally narrowed to some levels
- * and to a range of entry years taken from the matric number.
+ * Eligibility: every active account, optionally narrowed to students on
+ * the nominal roll (the official list an admin imports), to some levels and
+ * to a range of entry years taken from the matric number. When the roll
+ * lists a student's level, that level counts instead of the one they chose.
  *
  * @property int $id
  * @property string $title
@@ -30,6 +32,7 @@ use Illuminate\Support\Facades\DB;
  * @property list<string>|null $levels
  * @property int|null $entry_year_from
  * @property int|null $entry_year_to
+ * @property bool $roll_only
  * @property ElectionStatus $status
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
@@ -45,7 +48,7 @@ class Election extends Model
     /** Voting windows an admin can launch an election for, in hours. */
     public const DURATIONS = [1, 2, 6, 12, 24, 48, 72];
 
-    protected $fillable = ['title', 'description', 'levels', 'entry_year_from', 'entry_year_to'];
+    protected $fillable = ['title', 'description', 'levels', 'entry_year_from', 'entry_year_to', 'roll_only'];
 
     /**
      * @var array<string, mixed>
@@ -56,6 +59,7 @@ class Election extends Model
         'levels' => null,
         'entry_year_from' => null,
         'entry_year_to' => null,
+        'roll_only' => true,
         'starts_at' => null,
         'ends_at' => null,
         'closed_at' => null,
@@ -68,6 +72,7 @@ class Election extends Model
             'levels' => 'array',
             'entry_year_from' => 'integer',
             'entry_year_to' => 'integer',
+            'roll_only' => 'boolean',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'closed_at' => 'datetime',
@@ -133,7 +138,7 @@ class Election extends Model
             default => '',
         };
 
-        return $who.$years;
+        return $who.$years.($this->roll_only ? ', on the nominal roll' : '');
     }
 
     /**
@@ -145,9 +150,21 @@ class Election extends Model
             return 'Your account isn\'t active.';
         }
 
+        $level = $user->level;
+
+        if ($this->roll_only) {
+            $entry = RollEntry::query()->where('matric_number', $user->matric_number)->first(['level']);
+
+            if ($entry === null) {
+                return 'Your matric number isn\'t on the current nominal roll, so you can\'t vote in this election. If that\'s a mistake, ask an admin to check the roll.';
+            }
+
+            $level = $entry->level ?? $level;
+        }
+
         $levels = $this->levels ?? [];
 
-        if ($levels !== [] && ! in_array($user->level->value, $levels, true)) {
+        if ($levels !== [] && ! in_array($level->value, $levels, true)) {
             return 'This election is for '.$this->eligibilitySummary().'.';
         }
 
@@ -176,18 +193,24 @@ class Election extends Model
      */
     public function electorate(): Builder
     {
-        $query = User::query()->where('status', UserStatus::Active);
+        $query = User::query()->where('users.status', UserStatus::Active);
+        $level = 'users.level';
+
+        if ($this->roll_only) {
+            $query->join('nominal_roll', 'nominal_roll.matric_number', '=', 'users.matric_number');
+            $level = DB::raw('coalesce(nominal_roll.level, users.level)');
+        }
 
         if (($this->levels ?? []) !== []) {
-            $query->whereIn('level', $this->levels);
+            $query->whereIn($level, $this->levels);
         }
 
         if ($this->entry_year_from !== null) {
-            $query->where('entry_year', '>=', $this->entry_year_from);
+            $query->where('users.entry_year', '>=', $this->entry_year_from);
         }
 
         if ($this->entry_year_to !== null) {
-            $query->where('entry_year', '<=', $this->entry_year_to);
+            $query->where('users.entry_year', '<=', $this->entry_year_to);
         }
 
         return $query;

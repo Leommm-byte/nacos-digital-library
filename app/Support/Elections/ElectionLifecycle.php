@@ -4,6 +4,7 @@ namespace App\Support\Elections;
 
 use App\Enums\ElectionStatus;
 use App\Models\Election;
+use App\Models\RollEntry;
 use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +19,10 @@ class ElectionLifecycle
      */
     public static function launchProblem(Election $election): ?string
     {
+        if ($election->roll_only && ! RollEntry::query()->exists()) {
+            return 'The nominal roll is empty. Import it first, or untick "Only students on the nominal roll".';
+        }
+
         $positions = $election->positions()->withCount('candidates')->get();
 
         if ($positions->isEmpty()) {
