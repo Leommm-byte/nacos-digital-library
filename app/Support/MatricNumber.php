@@ -67,6 +67,6 @@ class MatricNumber
             return null;
         }
 
-        return $match[1] !== '' ? $match[1] !== 'ND' : ($match[2] ?? '') === 'HND';
+        return $match[1] !== '' ? $match[1] !== 'ND' : $match[2] === 'HND';
     }
 }
