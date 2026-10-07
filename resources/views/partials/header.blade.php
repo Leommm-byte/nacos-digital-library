@@ -70,6 +70,9 @@
                         @can('manage-announcements')
                             <a href="{{ route('announcements.manage') }}" class="menu-item"><x-icon name="bell" /> Announcements</a>
                         @endcan
+                        @can('manage-elections')
+                            <a href="{{ route('elections.manage') }}" class="menu-item"><x-icon name="vote" /> Manage elections</a>
+                        @endcan
                         @if (Route::has('uploads.index'))
                             <a href="{{ route('uploads.index') }}" class="menu-item"><x-icon name="upload" /> Your uploads</a>
                         @endif

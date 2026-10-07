@@ -6,6 +6,7 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Support\MatricNumber;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property string $fullname
  * @property string $matric_number
+ * @property int|null $entry_year
  * @property string|null $email
  * @property int $department_id
  * @property Level $level
@@ -106,13 +108,17 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Normalise matric numbers so lookups are case-insensitive.
+     * Normalise matric numbers so lookups are case-insensitive, and keep the
+     * entry year it contains (used for election eligibility).
      *
      * @return Attribute<string, string>
      */
     protected function matricNumber(): Attribute
     {
-        return Attribute::make(set: fn (string $value) => strtoupper(trim($value)));
+        return Attribute::make(set: fn (string $value) => [
+            'matric_number' => MatricNumber::normalize($value),
+            'entry_year' => MatricNumber::entryYear($value),
+        ]);
     }
 
     public function firstName(): string

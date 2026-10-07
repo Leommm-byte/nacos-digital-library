@@ -14,6 +14,7 @@ and the item is ticked off here.
 | Launch state | Not launched yet. No live data to migrate; the legacy app does not need patching. |
 | Password reset | Both: email reset links (collect email at signup or next login) and one-time codes issued by an admin or course rep as a fallback. |
 | Election results | Public and live during voting, for transparency. Serve a small static `live.json` snapshot rebuilt at most every few seconds; clients poll it with conditional requests (ETag/304), pause when the tab is hidden, and add jitter. No WebSockets/SSE on shared hosting. Leave a hook to switch to Pusher/Ably later. Show totals and turnout only; release updates in batches so individual votes cannot be inferred. |
+| Election eligibility | Per election: every active account by default; an admin can limit an election to some levels and to a range of matric entry years. Only admins create and run elections (governors are often candidates). |
 | Ballot secrecy | Who voted (`election_voters`) and what was voted (`election_votes`, random UUIDv4 ids, no timestamps) are stored separately. One ballot per election covering every position; skipping a position is allowed. |
 | Design | Keep the original green/yellow identity, improved: design tokens, dark mode, self-hosted subset fonts and icons, cheap GPU-friendly animations that respect reduced motion. |
 | Repository | Work happens in the fork `Leommm-byte/nacos-digital-library`. When everything is done, one PR goes from the fork back to `Tech-Reni/nacos-digital-library`. |
@@ -21,8 +22,7 @@ and the item is ticked off here.
 ## Open items for the owner
 
 - Answer the questions at the end of [`legacy-checklist.md`](legacy-checklist.md)
-  (one account per device, departments, election eligibility, invented
-  matric numbers).
+  (one account per device, departments, invented matric numbers).
 - Rotate the legacy database password (`nacos_db`). It was committed to git.
 - Decide whether to delete the 22 scan images in `legacy/uploads/temp_scans/`
   (possibly real student documents) and whether to scrub them from history.
@@ -42,8 +42,8 @@ Every legacy behaviour, bug to avoid and open question is tracked in
 - [x] **7. Reader.** HTTP Range streaming, latest PDF.js, HiDPI rendering, prefetch, page jump, saved position, matric-number watermark.
 - [x] **8. Uploads.** PDF or photos of pages; on-device OCR (Tesseract) with an optional queued AI pass; per-user limits; optional virus scanning. Decided with the owner: OCR runs on the phone (free), AI only if a key is set; legacy size limits. Uploads are single requests with progress and clear retry messages rather than resumable: with a 10 MB cap and photos shrunk on the phone, chunking added complexity without benefit.
 - [x] **9. Moderation.** Review queue and page with preview; approve, request changes or reject with a note; uploaders notified (in the app, and by email if verified) and able to edit and resubmit; approvals history; full clean-up on delete.
-- [ ] **10. Dashboard and announcements.** Stats, continue reading, recommendations, announcements (posted by governors and admins), profile summary and recent activity; shared parts cached.
-- [ ] **11. Elections.** Eligibility, single ballot enforced by the database, live public results as described above, audit trail.
+- [x] **10. Dashboard and announcements.** Stats, continue reading, recommendations, announcements (posted by governors and admins), profile summary and recent activity; shared parts cached.
+- [ ] **11. Elections.** Eligibility set per election (levels and matric entry years), single ballot enforced by the database, live public results as described above (static snapshot, released in batches of ballots), automatic closing by the scheduler, admin setup and monitoring, audit trail. Decided with the owner: only admins run elections.
 - [ ] **12. Admin panel.** Users, bulk import with random temporary passwords and printable slips, books, reports, audit log viewer, settings in the database.
 - [ ] **13. Assistant.** Keyword helper or real AI (to decide).
 - [ ] **14. Launch polish.** Offline support, accessibility, performance budget, load testing.

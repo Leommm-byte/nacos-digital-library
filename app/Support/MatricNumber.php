@@ -21,4 +21,23 @@ class MatricNumber
     {
         return preg_match(self::PATTERN, self::normalize($value)) === 1;
     }
+
+    /**
+     * The four-digit entry year in a matric number: F/ND/24/… is 2024 and
+     * ND/2019/CS/… is 2019. Null when the number has neither format.
+     */
+    public static function entryYear(?string $value): ?int
+    {
+        $value = self::normalize($value);
+
+        if (preg_match('#^[FPC]/(?:ND|HND|HD)/([0-9]{2})/#', $value, $match)) {
+            return 2000 + (int) $match[1];
+        }
+
+        if (preg_match('#^(?:ND|HND)/([0-9]{4})/#', $value, $match)) {
+            return (int) $match[1];
+        }
+
+        return null;
+    }
 }

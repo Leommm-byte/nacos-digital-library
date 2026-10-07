@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookStatus;
+use App\Enums\ElectionStatus;
 use App\Models\Book;
+use App\Models\Election;
 use App\Models\ReadingProgress;
 use App\Models\User;
 use App\Support\Catalog;
@@ -13,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -74,6 +77,7 @@ class HomeController extends Controller
             ],
             'announcements' => Announcements::latest(3),
             'activity' => ActivityFeed::forUser($user),
+            'elections' => $this->ballotsWaiting($user),
             'waiting' => Gate::allows('review-uploads')
                 ? Book::where('status', BookStatus::Pending)->where('uploader_id', '!=', $user->id)->count()
                 : null,
@@ -114,6 +118,33 @@ class HomeController extends Controller
         $books = Book::approved()->whereIn('id', $ids)->get()->keyBy('id');
 
         return collect($ids)->map(fn (int $id) => $books->get($id))->filter()->values();
+    }
+
+    /**
+     * Open elections this user can still vote in.
+     *
+     * @return Collection<int, Election>
+     */
+    private function ballotsWaiting(User $user): Collection
+    {
+        $open = Election::query()
+            ->where('status', ElectionStatus::Open)
+            ->where('ends_at', '>', now())
+            ->orderBy('ends_at')
+            ->get();
+
+        if ($open->isEmpty()) {
+            return $open;
+        }
+
+        $voted = DB::table('election_voters')
+            ->where('user_id', $user->id)
+            ->whereIn('election_id', $open->pluck('id'))
+            ->pluck('election_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return $open->reject(fn (Election $election) => in_array($election->id, $voted, true) || ! $election->isEligible($user))->values();
     }
 
     private function greeting(): string

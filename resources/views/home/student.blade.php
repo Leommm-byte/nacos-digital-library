@@ -95,6 +95,18 @@
         </div>
 
         <aside class="min-w-0 space-y-6">
+            @foreach ($elections as $election)
+                <div class="dashboard-card dashboard-card-vote">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="election-live"><span class="live-dot" aria-hidden="true"></span> Voting open</span>
+                        @include('elections.partials.countdown', ['ends' => $election->ends_at])
+                    </div>
+                    <h2 class="mt-3 text-base">{{ $election->title }}</h2>
+                    <p class="mt-1 text-sm text-muted">You haven't voted yet. It takes a minute, and your ballot is secret.</p>
+                    <x-button href="{{ route('elections.show', $election) }}" size="sm" icon="vote" class="mt-4 w-full">Vote now</x-button>
+                </div>
+            @endforeach
+
             @if ($waiting !== null)
                 <div class="dashboard-card dashboard-card-accent">
                     <div class="flex items-center gap-3">

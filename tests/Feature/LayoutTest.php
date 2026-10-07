@@ -103,8 +103,8 @@ class LayoutTest extends TestCase
 
         $items = Navigation::primary(User::factory()->role(Role::Student)->make());
 
-        $this->assertSame(['home', 'library.index', 'bookmarks.index', 'profile.edit'], array_column($items, 'route'));
-        $this->assertSame([true, false, false, false], array_column($items, 'active'));
+        $this->assertSame(['home', 'library.index', 'bookmarks.index', 'elections.index', 'profile.edit'], array_column($items, 'route'));
+        $this->assertSame([true, false, false, false, false], array_column($items, 'active'));
     }
 
     #[Test]

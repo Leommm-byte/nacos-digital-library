@@ -107,7 +107,7 @@ Keep:
 - [x] Recommended books: same department and level first, then same level, skipping books already opened.
 - [x] Recent activity (the user's own last 5 actions, in plain words; only the latest login; failed logins on the account included as a security signal).
 - [x] Up to 3 live announcements, newest first, with an empty state and an announcements page; governors and admins post, schedule, edit and delete them.
-- [x] Header: logo, search, notifications, account menu (Profile, Your uploads, Review uploads and Announcements for reviewers, Settings, Admin panel for admins, Log out). Elections join it in PR 11.
+- [x] Header: logo, search, notifications, account menu (Profile, Your uploads, Review uploads and Announcements for reviewers, Manage elections for admins, Settings, Admin panel for admins, Log out); Elections in the main navigation.
 
 Fix:
 
@@ -227,26 +227,35 @@ New:
 
 Keep:
 
-- [ ] Students see the open election or "No election active".
-- [ ] One choice per position, all positions on one ballot; skipping a position is allowed.
-- [ ] Clear confirmation after voting, and a "you have voted" state.
-- [ ] Live standings and a countdown to the closing time.
-- [ ] Elections close automatically at their end time.
-- [ ] Admin: create the election, add positions and candidates (name, matric, manifesto), launch for a set duration (1, 2, 6, 12 or 24 hours), stop early.
-- [ ] Admin live standings with vote counts and percentages.
+- [x] Students see the open election or "No election active".
+- [x] One choice per position, all positions on one ballot; skipping a position is allowed.
+- [x] Clear confirmation after voting, and a "you have voted" state.
+- [x] Live standings and a countdown to the closing time.
+- [x] Elections close automatically at their end time.
+- [x] Admin: create the election, add positions and candidates (name, matric, manifesto), launch for a set duration (1, 2, 6, 12 or 24 hours, plus 2 and 3 days), stop early.
+- [x] Admin live standings with vote counts and percentages.
 
 Fix:
 
-- [ ] Votes were stored with the voter's id, so ballots weren't secret; voters and votes are now stored separately.
-- [ ] No check that a candidate belongs to the position, or the position to the open election.
-- [ ] Anyone could fetch full tallies of any election, including drafts.
-- [ ] Results polled every 3 s per student with several queries and an `UPDATE`; now a static snapshot.
-- [ ] Candidate names inserted into the page unescaped (XSS).
-- [ ] Countdown dropped days and used the browser's time zone.
-- [ ] Closing depended on someone loading a page after the end time; the scheduler does it now.
-- [ ] Candidates could be changed while voting was open; a closed election could be reopened.
-- [ ] Only one election at a time, and "Reset engine" wiping everything was the only way to start another.
-- [ ] Eligibility rules (*question 3*).
+- [x] Votes were stored with the voter's id, so ballots weren't secret; voters and votes are now stored separately.
+- [x] No check that a candidate belongs to the position, or the position to the open election.
+- [x] Anyone could fetch full tallies of any election, including drafts.
+- [x] Results polled every 3 s per student with several queries and an `UPDATE`; now a static snapshot.
+- [x] Candidate names inserted into the page unescaped (XSS).
+- [x] Countdown dropped days and used the browser's time zone.
+- [x] Closing depended on someone loading a page after the end time; the scheduler does it now.
+- [x] Candidates could be changed while voting was open; a closed election could be reopened.
+- [x] Only one election at a time, and "Reset engine" wiping everything was the only way to start another.
+- [x] Eligibility rules (*question 3*, answered: set per election).
+
+New:
+
+- [x] Eligibility per election: every active account by default, or limited to some levels and to a range of matric entry years (F/ND/**24**/… entered in 2024).
+- [x] Results are published in batches of ballots (5 by default), so a change in the totals can't be tied to one voter; closing publishes the final count.
+- [x] Polling the results is a static file with an ETag (a 304 when nothing changed), paused in hidden tabs, with jitter.
+- [x] Results are public, including to guests; voting needs an account.
+- [x] Students who can still vote see a "Vote now" card on their dashboard; voting shows in their recent activity.
+- [x] Audit trail: created, edited, positions and candidates added or removed, launched, voted (who, never how), closed (by whom, or automatically).
 
 ## Admin panel (PR 12)
 
@@ -329,9 +338,9 @@ Fix:
    and Accountancy, but signup and the library were Computer Science only.
    The rebuild seeds all three with only Computer Science active. Is that
    right?
-3. **Election eligibility.** Legacy let every account vote, including
-   admins. Should voting be limited (for example to students, by level, or
-   to dues-paying members)?
+3. **Election eligibility.** *Answered (PR 11):* set per election. Every
+   active account can vote unless the admin limits the election to some
+   levels and/or a range of matric entry years. Only admins run elections.
 4. **Matric numbers that don't exist.** Signup checks the *format*
    (legacy rule: entry year 19 or later, so `F/HD/18/…` is refused), but a
    format check can't tell a real number from an invented one. Options to

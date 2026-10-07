@@ -1,0 +1,8 @@
+# Live election results, written by the app (see App\Support\Elections\LiveResults).
+# Browsers always revalidate, so a poll costs a 304 until the file changes.
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-cache"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

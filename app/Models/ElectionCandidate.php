@@ -26,6 +26,18 @@ class ElectionCandidate extends Model
     protected $fillable = ['user_id', 'name', 'matric_number', 'manifesto', 'photo_path', 'sort_order'];
 
     /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'user_id' => null,
+        'matric_number' => null,
+        'manifesto' => null,
+        'photo_path' => null,
+        'sort_order' => 0,
+        'votes_count' => 0,
+    ];
+
+    /**
      * @return BelongsTo<ElectionPosition, $this>
      */
     public function position(): BelongsTo

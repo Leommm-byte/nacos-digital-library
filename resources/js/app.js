@@ -35,3 +35,8 @@ if (document.querySelector('[data-upload], [data-upload-status]')) {
 if (document.querySelector('[data-pdf-preview]')) {
     import('./review').then(({ initReviewPreview }) => initReviewPreview());
 }
+
+// Election countdowns, the ballot and live results.
+if (document.querySelector('[data-countdown], [data-ballot], [data-live-results]')) {
+    import('./elections').then(({ initElections }) => initElections());
+}
