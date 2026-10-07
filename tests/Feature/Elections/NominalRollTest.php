@@ -46,17 +46,17 @@ class NominalRollTest extends TestCase
     public function a_spreadsheet_export_is_read_by_its_headings(): void
     {
         $this->actingAs($this->admin)->post(route('roll.store'), [
-            'roll' => $this->csv("\u{FEFF}S/N,Matric No.,Full Name,Class\n1,f/nd/24/1234567,Ada  Obi,nd 2\n2,not a matric,Someone,ND1\n3,F/ND/24/1234567,Duplicate,ND1\n4,HND/2021/CS/1234,Tunde Bello,HND1\n"),
+            'roll' => $this->csv("\u{FEFF}S/N,Matric No.,Full Name,Class\n1,f/nd/24/2222222,Ada  Obi,nd 2\n2,not a matric,Someone,ND1\n3,F/ND/24/2222222,Duplicate,ND1\n4,HND/2021/CS/1234,Tunde Bello,HND1\n"),
             'mode' => 'replace',
         ])->assertRedirect(route('roll.index'))->assertSessionHas('import.total', 2);
 
-        $ada = RollEntry::where('matric_number', 'F/ND/24/1234567')->firstOrFail();
+        $ada = RollEntry::where('matric_number', 'F/ND/24/2222222')->firstOrFail();
         $this->assertSame('Ada Obi', $ada->fullname);
         $this->assertSame(Level::ND2, $ada->level);
         $this->assertSame(1, session('import')['skippedCount']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'roll_imported', 'user_id' => $this->admin->id]);
 
-        $this->get(route('roll.index', ['q' => 'tunde']))->assertSee('HND/2021/CS/1234')->assertDontSee('F/ND/24/1234567');
+        $this->get(route('roll.index', ['q' => 'tunde']))->assertSee('HND/2021/CS/1234')->assertDontSee('F/ND/24/2222222');
     }
 
     #[Test]

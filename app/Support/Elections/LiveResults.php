@@ -91,9 +91,8 @@ class LiveResults
         return DB::transaction(function () use ($election) {
             $ballots = $election->ballotCount();
             $electorate = $election->electorate()->count();
-            $closed = $election->status === ElectionStatus::Closed;
 
-            $positions = $election->positions()->with('candidates')->get()->map(function (ElectionPosition $position) use ($ballots, $closed) {
+            $positions = $election->positions()->with('candidates')->get()->map(function (ElectionPosition $position) use ($ballots) {
                 $total = (int) $position->candidates->sum('votes_count');
                 $top = (int) $position->candidates->max('votes_count');
                 $leaders = $position->candidates->where('votes_count', $top)->count();
@@ -121,7 +120,7 @@ class LiveResults
                 // an earlier database with the same ids.
                 'key' => self::key($election),
                 'status' => $election->hasEnded() ? 'closed' : 'open',
-                'final' => $closed,
+                'final' => $election->status === ElectionStatus::Closed,
                 'ends_at' => $election->ends_at?->toIso8601String(),
                 'ballots' => $ballots,
                 'electorate' => $electorate,
