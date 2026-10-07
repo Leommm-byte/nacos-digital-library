@@ -23,7 +23,7 @@
     @if ($import)
         <x-alert type="success" class="mb-6">
             <p><strong>{{ $import['class'] }}: {{ number_format($import['total']) }} {{ \Illuminate\Support\Str::plural('student', $import['total']) }}.</strong>
-                {{ number_format($import['added']) }} added@if ($import['replace'] ?? true), {{ number_format($import['removed']) }} removed@endif @if ($import['moved']), {{ number_format($import['moved']) }} moved from another class@endif.</p>
+                {{ number_format($import['added']) }} added{{ ($import['replace'] ?? true) ? ', '.number_format($import['removed']).' removed' : '' }}{{ $import['moved'] ? ', '.number_format($import['moved']).' moved from another class' : '' }}.</p>
             @if ($import['skippedCount'] > 0)
                 <details class="mt-2">
                     <summary class="cursor-pointer font-semibold">{{ $import['skippedCount'] }} {{ \Illuminate\Support\Str::plural('line', $import['skippedCount']) }} skipped (no valid matric number)</summary>
