@@ -26,7 +26,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * The nominal roll: the official list of current students, kept class by
  * class (programme and level). Admins upload each class's list as the
  * governor returns it (Excel or CSV); uploading a class replaces that class
- * only. Elections can be limited to students on the roll.
+ * only, or adds to it. Single students can be added or removed too.
+ *
+ * While voting is open in an election limited to the roll, the roll is
+ * locked: nobody can be slipped onto it (or taken off it) to sway a vote.
+ * Every change is in the audit log.
  */
 class NominalRollController extends Controller
 {
@@ -57,7 +61,7 @@ class NominalRollController extends Controller
             'total' => RollEntry::query()->count(),
             'withAccount' => RollEntry::query()->whereIn('matric_number', fn ($query) => $query->select('matric_number')->from('users'))->count(),
             'lastImport' => AuditLog::query()->where('action', 'roll_imported')->latest('id')->with('user:id,fullname')->first(),
-            'votingOpen' => Election::query()->where('status', ElectionStatus::Open)->where('roll_only', true)->exists(),
+            'lockedBy' => self::lockedBy(),
             'programme' => Programme::tryFrom($request->string('programme')->toString()),
             'level' => Level::tryFrom($request->string('level')->toString()),
         ]);
@@ -65,7 +69,12 @@ class NominalRollController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (($locked = $this->locked()) !== null) {
+            return $locked;
+        }
+
         $data = $request->validate([
+            'mode' => ['nullable', 'in:replace,add'],
             'programme' => ['required', Rule::enum(Programme::class)],
             'level' => ['required', Rule::enum(Level::class)],
             'roll' => ['required', 'file', 'max:5120', 'extensions:xlsx,csv,txt'],
@@ -109,10 +118,12 @@ class NominalRollController extends Controller
                 ->with('mismatches', array_slice($mismatches, 0, 10));
         }
 
-        $result = RollImport::saveClass($parsed['rows'], $programme, $level);
+        $replace = $request->input('mode', 'replace') !== 'add';
+        $result = RollImport::saveClass($parsed['rows'], $programme, $level, $replace);
 
         Audit::record('roll_imported', null, [
             'class' => $class,
+            'mode' => $replace ? 'replace' : 'add',
             'programme' => $programme->value,
             'level' => $level->value,
             'file' => $file->getClientOriginalName(),
@@ -123,7 +134,90 @@ class NominalRollController extends Controller
 
         return redirect()->route('roll.index')
             ->with('status', "{$class} imported.")
-            ->with('import', [...$result, 'class' => $class, 'skipped' => array_slice($parsed['skipped'], 0, 20), 'skippedCount' => count($parsed['skipped'])]);
+            ->with('import', [...$result, 'class' => $class, 'replace' => $replace, 'skipped' => array_slice($parsed['skipped'], 0, 20), 'skippedCount' => count($parsed['skipped'])]);
+    }
+
+    /**
+     * Adds one student (a late registration, or someone the governor
+     * missed), or moves them to this class if they're on the roll already.
+     */
+    public function storeOne(Request $request): RedirectResponse
+    {
+        if (($locked = $this->locked()) !== null) {
+            return $locked;
+        }
+
+        $request->merge(['matric_number' => MatricNumber::normalize($request->string('matric_number')->toString())]);
+
+        $data = $request->validateWithBag('student', [
+            'matric_number' => ['required', 'string', 'max:32', 'regex:'.MatricNumber::PATTERN],
+            'fullname' => ['required', 'string', 'max:150'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'programme' => ['required', Rule::enum(Programme::class)],
+            'level' => ['required', Rule::enum(Level::class)],
+        ], [
+            'matric_number.regex' => 'Enter the matric number as printed on the ID card, for example F/ND/24/1234567.',
+        ]);
+
+        $programme = Programme::from((string) $data['programme']);
+        $level = Level::from((string) $data['level']);
+        $class = $level->label().' '.$programme->label();
+        $matric = (string) $data['matric_number'];
+        $row = [$matric => [
+            'matric_number' => $matric,
+            'fullname' => trim((string) preg_replace('/\s+/', ' ', (string) $data['fullname'])),
+            'email' => isset($data['email']) ? strtolower((string) $data['email']) : null,
+        ]];
+
+        if (RollImport::mismatches($row, $programme, $level) !== [] && ! $request->boolean('confirm')) {
+            return back()->withInput()->withErrors([
+                'matric_number' => "{$matric} doesn't look like {$class} (programme letter or ND/HND). Check the class, or tick \"It's right\" and add again.",
+            ], 'student')->with('confirmStudent', true);
+        }
+
+        $result = RollImport::saveClass($row, $programme, $level, false);
+        Audit::record('roll_student_added', null, ['matric' => $matric, 'name' => $row[$matric]['fullname'], 'class' => $class, 'moved' => $result['moved'] > 0]);
+
+        return redirect()->route('roll.index', ['q' => $matric])
+            ->with('status', $result['moved'] > 0 ? "{$matric} moved to {$class}." : "{$matric} added to {$class}.");
+    }
+
+    /**
+     * Takes one student off the roll (withdrawn, or added by mistake). Their
+     * account, if any, stays; they just can't vote in roll-only elections.
+     */
+    public function destroy(Request $request, RollEntry $entry): RedirectResponse
+    {
+        if (($locked = $this->locked()) !== null) {
+            return $locked;
+        }
+
+        $entry->delete();
+        Audit::record('roll_student_removed', null, [
+            'matric' => $entry->matric_number,
+            'name' => $entry->fullname,
+            'class' => trim(($entry->level?->label() ?? '').' '.($entry->programme?->label() ?? '')),
+        ]);
+
+        return redirect()->route('roll.index', array_filter(['q' => $request->string('q')->toString()]))
+            ->with('status', "{$entry->matric_number} is off the roll.");
+    }
+
+    /**
+     * The open election that locks the roll, if any.
+     */
+    public static function lockedBy(): ?Election
+    {
+        return Election::query()->where('status', ElectionStatus::Open)->where('roll_only', true)->orderBy('ends_at')->first();
+    }
+
+    private function locked(): ?RedirectResponse
+    {
+        $election = self::lockedBy();
+
+        return $election === null ? null : back()->withErrors([
+            'roll' => "The roll is locked while voting is open in {$election->title}, so nobody can be added or removed to sway it. It unlocks when voting closes.",
+        ]);
     }
 
     /**

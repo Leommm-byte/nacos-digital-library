@@ -89,6 +89,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/nominal-roll', [NominalRollController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('roll.store');
+        Route::post('/nominal-roll/students', [NominalRollController::class, 'storeOne'])->name('roll.students.store');
+        Route::delete('/nominal-roll/students/{entry}', [NominalRollController::class, 'destroy'])->name('roll.students.destroy');
     });
 
     Route::middleware('can:manage-elections')->prefix('elections/manage')->name('elections.manage')->group(function () {

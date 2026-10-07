@@ -249,4 +249,66 @@ class NominalRollTest extends TestCase
         $this->assertSame(['part_time'], $election->programmes);
         $this->assertSame('Part-time ND1 students, on the nominal roll', $election->eligibilitySummary());
     }
+
+    #[Test]
+    public function extra_students_can_be_added_to_a_class_without_removing_anyone(): void
+    {
+        RollEntry::create(['matric_number' => 'F/HD/24/0000001', 'programme' => 'full_time', 'level' => 'HND1']);
+
+        $this->actingAs($this->admin)
+            ->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0000002,Late Comer\n"), ['mode' => 'add']))
+            ->assertSessionHas('import', fn (array $import) => $import['added'] === 1 && $import['removed'] === 0 && $import['total'] === 2);
+
+        $this->assertSame(2, RollEntry::where('level', 'HND1')->count());
+    }
+
+    #[Test]
+    public function one_student_can_be_added_and_removed(): void
+    {
+        $this->actingAs($this->admin)->post(route('roll.students.store'), [
+            'matric_number' => 'p/nd/24/0000007',
+            'fullname' => 'ADE  Bisi',
+            'email' => 'Bisi@Example.com',
+            'programme' => 'part_time',
+            'level' => 'ND1',
+        ])->assertSessionHasNoErrors()->assertRedirect(route('roll.index', ['q' => 'P/ND/24/0000007']));
+
+        $entry = RollEntry::where('matric_number', 'P/ND/24/0000007')->firstOrFail();
+        $this->assertSame('ADE Bisi', $entry->fullname);
+        $this->assertSame('bisi@example.com', $entry->email);
+        $this->assertSame(Programme::PartTime, $entry->programme);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'roll_student_added', 'user_id' => $this->admin->id]);
+
+        // A full-time number in a part-time class needs confirming.
+        $student = ['matric_number' => 'F/ND/24/0000008', 'fullname' => 'Wrong Class', 'programme' => 'part_time', 'level' => 'ND1'];
+        $this->post(route('roll.students.store'), $student)->assertSessionHasErrorsIn('student', 'matric_number');
+        $this->assertDatabaseMissing('nominal_roll', ['matric_number' => 'F/ND/24/0000008']);
+        $this->post(route('roll.students.store'), [...$student, 'confirm' => '1'])->assertSessionHasNoErrors();
+
+        $this->delete(route('roll.students.destroy', $entry))->assertRedirect(route('roll.index'));
+        $this->assertModelMissing($entry);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'roll_student_removed', 'user_id' => $this->admin->id]);
+    }
+
+    #[Test]
+    public function the_roll_is_locked_while_voting_is_open(): void
+    {
+        $entry = RollEntry::create(['matric_number' => 'F/HD/24/0000001', 'programme' => 'full_time', 'level' => 'HND1']);
+        $election = Election::factory()->open()->withBallot()->create(['roll_only' => true, 'title' => 'Class Rep Election']);
+        $this->actingAs($this->admin);
+
+        $this->get(route('roll.index'))->assertSee('The roll is locked while voting is open')->assertSee('Class Rep Election');
+
+        $this->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0000002\n"), ['mode' => 'add']))->assertSessionHasErrors('roll');
+        $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0000003', 'fullname' => 'Not A Student', 'programme' => 'full_time', 'level' => 'HND1'])
+            ->assertSessionHasErrors('roll');
+        $this->delete(route('roll.students.destroy', $entry))->assertSessionHasErrors('roll');
+
+        $this->assertSame(['F/HD/24/0000001'], RollEntry::pluck('matric_number')->all());
+
+        // Elections that don't use the roll don't lock it.
+        $election->update(['roll_only' => false]);
+        $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0000003', 'fullname' => 'Late Comer', 'programme' => 'full_time', 'level' => 'HND1'])
+            ->assertSessionHasNoErrors();
+    }
 }

@@ -14,10 +14,16 @@
     <x-page-header title="Nominal roll" subtitle="The official list of current students, class by class. Elections can be limited to students on it, so graduates and made-up matric numbers can't vote."
         :back="route('elections.manage')" back-label="Manage elections" />
 
+    @if ($lockedBy)
+        <x-alert type="warning" class="mb-6">
+            <strong>The roll is locked while voting is open</strong> in <a href="{{ route('elections.manage.show', $lockedBy) }}" class="link">{{ $lockedBy->title }}</a>, so nobody can be added or removed to sway the vote. It unlocks when voting closes{{ $lockedBy->ends_at ? ' ('.$lockedBy->ends_at->timezone($zone)->format('D j M, g:i a').')' : '' }}.
+        </x-alert>
+    @endif
+
     @if ($import)
         <x-alert type="success" class="mb-6">
             <p><strong>{{ $import['class'] }}: {{ number_format($import['total']) }} {{ \Illuminate\Support\Str::plural('student', $import['total']) }}.</strong>
-                {{ number_format($import['added']) }} added, {{ number_format($import['removed']) }} removed@if ($import['moved']), {{ number_format($import['moved']) }} moved from another class@endif.</p>
+                {{ number_format($import['added']) }} added@if ($import['replace'] ?? true), {{ number_format($import['removed']) }} removed@endif @if ($import['moved']), {{ number_format($import['moved']) }} moved from another class@endif.</p>
             @if ($import['skippedCount'] > 0)
                 <details class="mt-2">
                     <summary class="cursor-pointer font-semibold">{{ $import['skippedCount'] }} {{ \Illuminate\Support\Str::plural('line', $import['skippedCount']) }} skipped (no valid matric number)</summary>
@@ -96,6 +102,13 @@
                                 @if ($entry->level || $entry->programme)
                                     <x-badge class="shrink-0">{{ trim(($entry->level?->label() ?? '').' '.($entry->programme?->label() ?? '')) }}</x-badge>
                                 @endif
+                                @unless ($lockedBy)
+                                    <form method="POST" action="{{ route('roll.students.destroy', ['entry' => $entry, 'q' => $search ?: null]) }}" data-confirm="Take {{ $entry->matric_number }}{{ $entry->fullname ? ' ('.$entry->fullname.')' : '' }} off the roll? They won't be able to vote in elections limited to the roll.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="icon-btn icon-btn-danger" aria-label="Remove {{ $entry->matric_number }} from the roll"><x-icon name="trash-2" /></button>
+                                    </form>
+                                @endunless
                             </li>
                         @endforeach
                     </ul>
@@ -105,19 +118,16 @@
             </x-section>
         </div>
 
-        <aside id="import" class="space-y-4 lg:sticky lg:top-24">
+        <aside id="import" class="space-y-4">
             <x-card class="space-y-4">
                 <div class="flex items-center gap-3">
                     <x-icon-tile name="upload" tone="green" size="sm" />
                     <h2 class="text-base">Upload a class</h2>
                 </div>
 
-                @if ($votingOpen)
-                    <x-alert type="warning">Voting is open in an election limited to the roll. Changes apply to it straight away.</x-alert>
-                @endif
-
-                <form method="POST" action="{{ route('roll.store') }}" enctype="multipart/form-data" class="space-y-4" novalidate>
+                <form method="POST" action="{{ route('roll.store') }}" enctype="multipart/form-data" novalidate>
                     @csrf
+                    <fieldset class="space-y-4" @disabled($lockedBy)>
                     <div class="grid grid-cols-2 gap-3">
                         <x-select name="programme" label="Programme" :options="$programmeOptions" :value="$programme?->value" />
                         <x-select name="level" label="Level" :options="$levelOptions" :value="$level?->value" />
@@ -141,10 +151,23 @@
                                 <span>Import anyway: I've checked, this is the right list for the class.</span>
                             </label>
                         @endif
-                        <p class="mt-1.5 text-sm text-muted">Excel (.xlsx) or CSV, up to 5 MB. The class's current list is replaced by this one.</p>
+                        <p class="mt-1.5 text-sm text-muted">Excel (.xlsx) or CSV, up to 5 MB.</p>
                     </div>
 
-                    <x-button icon="upload" class="w-full">Upload class</x-button>
+                    <fieldset class="space-y-2">
+                        <legend class="field-label">This file is</legend>
+                        <label class="flex items-start gap-3">
+                            <input type="radio" name="mode" value="replace" class="mt-1 size-4 accent-[var(--primary)]" @checked(old('mode', 'replace') === 'replace')>
+                            <span class="text-sm"><strong>The class's full list</strong><span class="block text-muted">Replaces it: students not in the file come off the roll.</span></span>
+                        </label>
+                        <label class="flex items-start gap-3">
+                            <input type="radio" name="mode" value="add" class="mt-1 size-4 accent-[var(--primary)]" @checked(old('mode') === 'add')>
+                            <span class="text-sm"><strong>Extra students</strong><span class="block text-muted">Added to the class; nobody is removed.</span></span>
+                        </label>
+                    </fieldset>
+
+                    <x-button icon="upload" class="w-full">Upload</x-button>
+                    </fieldset>
                 </form>
 
                 <div class="border-t border-border pt-4 text-sm text-muted">
@@ -156,6 +179,38 @@
                         Last upload: {{ $lastImport->meta['class'] ?? 'a class' }}, {{ $lastImport->created_at->timezone($zone)->format('j M Y, g:i a') }}@if ($lastImport->user) by {{ $lastImport->user->fullname }}@endif.
                     </p>
                 @endif
+            </x-card>
+
+            <x-card class="space-y-4" id="add-student">
+                <div class="flex items-center gap-3">
+                    <x-icon-tile name="user-plus" tone="blue" size="sm" />
+                    <h2 class="text-base">Add one student</h2>
+                </div>
+                <form method="POST" action="{{ route('roll.students.store') }}" novalidate>
+                    @csrf
+                    <fieldset class="space-y-3" @disabled($lockedBy)>
+                        <x-field name="matric_number" id="add-matric" label="Matric number" bag="student" required maxlength="32" placeholder="F/ND/24/1234567" autocomplete="off" />
+                        <x-field name="fullname" id="add-name" label="Full name" bag="student" required maxlength="150" placeholder="Surname first" autocomplete="off" />
+                        <x-field name="email" id="add-email" label="Email (optional)" type="email" bag="student" maxlength="255" autocomplete="off" />
+                        <div class="grid grid-cols-2 gap-3">
+                            <x-select name="programme" id="add-programme" label="Programme" :options="$programmeOptions" :value="$programme?->value" />
+                            <x-select name="level" id="add-level" label="Level" :options="$levelOptions" :value="$level?->value" />
+                        </div>
+                        @foreach (['programme', 'level'] as $field)
+                            @if ($errors->getBag('student')->has($field))
+                                <p class="field-error">{{ $errors->getBag('student')->first($field) }}</p>
+                            @endif
+                        @endforeach
+                        @if (session('confirmStudent'))
+                            <label class="flex items-start gap-3 text-sm">
+                                <input type="checkbox" name="confirm" value="1" class="mt-0.5 size-4 accent-[var(--primary)]">
+                                <span>It's right: add them to this class anyway.</span>
+                            </label>
+                        @endif
+                        <x-button size="sm" variant="secondary" icon="user-plus" class="w-full">Add to the roll</x-button>
+                    </fieldset>
+                </form>
+                <p class="text-xs text-muted">For a late registration, or someone left off their class list. Remove a student with the bin next to them under "Find a student".</p>
             </x-card>
         </aside>
     </div>
