@@ -127,8 +127,33 @@ const pages = [
         await page.click('[data-upload-submit]');
         await page.waitForURL(/\/uploads\/[^/]+$/, { timeout: 90000 });
     }],
+    // End to end: asks the assistant (the free helper in CI, no API key)
+    // and fails the run if no answer arrives.
+    ['assistant', '/assistant', 'F/ND/24/0000004', async (page) => {
+        if (await page.locator('.assistant-log .assistant-msg:not([data-assistant-intro])').count()) {
+            page.once('dialog', (dialog) => dialog.accept());
+            await page.click('[data-assistant-clear] button');
+            await page.waitForTimeout(500);
+        }
+        await askAssistant(page, 'Show my saved books', 1);
+        await askAssistant(page, 'How are my uploads doing?', 2);
+    }],
+    ['assistant-panel', '/library', 'F/ND/24/0000004', async (page) => {
+        await page.click('[data-assistant-open]');
+        await page.locator('#assistant-panel').waitFor({ state: 'visible', timeout: 5000 });
+        const before = await page.locator('#assistant-panel .assistant-msg.is-bot:not([data-assistant-intro])').count();
+        await askAssistant(page, 'Find books for ND1', before + 1, '#assistant-panel');
+        return 'viewport';
+    }],
     ['styleguide', '/styleguide', 'F/ND/24/0000004'],
 ];
+
+async function askAssistant(page, question, answers, scope = '[data-assistant]') {
+    await page.fill(`${scope} [data-assistant-form] textarea`, question);
+    await page.press(`${scope} [data-assistant-form] textarea`, 'Enter');
+    await page.locator(`${scope} .assistant-msg.is-bot:not([data-assistant-intro])`).nth(answers - 1).waitFor({ timeout: 15000 });
+    await page.waitForTimeout(300);
+}
 
 // A minimal valid one-page PDF.
 function samplePdf() {
@@ -250,11 +275,11 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
                 if (response && response.status() >= 500) {
                     failures.push(`${name}: HTTP ${response.status()}`);
                 }
-                if (before) {
-                    await before(page);
-                }
+                // A step can return 'viewport' to photograph only the screen
+                // (for fixed panels).
+                const shot = before ? await before(page) : null;
                 await page.waitForTimeout(250);
-                await page.screenshot({ path: `${out}/${name}--${viewportName}--${theme}.png`, fullPage: true });
+                await page.screenshot({ path: `${out}/${name}--${viewportName}--${theme}.png`, fullPage: shot !== 'viewport' });
             } catch (error) {
                 failures.push(`${name} (${viewportName}, ${theme}): ${error.message.split('\n')[0]}`);
             }

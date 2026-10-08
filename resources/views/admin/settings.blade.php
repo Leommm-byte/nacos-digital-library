@@ -7,7 +7,7 @@
                 <x-icon-tile name="settings" tone="green" size="sm" />
                 <div>
                     <h2 id="site-heading">Site and uploads</h2>
-                    <p>The name in page titles and emails, the current session, and upload limits for students. Reviewers and admins have no daily limit.</p>
+                    <p>The name in page titles and emails, the current session, upload limits for students (reviewers and admins have none) and the assistant's daily AI answers.</p>
                 </div>
             </div>
             <x-card>
@@ -24,6 +24,18 @@
                         <x-field name="uploads_pending" label="Waiting for review" type="number" min="1" max="500" required :value="$settings['uploads_pending']" hint="Most uploads one student can have waiting." />
                     </div>
                     <p class="text-sm text-muted">Students upload PDFs or photos of pages (JPG, PNG or WebP); other file types are always refused.</p>
+                    <div class="border-t border-border pt-4">
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            <x-field name="assistant_daily_limit" label="Smart answers per day" type="number" min="0" max="200" :value="$settings['assistant_daily_limit']" hint="Per student. 0 turns AI answers off." />
+                        </div>
+                        <p class="mt-2 text-sm text-muted">
+                            @if ($aiKey)
+                                The assistant uses AI (Claude) for each student's first answers of the day, then quick keyword answers. Each AI answer costs a little; this limit caps the bill.
+                            @else
+                                No Anthropic API key is set, so the assistant gives quick keyword answers only, at no cost. Add <code>ANTHROPIC_API_KEY</code> to the server's .env to turn on AI answers.
+                            @endif
+                        </p>
+                    </div>
                     <x-button icon="circle-check">Save settings</x-button>
                 </form>
             </x-card>

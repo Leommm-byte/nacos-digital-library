@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Announcements\AnnouncementController;
+use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Elections\BallotSetupController;
 use App\Http\Controllers\Elections\ElectionController;
 use App\Http\Controllers\Elections\ManageElectionController;
@@ -147,6 +148,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications/{id}', [NotificationController::class, 'open'])
         ->whereUuid('id')
         ->name('notifications.open');
+
+    Route::get('/assistant', [AssistantController::class, 'index'])->name('assistant.index');
+    // AI answers take a few seconds each; the limit stops scripted floods.
+    Route::post('/assistant', [AssistantController::class, 'store'])
+        ->middleware('throttle:12,1')
+        ->name('assistant.store');
+    Route::delete('/assistant', [AssistantController::class, 'destroy'])->name('assistant.destroy');
 
     Route::get('/saved', [BookmarkController::class, 'index'])->name('bookmarks.index');
     Route::post('/library/{book}/bookmark', [BookmarkController::class, 'store'])

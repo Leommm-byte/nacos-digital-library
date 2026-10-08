@@ -23,6 +23,7 @@ class Settings
         'pdf_max_mb' => 'uploads.pdf_max_kb',
         'uploads_per_day' => 'uploads.per_day',
         'uploads_pending' => 'uploads.pending',
+        'assistant_daily_limit' => 'assistant.daily_limit',
     ];
 
     /**
@@ -75,7 +76,7 @@ class Settings
 
             config([self::APPLIED[$key] => match ($key) {
                 'pdf_max_mb' => (int) $value * 1024,
-                'uploads_per_day', 'uploads_pending' => (int) $value,
+                'uploads_per_day', 'uploads_pending', 'assistant_daily_limit' => (int) $value,
                 default => $value,
             }]);
         }

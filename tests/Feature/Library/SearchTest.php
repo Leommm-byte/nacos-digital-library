@@ -5,6 +5,8 @@ namespace Tests\Feature\Library;
 use App\Models\Book;
 use App\Models\Department;
 use App\Models\User;
+use App\Support\Assistant\Lookups;
+use App\Support\Assistant\Tutor;
 use App\Support\Catalog;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
@@ -114,5 +116,24 @@ class SearchTest extends TestCase
             ->assertOk()
             ->assertSee('Introduction to Databases')
             ->assertDontSee('Organic Chemistry');
+    }
+
+    #[Test]
+    public function the_assistant_searches_and_reads_the_library(): void
+    {
+        $lookups = new Lookups($this->student);
+        $this->assertSame('Data Structures and Algorithms', $lookups->books('data structures')[0]['label'] ?? null);
+
+        $tutor = new Tutor($this->student);
+        $found = json_decode($tutor->run('search_library', ['query' => 'recursion']), true);
+        $this->assertSame('C Programming', $found[0]['label']);
+        // The model sees ids, not links; links are shown by the app.
+        $this->assertArrayNotHasKey('url', $found[0]);
+
+        $read = json_decode($tutor->run('read_book', ['book_id' => $found[0]['id'], 'focus' => 'recursion']), true);
+        $this->assertStringContainsString('explain recursion', $read['text']);
+
+        $missing = json_decode($tutor->run('read_book', ['book_id' => 'nope']), true);
+        $this->assertArrayHasKey('error', $missing);
     }
 }

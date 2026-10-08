@@ -30,6 +30,10 @@
         @include('partials.tabbar', ['nav' => $nav])
     @endif
 
+    @if ($user && Route::has('assistant.index') && ! request()->routeIs('assistant.*'))
+        @include('assistant.panel')
+    @endif
+
     {{-- Success messages appear here and fade away (resources/js/toast.js). --}}
     <div id="toast" @class(['toast', 'is-visible' => session('status')]) role="status" aria-live="polite">{{ session('status') }}</div>
 </body>
