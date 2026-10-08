@@ -55,7 +55,7 @@
     @csrf
     <label for="assistant-input-{{ $panel ? 'panel' : 'page' }}" class="sr-only">Your question</label>
     <textarea id="assistant-input-{{ $panel ? 'panel' : 'page' }}" name="message" rows="1" maxlength="1000" required
-        placeholder="{{ $ai ? 'Ask about a book, a topic or your account' : 'Ask about books, uploads or elections' }}" enterkeyhint="send">{{ $panel ? '' : old('message') }}</textarea>
+        placeholder="{{ $ai ? 'Ask about a book or a topic' : 'Ask a question' }}" enterkeyhint="send">{{ $panel ? '' : old('message') }}</textarea>
     <button class="btn btn-primary btn-icon" aria-label="Send"><x-icon name="send" /></button>
 </form>
 @if (! $panel)
