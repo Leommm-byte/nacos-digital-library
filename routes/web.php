@@ -148,7 +148,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/books/{book}', [AdminBookController::class, 'destroy'])->name('books.destroy');
 
         Route::get('/reports', ReportController::class)->name('reports');
-        Route::get('/audit', AuditLogController::class)->name('audit');
+        Route::get('/audit', [AuditLogController::class, 'index'])->name('audit');
+        Route::get('/audit/export', [AuditLogController::class, 'export'])->name('audit.export');
 
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');

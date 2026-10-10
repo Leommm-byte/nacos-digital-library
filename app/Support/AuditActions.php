@@ -48,6 +48,7 @@ class AuditActions
         'user_two_factor_reset' => 'Turned off someone\'s two-step',
         'user_password_reset' => 'Gave a new password',
         'settings_updated' => 'Changed settings',
+        'audit_exported' => 'Exported the audit log',
         'department_opened' => 'Opened a department',
         'department_closed' => 'Closed a department',
     ];
@@ -55,6 +56,24 @@ class AuditActions
     public static function label(string $action): string
     {
         return self::LABELS[$action] ?? ucfirst(str_replace('_', ' ', $action));
+    }
+
+    /**
+     * A colour per kind of action, so the log can be scanned at a glance:
+     * red for failures and removals, blue for books, violet for elections,
+     * yellow for admin work, green for a person's own account.
+     */
+    public static function tone(string $action): string
+    {
+        return match (true) {
+            str_contains($action, 'failed'), str_contains($action, 'suspended'), str_contains($action, 'deleted'),
+            str_contains($action, 'removed'), str_contains($action, 'rejected') => 'red',
+            str_starts_with($action, 'book_') => 'blue',
+            str_starts_with($action, 'election_'), str_starts_with($action, 'roll_') => 'violet',
+            str_starts_with($action, 'user_'), str_starts_with($action, 'settings_'), str_starts_with($action, 'department_'),
+            str_starts_with($action, 'accounts_'), str_starts_with($action, 'audit_'), str_starts_with($action, 'announcement_') => 'yellow',
+            default => 'green',
+        };
     }
 
     /**
