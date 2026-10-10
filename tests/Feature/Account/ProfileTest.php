@@ -165,8 +165,9 @@ class ProfileTest extends TestCase
 
         // Emptied, it's the first name again.
         $this->put('/profile', $this->form($user, ['display_name' => '']))->assertSessionHasNoErrors();
-        $this->assertNull($user->fresh()?->display_name);
-        $this->assertSame('Oluwatobiloba', $user->fresh()?->greetingName());
+        $user = User::findOrFail($user->id);
+        $this->assertNull($user->display_name);
+        $this->assertSame('Oluwatobiloba', $user->greetingName());
     }
 
     #[Test]
