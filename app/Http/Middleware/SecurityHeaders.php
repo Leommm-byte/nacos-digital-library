@@ -34,6 +34,14 @@ class SecurityHeaders
         $headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
         $headers->set('Cross-Origin-Opener-Policy', 'same-origin');
 
+        // Signed-in pages are personal: the browser must not keep them, so
+        // after logging out on a shared phone, Back shows nothing of the
+        // previous student's. (They were never reused from the cache
+        // anyway; Laravel sends no-cache.)
+        if ($request->user() !== null && str_starts_with((string) $headers->get('Content-Type'), 'text/html')) {
+            $headers->set('Cache-Control', 'no-store, private');
+        }
+
         if ($request->isSecure()) {
             $headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }

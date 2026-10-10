@@ -52,11 +52,12 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // Books kept offline are deleted by resources/js/offline.js; this
-        // also clears PDFs the browser cached while reading, so the next
-        // person on a shared phone can't open them.
-        return redirect()->route('login')
-            ->with('status', 'You have been logged out.')
-            ->header('Clear-Site-Data', '"cache"');
+        // Books kept offline are deleted by resources/js/offline.js. Nothing
+        // else personal is left in the browser's cache: signed-in pages are
+        // never stored (SecurityHeaders) and book files are checked with the
+        // server before each use (BookFileController). (Clear-Site-Data
+        // would do it too, but Chrome then goes through its whole cache,
+        // every site's, and logging out took seconds.)
+        return redirect()->route('login')->with('status', 'You have been logged out.');
     }
 }

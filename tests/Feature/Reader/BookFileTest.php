@@ -74,17 +74,25 @@ class BookFileTest extends TestCase
     }
 
     #[Test]
-    public function the_versioned_url_is_cached_privately_and_others_are_revalidated(): void
+    public function the_browser_must_check_before_reusing_its_copy(): void
     {
         $version = substr($this->book->currentFile->sha256, 0, 12);
+        $url = route('books.file', ['book' => $this->book, 'v' => $version]);
 
-        $cached = $this->actingAs($this->student)->get(route('books.file', ['book' => $this->book, 'v' => $version]));
-        $cacheControl = (string) $cached->headers->get('Cache-Control');
+        $first = $this->actingAs($this->student)->get($url)->assertOk();
+        $cacheControl = (string) $first->headers->get('Cache-Control');
         $this->assertStringContainsString('private', $cacheControl);
-        $this->assertStringContainsString('max-age=31536000', $cacheControl);
+        $this->assertStringContainsString('no-cache', $cacheControl);
+        $this->assertStringNotContainsString('max-age', $cacheControl);
 
-        $plain = $this->get(route('books.file', ['book' => $this->book, 'v' => 'old']));
-        $this->assertStringContainsString('no-cache', (string) $plain->headers->get('Cache-Control'));
+        // Unchanged: an empty 304, the file isn't sent again.
+        $again = $this->get($url, ['If-None-Match' => (string) $first->headers->get('ETag')]);
+        $again->assertStatus(304);
+        $this->assertSame('', $this->body($again->baseResponse));
+
+        // After logging out the check fails, so a cached copy can't be used.
+        $this->post(route('logout'));
+        $this->get($url, ['If-None-Match' => (string) $first->headers->get('ETag')])->assertRedirect(route('login'));
     }
 
     #[Test]

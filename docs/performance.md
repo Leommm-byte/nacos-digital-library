@@ -82,8 +82,19 @@ DreamHost's terms don't allow load testing shared servers.
 - "Keep offline" on a book stores its PDF in the phone's Cache Storage,
   with PDF.js, under the student's opaque owner id. The worker serves the
   PDF's byte ranges, so the normal reading link works offline.
-- Kept books are deleted on logout (and the browser cache is cleared with
-  `Clear-Site-Data`), and when another account signs in on the phone.
+- Kept books are deleted on logout, and when another account signs in on
+  the phone.
+- Nothing else personal stays usable in the browser's cache: signed-in
+  pages are sent with `no-store`, and book files with `no-cache` and an
+  ETag, so the browser checks with the server first (an empty 304 when
+  unchanged) and a logged-out phone can't open them. Logout doesn't send
+  `Clear-Site-Data`: Chrome then walks its whole cache, every site's, and
+  logging out took seconds.
+- Service workers only run on HTTPS or `localhost`, so "Keep offline" and
+  the install card don't appear when a phone opens the dev machine by its
+  IP (`http://192.168…`). To try them on a phone, use Chrome's USB port
+  forwarding (`chrome://inspect`, forward 8080 to `localhost:8080`) or an
+  HTTPS tunnel.
 
 ## Accessibility
 
