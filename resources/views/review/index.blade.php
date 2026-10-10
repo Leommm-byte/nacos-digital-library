@@ -1,5 +1,6 @@
 <x-layouts.app title="Review uploads">
-    <x-page-header title="Review uploads" :subtitle="($counts['pending'] ?? 0) === 0 ? 'Nothing is waiting for review.' : number_format($counts['pending']).' '.\Illuminate\Support\Str::plural('upload', $counts['pending']).' waiting, oldest first.'" />
+    <x-page-header title="Review uploads" :eyebrow="$ownLevel ? $ownLevel->label().' uploads' : null"
+        :subtitle="($counts['pending'] ?? 0) === 0 ? 'Nothing is waiting for review.' : number_format($counts['pending']).' '.\Illuminate\Support\Str::plural('upload', $counts['pending']).' waiting, oldest first.'" />
 
     <nav class="review-tabs" aria-label="Status">
         @foreach (\App\Http\Controllers\Review\ReviewController::STATUSES as $value => $label)
@@ -21,13 +22,15 @@
             <input id="review-q" name="q" type="search" value="{{ $filters['q'] }}" placeholder="Title or author" class="field-input pl-11">
         </div>
         <div class="flex gap-2">
-            <label for="review-level" class="sr-only">Level</label>
-            <select id="review-level" name="level" class="field-input field-select min-h-12 w-auto">
-                <option value="">All levels</option>
-                @foreach ($levels as $value => $label)
-                    <option value="{{ $value }}" @selected($filters['level'] === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
+            @if ($levels)
+                <label for="review-level" class="sr-only">Level</label>
+                <select id="review-level" name="level" class="field-input field-select min-h-12 w-auto">
+                    <option value="">All levels</option>
+                    @foreach ($levels as $value => $label)
+                        <option value="{{ $value }}" @selected($filters['level'] === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            @endif
             @if (count($departments) > 1)
                 <label for="review-department" class="sr-only">Department</label>
                 <select id="review-department" name="department" class="field-input field-select min-h-12 w-auto">

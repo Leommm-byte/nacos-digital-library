@@ -175,8 +175,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/exams/manage', [ExamController::class, 'manage'])->name('exams.manage');
         Route::get('/exams/template', [ExamController::class, 'template'])->name('exams.template');
         Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');
-        Route::put('/exams/{exam}', [ExamController::class, 'update'])->name('exams.update');
-        Route::delete('/exams/{exam}', [ExamController::class, 'destroy'])->name('exams.destroy');
+        Route::put('/exams/{exam}', [ExamController::class, 'update'])->whereNumber('exam')->name('exams.update');
+        Route::delete('/exams/{exam}', [ExamController::class, 'destroy'])->whereNumber('exam')->name('exams.destroy');
+        Route::put('/exams/visibility', [ExamController::class, 'publish'])->name('exams.publish');
         Route::post('/exams/import', [ExamController::class, 'import'])
             ->middleware('throttle:10,1')
             ->name('exams.import');

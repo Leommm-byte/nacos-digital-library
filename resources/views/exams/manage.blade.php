@@ -5,7 +5,7 @@
 @endphp
 
 <x-layouts.admin title="Exam timetable">
-    <x-page-header title="Exam timetable" :subtitle="$count.' '.\Illuminate\Support\Str::plural('paper', $count).' · seen by every student'">
+    <x-page-header title="Exam timetable" :subtitle="$count.' '.\Illuminate\Support\Str::plural('paper', $count).' · '.($published ? 'visible to students' : 'hidden from students')">
         <x-slot:actions>
             <x-button href="{{ route('exams.index', ['show' => 'all']) }}" variant="secondary" icon="eye">See it as students do</x-button>
         </x-slot:actions>
@@ -87,6 +87,25 @@
         </div>
 
         <aside class="space-y-4">
+            <x-card class="space-y-3" id="visibility">
+                <div class="flex items-center gap-3">
+                    <x-icon-tile :name="$published ? 'eye' : 'eye-off'" :tone="$published ? 'green' : 'yellow'" size="sm" />
+                    <div class="min-w-0">
+                        <h2 class="text-base">{{ $published ? 'Visible to students' : 'Hidden from students' }}</h2>
+                        <p class="text-sm text-muted">{{ $published ? 'Students see their papers here and on their home page.' : 'Prepare it here; students see "not out yet" until you show it.' }}</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ route('exams.publish') }}"
+                    data-confirm="{{ $published ? 'Hide the exam timetable from students?' : 'Show the exam timetable to every student now?' }}">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="published" value="{{ $published ? 0 : 1 }}">
+                    <x-button :variant="$published ? 'secondary' : 'primary'" :icon="$published ? 'eye-off' : 'eye'" class="w-full">
+                        {{ $published ? 'Hide from students' : 'Show to students' }}
+                    </x-button>
+                </form>
+            </x-card>
+
             <x-card class="space-y-4" id="add">
                 <div class="flex items-center gap-3">
                     <x-icon-tile name="plus" tone="green" size="sm" />

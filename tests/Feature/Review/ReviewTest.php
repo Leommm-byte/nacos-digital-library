@@ -3,6 +3,7 @@
 namespace Tests\Feature\Review;
 
 use App\Enums\BookStatus;
+use App\Enums\Level;
 use App\Enums\ReviewAction;
 use App\Enums\Role;
 use App\Models\Book;
@@ -31,13 +32,13 @@ class ReviewTest extends TestCase
 
         Storage::fake('private');
         $this->department = Department::factory()->create();
-        $this->governor = User::factory()->for($this->department)->role(Role::Governor)->create();
+        $this->governor = User::factory()->for($this->department)->role(Role::Governor)->create(['level' => Level::ND1]);
         $this->uploader = User::factory()->for($this->department)->create(['fullname' => 'Ada Uploader']);
     }
 
     private function pending(string $title = 'Algorithms Notes'): Book
     {
-        return Book::factory()->for($this->department)->uploadedBy($this->uploader)->withPdf(3)->create(['title' => $title]);
+        return Book::factory()->for($this->department)->uploadedBy($this->uploader)->withPdf(3)->create(['title' => $title, 'level' => Level::ND1]);
     }
 
     #[Test]
@@ -54,7 +55,7 @@ class ReviewTest extends TestCase
         $this->pending('Older Upload');
         $this->travel(1)->hour();
         $this->pending('Newer Upload');
-        Book::factory()->for($this->department)->approved()->create(['title' => 'Already In Library']);
+        Book::factory()->for($this->department)->approved()->create(['title' => 'Already In Library', 'level' => Level::ND1]);
 
         $this->actingAs($this->governor)
             ->get(route('review.index'))
@@ -149,7 +150,7 @@ class ReviewTest extends TestCase
     public function a_book_can_only_be_decided_once(): void
     {
         $book = $this->pending();
-        $other = User::factory()->role(Role::Governor)->create();
+        $other = User::factory()->role(Role::Governor)->create(['level' => Level::ND1]);
 
         $this->actingAs($this->governor)->post(route('review.decide', $book), ['action' => 'approved']);
 
@@ -165,7 +166,7 @@ class ReviewTest extends TestCase
     #[Test]
     public function nobody_decides_their_own_upload(): void
     {
-        $own = Book::factory()->for($this->department)->uploadedBy($this->governor)->withPdf()->create();
+        $own = Book::factory()->for($this->department)->uploadedBy($this->governor)->withPdf()->create(['level' => Level::ND1]);
 
         $this->actingAs($this->governor)
             ->get(route('review.show', $own))
@@ -209,5 +210,24 @@ class ReviewTest extends TestCase
 
         $this->actingAs($this->governor)->get(route('home'))->assertSee('Review uploads')->assertSee('menu-count', false);
         $this->actingAs($this->uploader)->get(route('home'))->assertDontSee('Review uploads');
+    }
+
+    #[Test]
+    public function governors_only_see_their_own_levels_uploads(): void
+    {
+        $mine = $this->pending('ND1 Notes');
+        $other = Book::factory()->for($this->department)->uploadedBy($this->uploader)->withPdf()->create(['title' => 'HND2 Notes', 'level' => Level::HND2]);
+
+        $this->actingAs($this->governor)->get(route('review.index'))->assertOk()
+            ->assertSee('ND1 uploads')
+            ->assertSee('ND1 Notes')->assertDontSee('HND2 Notes')
+            ->assertDontSee('All levels');
+        $this->get(route('review.show', $other))->assertNotFound();
+        $this->post(route('review.decide', $other), ['action' => ReviewAction::Approved->value])->assertForbidden();
+        $this->get(route('review.show', $mine))->assertOk();
+
+        // Admins see every level.
+        $this->actingAs(User::factory()->role(Role::Admin)->create())->get(route('review.index'))
+            ->assertSee('ND1 Notes')->assertSee('HND2 Notes')->assertSee('All levels');
     }
 }

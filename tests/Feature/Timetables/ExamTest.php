@@ -5,8 +5,10 @@ namespace Tests\Feature\Timetables;
 use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\Role;
+use App\Http\Controllers\Timetables\ExamController;
 use App\Models\Exam;
 use App\Models\User;
+use App\Support\Settings;
 use App\Support\Spreadsheets\SpreadsheetRows;
 use App\Support\Timetables\ExamImport;
 use Database\Factories\UserFactory;
@@ -36,6 +38,7 @@ class ExamTest extends TestCase
             'matric_number' => UserFactory::matricFor(Level::HND1, Programme::FullTime, 'swd'),
         ]);
         $this->admin = User::factory()->role(Role::Admin)->create();
+        Settings::put(['exams_published' => 1]);
     }
 
     /**
@@ -179,5 +182,31 @@ class ExamTest extends TestCase
         $this->assertSame(['levels' => ['ND1', 'ND2'], 'programmes' => ['part_time'], 'arms' => null], ExamImport::audience('Part time ND1, ND2'));
         $this->assertSame(['levels' => null, 'programmes' => null, 'arms' => null], ExamImport::audience('All'));
         $this->assertNull(ExamImport::audience('Year 9'));
+    }
+
+    #[Test]
+    public function the_timetable_stays_hidden_until_an_admin_shows_it(): void
+    {
+        Settings::put(['exams_published' => 0]);
+        $this->exam('SWD 311', '2026-11-04', ['levels' => ['HND1'], 'arms' => ['swd']]);
+
+        $this->actingAs($this->student)->get(route('exams.index'))->assertOk()
+            ->assertSee('The exam timetable isn\'t out yet')
+            ->assertDontSee('SWD 311');
+        $this->get(route('home'))->assertDontSee('Next exam');
+
+        // Admins still see it, with a reminder, and can show it.
+        $this->actingAs($this->admin)->get(route('exams.index', ['show' => 'all']))->assertOk()
+            ->assertSee('SWD 311')->assertSee('Students can\'t see this yet', false);
+        $this->get(route('exams.manage'))->assertSee('Hidden from students')->assertSee('Show to students');
+        $this->put(route('exams.publish'), ['published' => '1'])->assertRedirect(route('exams.manage'));
+        $this->assertTrue(ExamController::published());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'exams_published']);
+
+        $this->actingAs($this->student)->get(route('exams.index'))->assertSee('SWD 311');
+
+        // Only admins switch it.
+        $this->put(route('exams.publish'), ['published' => '0'])->assertForbidden();
+        $this->assertTrue(ExamController::published());
     }
 }
