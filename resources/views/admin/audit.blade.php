@@ -65,6 +65,8 @@
                                     @if ($entry->user)
                                         <span class="text-muted">by</span> <a href="{{ route('admin.users.show', $entry->user) }}" class="link">{{ $entry->user->fullname }}</a>
                                         <span class="audit-matric">{{ $entry->user->matric_number }}</span>
+                                    @elseif (str_starts_with($entry->action, 'login'))
+                                        <span class="text-muted">with no matching account</span>
                                     @else
                                         <span class="text-muted">by the system</span>
                                     @endif
