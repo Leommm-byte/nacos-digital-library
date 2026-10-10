@@ -46,6 +46,9 @@ const pages = [
         // Submitting with nothing chosen shows the inline error.
         await page.click('[data-upload-submit]');
         await page.waitForTimeout(300);
+        // Back to the top: scrolled, the sticky header covers a field, which
+        // the accessibility check reads as a too-small target.
+        await page.evaluate(() => window.scrollTo(0, 0));
     }],
     ['uploads-empty', '/uploads', 'F/ND/24/0000004'],
     ['uploads', '/uploads', 'F/ND/23/0000003'],

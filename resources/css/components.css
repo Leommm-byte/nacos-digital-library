@@ -619,11 +619,19 @@
 
     .site-footer {
         margin-top: 4rem;
-        padding-block: 2rem 1.5rem;
+        padding-block: 1.25rem;
         border-top: 1px solid var(--border);
-        background: var(--surface);
         color: var(--muted);
         font-size: 0.875rem;
+
+        /* Phones with the tab bar: it already sits at the bottom. */
+        .has-tabbar & {
+            display: none;
+
+            @variant md {
+                display: block;
+            }
+        }
     }
 
     /* Quick links on the student home. */
