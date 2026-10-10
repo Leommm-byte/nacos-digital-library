@@ -87,6 +87,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // Nullable columns read on every page. Declared so a model that was
         // just created (not re-read from the database) has them too;
         // strict mode would otherwise throw.
+        'display_name' => null,
         'email_verified_at' => null,
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
