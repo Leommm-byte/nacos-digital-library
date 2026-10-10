@@ -10,7 +10,7 @@
     @if ($books->isNotEmpty())
         <ul class="stagger grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6">
             @foreach ($books as $book)
-                <li class="flex" data-saved-item><x-book-card :book="$book" :saved="true" class="w-full" /></li>
+                <li class="flex" data-saved-item><x-book-card :book="$book" :saved="true" heading="h2" class="w-full" /></li>
             @endforeach
         </ul>
 

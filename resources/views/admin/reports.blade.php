@@ -34,7 +34,7 @@
     </div>
 
     <x-section title="Accounts by class" description="Active accounts, by the class students chose or an admin set." icon="users" tone="blue" class="mt-10">
-        <div class="table-scroll">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways">
             <table class="admin-table">
                 <thead>
                     <tr>

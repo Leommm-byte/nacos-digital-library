@@ -155,7 +155,7 @@
         --muted: #9bada4;
 
         --primary: var(--color-green-700);
-        --primary-hover: var(--color-green-600);
+        --primary-hover: var(--color-green-800);
         --on-primary: #ffffff;
         --primary-soft: #0f2a1c;
         --link: var(--color-green-300);

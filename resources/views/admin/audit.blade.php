@@ -22,7 +22,7 @@
     @if ($entries->isEmpty())
         <x-empty-state icon="scroll-text" title="Nothing found" text="No entries match these filters." />
     @else
-        <div class="table-scroll">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways">
             <table class="admin-table">
                 <thead>
                     <tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr>

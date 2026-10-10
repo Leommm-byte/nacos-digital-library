@@ -20,6 +20,8 @@
         </div>
     </section>
 
+    @include('partials.install-banner')
+
     <section class="mt-12 md:mt-16" aria-labelledby="features">
         <h2 id="features" class="sr-only">What you get</h2>
         <ul class="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

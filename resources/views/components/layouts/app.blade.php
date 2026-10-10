@@ -12,7 +12,7 @@
 <head>
     @include('partials.head', ['title' => $title, 'description' => $description])
 </head>
-<body @class(['flex min-h-dvh flex-col', 'has-tabbar' => $tabbar])>
+<body @class(['flex min-h-dvh flex-col', 'has-tabbar' => $tabbar]) @if ($user) data-user="{{ \App\Support\Offline::owner($user) }}" @endif>
     <a href="#main" class="skip-link">Skip to content</a>
 
     @include('partials.header', ['user' => $user, 'nav' => $nav])

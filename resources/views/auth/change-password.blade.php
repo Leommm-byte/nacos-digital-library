@@ -14,7 +14,7 @@
         <x-button class="w-full">Save password</x-button>
     </form>
 
-    <form method="POST" action="{{ route('logout') }}" class="mt-4 text-center">
+    <form method="POST" action="{{ route('logout') }}" class="mt-4 text-center" data-logout>
         @csrf
         <button type="submit" class="text-sm text-muted underline underline-offset-4">Log out instead</button>
     </form>

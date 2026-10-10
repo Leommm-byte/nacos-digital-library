@@ -7,7 +7,11 @@
     @include('partials.head', ['title' => $title, 'description' => null])
     <meta name="robots" content="noindex">
 </head>
-<body class="reader-body">
+@php
+    // The offline reader (offline/reader) is the same for everyone.
+    $user = request()->routeIs('offline.*') ? null : auth()->user();
+@endphp
+<body class="reader-body" @if ($user) data-user="{{ \App\Support\Offline::owner($user) }}" @endif>
     {{ $slot }}
 </body>
 </html>

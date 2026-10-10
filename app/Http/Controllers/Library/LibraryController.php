@@ -43,7 +43,7 @@ class LibraryController extends Controller
         // Not found, rather than forbidden, so unapproved books stay hidden.
         abort_unless(Gate::allows('view', $book), 404);
 
-        $book->load(['department:id,name', 'uploader:id,fullname', 'currentFile:id,book_id']);
+        $book->load(['department:id,name', 'uploader:id,fullname', 'currentFile:id,book_id,size_bytes,sha256']);
 
         $related = $book->status === BookStatus::Approved
             ? Book::approved()

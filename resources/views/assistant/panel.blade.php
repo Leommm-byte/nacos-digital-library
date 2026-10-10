@@ -3,7 +3,7 @@
     button is a link to the full page, so it works without JavaScript;
     resources/js/assistant.js opens the panel instead and loads the chat.
 --}}
-<div class="assistant" data-assistant data-url="{{ route('assistant.index') }}">
+<aside class="assistant" aria-label="Assistant" data-assistant data-url="{{ route('assistant.index') }}">
     <a href="{{ route('assistant.index') }}" class="assistant-fab" data-assistant-open aria-controls="assistant-panel" aria-expanded="false">
         <x-icon name="message-circle" />
         <span>Ask</span>
@@ -18,4 +18,4 @@
             'panel' => true,
         ])
     </section>
-</div>
+</aside>

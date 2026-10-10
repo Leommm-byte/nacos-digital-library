@@ -14,7 +14,7 @@
                 <x-alert type="error">{{ $message }}</x-alert>
             @enderror
 
-            <div class="table-scroll">
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways">
                 <table class="admin-table">
                     <thead>
                         <tr><th class="w-10"><span class="sr-only">Choose</span></th><th>Class</th><th class="num">On the roll</th><th class="num">Need an account</th></tr>

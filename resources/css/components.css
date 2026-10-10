@@ -325,7 +325,7 @@
         font-weight: 700;
         line-height: 1.2;
 
-        &:nth-child(1) { left: 8%; transform: rotate(-8deg); background: var(--color-green-600); }
+        &:nth-child(1) { left: 8%; transform: rotate(-8deg); background: var(--color-green-800); }
         &:nth-child(2) { left: 34%; bottom: 1.5rem; transform: rotate(2deg); z-index: 1; background: var(--color-yellow-400); color: var(--on-accent); }
         &:nth-child(3) { left: 60%; transform: rotate(9deg); background: #f4f7f5; color: var(--color-green-800); }
     }
@@ -2151,7 +2151,7 @@
             color: var(--on-primary);
 
             & .review-tab-count {
-                background: color-mix(in srgb, var(--on-primary) 22%, transparent);
+                background: rgb(0 0 0 / 0.25);
                 color: var(--on-primary);
             }
         }
@@ -3915,6 +3915,117 @@
             grid-template-columns: minmax(0, 1fr) 18rem;
             align-items: start;
         }
+    }
+
+
+    /* Offline: "Keep offline" on a book, the offline page and its list. */
+    .keep-offline {
+        display: contents;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .keep-offline-error {
+        flex-basis: 100%;
+        color: var(--danger);
+        font-size: 0.875rem;
+    }
+
+    .offline-hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+
+    .offline-books {
+        display: grid;
+        gap: 0.5rem;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .offline-book {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+    }
+
+    .offline-book-link {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 3rem;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-md);
+
+        &:hover .offline-book-title {
+            text-decoration: underline;
+        }
+    }
+
+    .offline-book-title {
+        overflow: hidden;
+        color: var(--link);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .offline-book-meta {
+        color: var(--muted);
+        font-size: 0.8125rem;
+    }
+
+
+    /* "Install the app" card on the home pages (resources/js/install.js). */
+    .install-banner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1rem;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+        animation: enter var(--duration-slow) var(--ease-out) both;
+
+        &[hidden] {
+            display: none;
+        }
+
+        > div:nth-child(2) {
+            flex-basis: 14rem;
+        }
+    }
+
+    .install-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+
+
+    /* Same look whether the card title is an h2 or an h3. */
+    .book-card-title {
+        font-family: var(--font-sans);
+        font-weight: 600;
+        line-height: 1.3;
+        letter-spacing: -0.005em;
+        word-spacing: normal;
     }
 
 }

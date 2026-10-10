@@ -66,6 +66,8 @@ jobs:
           {
             echo "# Screenshots of ${GITHUB_REF_NAME} @ ${GITHUB_SHA::7}"
             echo
+            echo "[Accessibility report](accessibility.md)"
+            echo
             for f in *.png; do echo "### ${f%.png}"; echo; echo "![${f%.png}](${f})"; echo; done
           } > README.md
           git add -A

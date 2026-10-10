@@ -39,6 +39,9 @@
                 @endif
                 @if ($approved)
                     <x-bookmark-button :book="$book" :saved="isset($bookmarked[$book->id])" />
+                    @if ($book->currentFile)
+                        <x-keep-offline :book="$book" :file="$book->currentFile" />
+                    @endif
                 @endif
             </div>
 
