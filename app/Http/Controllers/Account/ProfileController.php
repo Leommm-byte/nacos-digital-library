@@ -41,7 +41,7 @@ class ProfileController extends Controller
     {
         $user = $this->user($request);
 
-        $user->fill($request->safe()->only(['fullname', 'department_id', 'level', 'programme']));
+        $user->fill($request->safe()->only(['fullname', 'display_name', 'department_id', 'level', 'programme']));
         $changed = array_keys($user->getDirty());
 
         if ($changed === []) {

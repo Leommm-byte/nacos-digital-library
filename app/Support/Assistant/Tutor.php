@@ -231,7 +231,7 @@ PROMPT;
     {
         $this->user->loadMissing('department:id,name');
 
-        return 'The student: '.$this->user->firstName().', '.$this->user->level->label()
+        return 'The student: '.$this->user->greetingName().', '.$this->user->level->label()
             .' '.$this->user->programme->label().' in '.$this->user->department->name
             .'. Today is '.now()->timezone((string) config('app.display_timezone'))->format('l j F Y').'.';
     }

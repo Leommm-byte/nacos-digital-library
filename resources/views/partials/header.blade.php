@@ -51,7 +51,7 @@
             @if ($user)
                 <details class="menu">
                     <summary class="flex items-center gap-1 rounded-full p-0.5" aria-label="Account menu">
-                        <span class="avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($user->fullname, 0, 1)) }}</span>
+                        <span class="avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr($user->greetingName(), 0, 1)) }}</span>
                         <x-icon name="chevron-down" class="hidden text-muted sm:block" />
                     </summary>
                     <div class="menu-panel">

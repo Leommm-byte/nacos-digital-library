@@ -4,7 +4,7 @@
         <div class="relative flex flex-wrap items-end justify-between gap-6">
             <div class="min-w-0">
                 <p class="hero-eyebrow">{{ $greeting }}</p>
-                <h1 class="hero-title">{{ $user->firstName() }}</h1>
+                <h1 class="hero-title">{{ $user->greetingName() }}</h1>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <span class="hero-chip">{{ $user->level->label() }}</span>
                     <span class="hero-chip">{{ $user->department->name }}</span>

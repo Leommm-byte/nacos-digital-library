@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property string $fullname
+ * @property string|null $display_name
  * @property string $matric_number
  * @property int|null $entry_year
  * @property string|null $email
@@ -52,8 +53,12 @@ class User extends Authenticatable implements MustVerifyEmail
      *
      * @var list<string>
      */
+    /** A display name: letters, with spaces, hyphens, apostrophes and dots. */
+    public const DISPLAY_NAME_PATTERN = "/^\\pL[\\pL\\pM .'’-]*$/u";
+
     protected $fillable = [
         'fullname',
+        'display_name',
         'matric_number',
         'email',
         'department_id',
@@ -82,6 +87,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // Nullable columns read on every page. Declared so a model that was
         // just created (not re-read from the database) has them too;
         // strict mode would otherwise throw.
+        'display_name' => null,
         'email_verified_at' => null,
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
@@ -124,6 +130,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function firstName(): string
     {
         return explode(' ', trim($this->fullname))[0];
+    }
+
+    /**
+     * What to call the student in greetings: the name they chose, or the
+     * first word of their full name. Admin pages and records use the full
+     * name.
+     */
+    public function greetingName(): string
+    {
+        return $this->display_name !== null && trim($this->display_name) !== '' ? $this->display_name : $this->firstName();
     }
 
     public function hasTwoFactorEnabled(): bool

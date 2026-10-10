@@ -52,7 +52,8 @@
                 @csrf
                 @method('PUT')
 
-                <x-field name="fullname" label="Full name" autocomplete="name" :value="$user->fullname" data-preview="fullname" required />
+                <x-field name="fullname" label="Full name" autocomplete="name" :value="$user->fullname" data-preview="fullname" hint="As on your school records. Used on official lists." required />
+                <x-field name="display_name" label="What should we call you? (optional)" autocomplete="nickname" maxlength="30" :value="$user->display_name" hint="Used in greetings. Leave it empty to use your first name ({{ $user->firstName() }})." />
 
                 <div>
                     <span class="field-label">Matric number</span>

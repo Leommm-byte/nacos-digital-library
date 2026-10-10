@@ -7,6 +7,7 @@ use App\Models\Election;
 use App\Models\ElectionCandidate;
 use App\Models\ElectionPosition;
 use App\Models\User;
+use App\Rules\ValidMatricNumber;
 use App\Support\Audit;
 use App\Support\MatricNumber;
 use App\Support\Uploads\Images;
@@ -154,10 +155,8 @@ class BallotSetupController extends Controller
 
         $data = $request->validateWithBag($bag, [
             'name' => ['required', 'string', 'max:150'],
-            'matric_number' => ['nullable', 'string', 'max:32', 'regex:'.MatricNumber::PATTERN],
+            'matric_number' => ['nullable', 'string', 'max:32', new ValidMatricNumber],
             'manifesto' => ['nullable', 'string', 'max:1000'],
-        ], [
-            'matric_number.regex' => 'Enter the matric number as printed on the ID card, for example F/ND/24/1234567.',
         ]);
 
         $matric = isset($data['matric_number']) ? (string) $data['matric_number'] : null;

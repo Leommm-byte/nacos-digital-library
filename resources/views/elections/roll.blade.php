@@ -26,7 +26,7 @@
                 {{ number_format($import['added']) }} added{{ ($import['replace'] ?? true) ? ', '.number_format($import['removed']).' removed' : '' }}{{ $import['moved'] ? ', '.number_format($import['moved']).' moved from another class' : '' }}.</p>
             @if ($import['skippedCount'] > 0)
                 <details class="mt-2">
-                    <summary class="cursor-pointer font-semibold">{{ $import['skippedCount'] }} {{ \Illuminate\Support\Str::plural('line', $import['skippedCount']) }} skipped (no valid matric number)</summary>
+                    <summary class="cursor-pointer font-semibold">{{ $import['skippedCount'] }} {{ \Illuminate\Support\Str::plural('line', $import['skippedCount']) }} skipped (no valid matric number: 7 digits and an entry year that has started)</summary>
                     <ul class="mt-2 space-y-1 text-sm">
                         @foreach ($import['skipped'] as $line)
                             <li>Line {{ $line['line'] }}: {{ $line['text'] }}</li>
@@ -80,8 +80,8 @@
                 @endif
             </x-section>
 
-            <x-section title="Find a student" description="Check whether someone is on the roll, and in which class." icon="search" tone="blue">
-                <form method="GET" action="{{ route('roll.index') }}" role="search" class="relative">
+            <x-section id="find" class="scroll-mt-24" title="Find a student" description="Check whether someone is on the roll, and in which class." icon="search" tone="blue">
+                <form method="GET" action="{{ route('roll.index') }}#find" role="search" class="relative">
                     <label for="roll-search" class="sr-only">Find a student on the roll</label>
                     <x-icon name="search" class="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted" />
                     <input id="roll-search" name="q" type="search" value="{{ $search }}" placeholder="Matric number or name" class="field-input pl-11">
@@ -103,7 +103,7 @@
                                     <x-badge class="shrink-0">{{ trim(($entry->level?->label() ?? '').' '.($entry->programme?->label() ?? '')) }}</x-badge>
                                 @endif
                                 @unless ($lockedBy)
-                                    <form method="POST" action="{{ route('roll.students.destroy', ['entry' => $entry, 'q' => $search ?: null]) }}" data-confirm="Take {{ $entry->matric_number }}{{ $entry->fullname ? ' ('.$entry->fullname.')' : '' }} off the roll? They won't be able to vote in elections limited to the roll.">
+                                    <form method="POST" action="{{ route('roll.students.destroy', ['entry' => $entry, 'q' => $search ?: null, 'page' => $entries->currentPage() > 1 ? $entries->currentPage() : null]) }}" data-confirm="Take {{ $entry->matric_number }}{{ $entry->fullname ? ' ('.$entry->fullname.')' : '' }} off the roll? They won't be able to vote in elections limited to the roll.">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="icon-btn icon-btn-danger" aria-label="Remove {{ $entry->matric_number }} from the roll"><x-icon name="trash-2" /></button>

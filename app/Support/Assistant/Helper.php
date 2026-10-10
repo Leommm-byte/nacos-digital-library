@@ -65,7 +65,7 @@ class Helper
     public function menu(?string $intro = null): Reply
     {
         return new Reply(
-            ($intro ?? 'Hi '.$this->user->firstName().'! I can help you with the library and your account.')
+            ($intro ?? 'Hi '.$this->user->greetingName().'! I can help you with the library and your account.')
             ."\n\nTry asking me to:\n- find books by title, author or topic\n- check how your uploads are doing\n- list your saved books or what you were reading\n- show your notifications and recent activity\n- tell you about elections you can vote in",
             suggestions: self::MENU,
         );

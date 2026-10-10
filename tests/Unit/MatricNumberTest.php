@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Enums\Programme;
 use App\Support\MatricNumber;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class MatricNumberTest extends TestCase
 {

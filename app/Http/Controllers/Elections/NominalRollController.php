@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Election;
 use App\Models\RollEntry;
+use App\Rules\ValidMatricNumber;
 use App\Support\Audit;
 use App\Support\Elections\RollImport;
 use App\Support\Elections\RollTemplate;
@@ -47,7 +48,9 @@ class NominalRollController extends Controller
             })
             ->orderBy('matric_number')
             ->paginate(25)
-            ->withQueryString();
+            ->withQueryString()
+            // Next and previous land on the list, not the top of the page.
+            ->fragment('find');
 
         $classes = [];
         foreach (RollEntry::query()->toBase()->selectRaw('programme, level, count(*) as total, max(updated_at) as updated')->groupBy('programme', 'level')->get() as $row) {
@@ -150,13 +153,11 @@ class NominalRollController extends Controller
         $request->merge(['matric_number' => MatricNumber::normalize($request->string('matric_number')->toString())]);
 
         $data = $request->validateWithBag('student', [
-            'matric_number' => ['required', 'string', 'max:32', 'regex:'.MatricNumber::PATTERN],
+            'matric_number' => ['required', 'string', 'max:32', new ValidMatricNumber],
             'fullname' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:255'],
             'programme' => ['required', Rule::enum(Programme::class)],
             'level' => ['required', Rule::enum(Level::class)],
-        ], [
-            'matric_number.regex' => 'Enter the matric number as printed on the ID card, for example F/ND/24/1234567.',
         ]);
 
         $programme = Programme::from((string) $data['programme']);
@@ -199,8 +200,13 @@ class NominalRollController extends Controller
             'class' => trim(($entry->level?->label() ?? '').' '.($entry->programme?->label() ?? '')),
         ]);
 
-        return redirect()->route('roll.index', array_filter(['q' => $request->string('q')->toString()]))
-            ->with('status', "{$entry->matric_number} is off the roll.");
+        // Back to the same page of the list, where the student was.
+        $back = route('roll.index', array_filter([
+            'q' => $request->string('q')->toString(),
+            'page' => max(1, $request->integer('page')) > 1 ? $request->integer('page') : null,
+        ]));
+
+        return redirect()->to($back.'#find')->with('status', "{$entry->matric_number} is off the roll.");
     }
 
     /**

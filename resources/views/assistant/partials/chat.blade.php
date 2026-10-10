@@ -33,7 +33,7 @@
     <div class="assistant-msg is-bot" data-assistant-intro>
         <span class="sr-only">Assistant:</span>
         <div class="assistant-bubble">
-            <p>Hi {{ auth()->user()?->firstName() }}! Ask me to find books, check your uploads, saved books or notifications, or tell you about elections.@if ($ai) I can also explain a topic or quiz you from a library book.@endif</p>
+            <p>Hi {{ auth()->user()?->greetingName() }}! Ask me to find books, check your uploads, saved books or notifications, or tell you about elections.@if ($ai) I can also explain a topic or quiz you from a library book.@endif</p>
         </div>
         <div class="assistant-chips" @if (count($messages)) hidden @endif>
             @foreach ($suggestions as $suggestion)

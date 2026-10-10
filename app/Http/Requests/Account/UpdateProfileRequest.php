@@ -24,6 +24,7 @@ class UpdateProfileRequest extends FormRequest
 
         return [
             'fullname' => ['required', 'string', 'min:3', 'max:150'],
+            'display_name' => ['nullable', 'string', 'max:30', 'regex:'.User::DISPLAY_NAME_PATTERN],
             'department_id' => ['required', 'integer', $department],
             'level' => ['required', Rule::enum(Level::class)],
             'programme' => ['required', Rule::enum(Programme::class)],
@@ -62,13 +63,26 @@ class UpdateProfileRequest extends FormRequest
     /**
      * @return array<string, string>
      */
+    public function messages(): array
+    {
+        return [
+            'display_name.regex' => 'Use letters for the name we call you (spaces, hyphens and apostrophes are fine).',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
     public function attributes(): array
     {
-        return ['fullname' => 'full name', 'department_id' => 'department'];
+        return ['fullname' => 'full name', 'display_name' => 'name we call you', 'department_id' => 'department'];
     }
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['fullname' => preg_replace('/\s+/', ' ', trim((string) $this->input('fullname')))]);
+        $this->merge([
+            'fullname' => preg_replace('/\s+/', ' ', trim((string) $this->input('fullname'))),
+            'display_name' => preg_replace('/\s+/', ' ', trim((string) $this->input('display_name'))) ?: null,
+        ]);
     }
 }

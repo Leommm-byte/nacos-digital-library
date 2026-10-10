@@ -77,6 +77,34 @@ class NominalRollTest extends TestCase
     }
 
     #[Test]
+    public function rows_with_a_year_that_has_not_started_or_six_digits_are_skipped(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 1));
+
+        $this->actingAs($this->admin)
+            ->post(route('roll.store'), $this->upload($this->csv("F/HD/26/0000001\nF/HD/27/0000002\nF/HD/26/000003\n")))
+            ->assertSessionHas('import', fn (array $import) => $import['total'] === 1 && $import['skippedCount'] === 2);
+
+        $this->assertSame(['F/HD/26/0000001'], RollEntry::pluck('matric_number')->all());
+    }
+
+    #[Test]
+    public function paging_through_the_roll_stays_on_the_list(): void
+    {
+        foreach (range(1, 30) as $i) {
+            RollEntry::create(['matric_number' => sprintf('F/ND/24/%07d', $i), 'fullname' => "Student {$i}"]);
+        }
+
+        $page = $this->actingAs($this->admin)->get(route('roll.index'))->assertOk();
+        $page->assertSee('id="find"', false)->assertSee('page=2#find', false);
+
+        // Removing someone on page 2 comes back to page 2 of the list.
+        $entry = RollEntry::where('matric_number', 'F/ND/24/0000028')->firstOrFail();
+        $this->delete(route('roll.students.destroy', ['entry' => $entry, 'page' => 2]))
+            ->assertRedirect(route('roll.index', ['page' => 2]).'#find');
+    }
+
+    #[Test]
     public function only_admins_see_and_upload_the_roll(): void
     {
         foreach ([Role::Student, Role::CourseRep, Role::Governor] as $role) {
@@ -285,7 +313,7 @@ class NominalRollTest extends TestCase
         $this->assertDatabaseMissing('nominal_roll', ['matric_number' => 'F/ND/24/0000008']);
         $this->post(route('roll.students.store'), [...$student, 'confirm' => '1'])->assertSessionHasNoErrors();
 
-        $this->delete(route('roll.students.destroy', $entry))->assertRedirect(route('roll.index'));
+        $this->delete(route('roll.students.destroy', $entry))->assertRedirect(route('roll.index').'#find');
         $this->assertModelMissing($entry);
         $this->assertDatabaseHas('audit_logs', ['action' => 'roll_student_removed', 'user_id' => $this->admin->id]);
     }
