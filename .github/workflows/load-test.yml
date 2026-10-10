@@ -1,0 +1,110 @@
+name: Load test
+
+# A busy hour on a copy of the site: the app runs in the same PHP 8.3 +
+# Apache image as local development, with production-like settings, MySQL 8,
+# database sessions and cache (as on DreamHost), and Apache limited to 20
+# PHP workers to behave like shared hosting. k6 then plays up to 150
+# signed-in students plus a 300-voter election rush (tests/load).
+#
+# The test machine is not DreamHost: read the numbers as "does anything
+# fall over or grow out of hand", not as exact live timings.
+
+on:
+  workflow_dispatch:
+    inputs:
+      vus:
+        description: Students browsing at the peak
+        default: '150'
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'tests/load/**'
+      - 'database/seeders/LoadTestSeeder.php'
+      - '.github/workflows/load-test.yml'
+
+concurrency:
+  group: load-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: nacos
+          MYSQL_USER: nacos
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund && npm run build
+
+      # "staging": production behaviour, except links stay http:// (the test
+      # machine has no certificate) and stray lazy loading still throws.
+      - name: Start the app (Apache + PHP 8.3, production-like settings)
+        run: |
+          docker build -t nacos-app docker/app
+          docker run -d --name app --network host -v "$PWD":/var/www/html \
+            -e APP_ENV=staging -e APP_DEBUG=false -e APP_URL=http://127.0.0.1 \
+            -e DB_CONNECTION=mysql -e DB_HOST=127.0.0.1 -e DB_PORT=3306 \
+            -e DB_DATABASE=nacos -e DB_USERNAME=nacos -e DB_PASSWORD=secret \
+            -e SESSION_DRIVER=database -e CACHE_STORE=database -e QUEUE_CONNECTION=database \
+            -e LOG_LEVEL=warning -e MAIL_MAILER=log \
+            nacos-app
+          for i in $(seq 120); do curl -fs http://127.0.0.1/up > /dev/null && break; sleep 3; done
+          curl -fsS http://127.0.0.1/up > /dev/null
+
+      - name: Fill the database and tune like production
+        run: |
+          docker exec -u www-data app php artisan db:seed --class=LoadTestSeeder --force
+          docker exec -u www-data app php artisan optimize
+          # About what a shared host allows one site at once.
+          docker exec app sh -c 'printf "<IfModule mpm_prefork_module>\n  StartServers 5\n  MaxRequestWorkers 20\n</IfModule>\n" > /etc/apache2/conf-enabled/zz-load-test.conf && apache2ctl -k graceful'
+          sleep 3
+
+      - uses: grafana/setup-k6-action@v1
+
+      - name: Run k6
+        run: k6 run -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
+
+      - name: Check the election after the rush
+        if: always()
+        run: |
+          q() { mysql -h127.0.0.1 -unacos -psecret nacos -N -e "$1" 2>/dev/null; }
+          election=$(q "select id from elections where title = 'Load Test Executive Election'")
+          voters=$(q "select count(*) from election_voters where election_id = $election")
+          votes=$(q "select count(*) from election_votes v join election_positions p on p.id = v.position_id where p.election_id = $election")
+          live=$(curl -fsS "http://127.0.0.1/live/election-$election.json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["ballots"])')
+          {
+            echo
+            echo "**Election:** $voters ballots recorded, $votes votes across 3 positions, live results show $live ballots."
+          } | tee -a load-test-summary.md
+          test "$voters" = "$live"
+
+      - name: Summary
+        if: always()
+        run: cat load-test-summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Server errors
+        if: always()
+        run: |
+          docker exec app sh -c 'tail -n 80 storage/logs/*.log 2>/dev/null' || true
+          docker logs app 2>&1 | grep -iE "error|warn" | tail -n 40 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test-summary
+          path: load-test-summary.md

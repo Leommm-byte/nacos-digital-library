@@ -314,15 +314,15 @@ Keep:
 - [x] Page titles and descriptions; `noindex` on error pages (PR 2).
 - [x] Brand presence: green brand panel on auth pages, green hero on the home pages (PR 6.5).
 - [x] Coloured icon tiles, softer surfaces and section headers with "See all" links (PR 6.5).
-- [ ] Web app manifest and service worker with an offline fallback page (PR 14).
-- [ ] Install prompt: Android/desktop install button; iOS "Share, Add to Home Screen" steps; hidden when installed; dismiss for 24 h (PR 14).
+- [x] Web app manifest and service worker with an offline fallback page, plus books kept offline on request (PR 14).
+- [x] Install prompt: Android/desktop install button; iOS "Share, Add to Home Screen" steps; hidden when installed; dismiss for 24 h (PR 14).
 - [ ] Confirmation dialogs (legacy AppModal) for destructive actions (as features need them).
-- [ ] Open Graph/Twitter share tags (PR 14).
+- [x] Open Graph/Twitter share tags (PR 14).
 - [x] Audit log of security-relevant actions (PR 1).
 
 Fix:
 
-- [ ] The service worker cached signed-in and admin pages, and could cache PDFs (PR 14).
+- [x] The service worker cached signed-in and admin pages, and could cache PDFs. Now it never stores pages; PDFs only when a student keeps a book, removed on logout or when someone else signs in (PR 14).
 - [x] `.htaccess` didn't block `includes/`, protected uploads or the config file. Now only `public/` is web-served (PR 1).
 - [x] Inline styles and handlers everywhere; the CSP forbids them now (PR 2).
 - [x] Heavy `backdrop-filter` blur and large shadows (PR 2).
