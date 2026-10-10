@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
@@ -50,6 +51,7 @@ class AssistantSessionTest extends TestCase
      *
      * @param  array<string, mixed>  $data
      * @param  array<string, string>  $headers
+     * @return TestResponse<Response>
      */
     private function send(string $method, string $uri, array $data = [], array $headers = []): TestResponse
     {
