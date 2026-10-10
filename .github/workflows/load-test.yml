@@ -70,8 +70,12 @@ jobs:
         run: |
           docker exec -u www-data app php artisan db:seed --class=LoadTestSeeder --force
           docker exec -u www-data app php artisan optimize
-          # About what a shared host allows one site at once.
-          docker exec app sh -c 'printf "<IfModule mpm_prefork_module>\n  StartServers 5\n  MaxRequestWorkers 20\n</IfModule>\n" > /etc/apache2/conf-enabled/zz-load-test.conf && apache2ctl -k graceful'
+          # About what a shared host allows one site at once: 20 PHP
+          # processes. This image runs PHP inside Apache's workers, so
+          # keep-alive is off, or idle connections would hold workers the
+          # way they never hold PHP processes on DreamHost (whose Apache
+          # hands requests to a separate PHP pool).
+          docker exec app sh -c 'printf "KeepAlive Off\n<IfModule mpm_prefork_module>\n  StartServers 5\n  MaxRequestWorkers 20\n</IfModule>\n" > /etc/apache2/conf-enabled/zz-load-test.conf && apache2ctl -k graceful'
           sleep 3
 
       - uses: grafana/setup-k6-action@v1
