@@ -67,7 +67,7 @@ class CandidatePhotoTest extends TestCase
         $this->assertSame($second, $candidate->fresh()?->photo_path);
 
         $this->put(route('elections.manage.candidates.update', [$election, $position, $candidate]), ['name' => 'Ada N. Obi', 'remove_photo' => '1']);
-        $this->assertNull($candidate->fresh()?->photo_path);
+        $this->assertNull(ElectionCandidate::findOrFail($candidate->id)->photo_path);
         Storage::disk('private')->assertMissing($second);
     }
 
