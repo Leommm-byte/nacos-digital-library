@@ -77,7 +77,27 @@ jobs:
       - uses: grafana/setup-k6-action@v1
 
       - name: Run k6
-        run: k6 run -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
+        run: |
+          # Every 10 s: slow queries and lock waits in MySQL, for diagnosis.
+          (
+            for i in $(seq 1 32); do
+              echo "== $(date +%T)"
+              mysql -h127.0.0.1 -uroot -proot -t -e "
+                select count(*) as transactions, sum(trx_state = 'LOCK WAIT') as waiting,
+                       max(timestampdiff(second, trx_started, now())) as oldest_s
+                  from information_schema.innodb_trx;
+                select time as s, state, left(info, 140) as query
+                  from information_schema.processlist
+                 where command <> 'Sleep' and time >= 1 and info not like '%processlist%'
+                 order by time desc limit 8;" 2>/dev/null
+              sleep 10
+            done
+          ) > db-sample.log &
+          k6 run -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
+
+      - name: Database during the run
+        if: always()
+        run: cat db-sample.log 2>/dev/null | head -n 400 || true
 
       - name: Check the election after the rush
         if: always()
