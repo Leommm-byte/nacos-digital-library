@@ -65,6 +65,14 @@ export default defineConfig({
         pdfjsAssets(),
         tesseractAssets(),
     ],
+    build: {
+        // The local stack rebuilds on every save (docker/assets/watch.sh).
+        // Emptying public/build first left a moment with no manifest, and a
+        // page opened then failed with "Unable to locate file in Vite
+        // manifest". Watching keeps the old files until the new ones are
+        // written; watch.sh clears the folder when the container starts.
+        emptyOutDir: !process.argv.includes('--watch'),
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**'],
