@@ -224,12 +224,16 @@ class VotingTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame(1, $election->ballotCount());
-        $this->assertSame(0, LiveResults::read($election)['ballots'] ?? null);
+        $before = LiveResults::read($election);
+        $this->assertNotNull($before);
+        $this->assertSame(0, $before['ballots']);
 
         // That writer finishes; the scheduler (or the next ballot) catches up.
         $lock->release();
         $this->artisan('elections:close')->assertSuccessful();
-        $this->assertSame(1, LiveResults::read($election)['ballots'] ?? null);
+        $after = LiveResults::read($election);
+        $this->assertNotNull($after);
+        $this->assertSame(1, $after['ballots']);
     }
 
     #[Test]

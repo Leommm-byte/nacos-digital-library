@@ -158,7 +158,7 @@ class LoadTestSeeder extends Seeder
 
         LiveResults::publish($election);
 
-        $this->command?->info('Load test data: '.self::BOOKS.' books, '.self::STUDENTS.' students, election #'.$election->id.'.');
+        $this->command->info('Load test data: '.self::BOOKS.' books, '.self::STUDENTS.' students, election #'.$election->id.'.');
     }
 
     private function words(int $count): string
