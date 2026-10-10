@@ -25,6 +25,8 @@ use App\Http\Controllers\Reader\BookFileController;
 use App\Http\Controllers\Reader\ReaderController;
 use App\Http\Controllers\Reader\ReadingProgressController;
 use App\Http\Controllers\Review\ReviewController;
+use App\Http\Controllers\Timetables\ExamController;
+use App\Http\Controllers\Timetables\TimetableController;
 use App\Http\Controllers\Uploads\UploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -154,6 +156,30 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
         Route::put('/settings/departments/{department}', [SettingController::class, 'department'])->name('settings.department');
+    });
+
+    // Timetables: who may see or change a class's is checked per class
+    // (the view-timetable and edit-timetable gates).
+    Route::get('/timetable', [TimetableController::class, 'show'])->name('timetable.show');
+    Route::get('/timetable/edit', [TimetableController::class, 'edit'])->name('timetable.edit');
+    Route::get('/timetable/template', [TimetableController::class, 'template'])->name('timetable.template');
+    Route::post('/timetable/lectures', [TimetableController::class, 'store'])->name('timetable.slots.store');
+    Route::put('/timetable/lectures/{slot}', [TimetableController::class, 'update'])->name('timetable.slots.update');
+    Route::delete('/timetable/lectures/{slot}', [TimetableController::class, 'destroy'])->name('timetable.slots.destroy');
+    Route::post('/timetable/import', [TimetableController::class, 'import'])
+        ->middleware('throttle:10,1')
+        ->name('timetable.import');
+
+    Route::get('/exams', [ExamController::class, 'index'])->name('exams.index');
+    Route::middleware('can:manage-exams')->group(function () {
+        Route::get('/exams/manage', [ExamController::class, 'manage'])->name('exams.manage');
+        Route::get('/exams/template', [ExamController::class, 'template'])->name('exams.template');
+        Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');
+        Route::put('/exams/{exam}', [ExamController::class, 'update'])->name('exams.update');
+        Route::delete('/exams/{exam}', [ExamController::class, 'destroy'])->name('exams.destroy');
+        Route::post('/exams/import', [ExamController::class, 'import'])
+            ->middleware('throttle:10,1')
+            ->name('exams.import');
     });
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

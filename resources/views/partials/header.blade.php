@@ -62,6 +62,9 @@
                         @if (Route::has('profile.edit'))
                             <a href="{{ route('profile.edit') }}" class="menu-item"><x-icon name="user" /> Profile</a>
                         @endif
+                        @if (Route::has('bookmarks.index'))
+                            <a href="{{ route('bookmarks.index') }}" class="menu-item"><x-icon name="bookmark" /> Saved books</a>
+                        @endif
                         @if ($waiting !== null)
                             <a href="{{ route('review.index') }}" class="menu-item"><x-icon name="shield-check" /> Review uploads
                                 @if ($waiting)<span class="menu-count">{{ $waiting }}</span>@endif

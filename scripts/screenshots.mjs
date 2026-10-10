@@ -39,6 +39,16 @@ const pages = [
     }],
     ['saved', '/saved', 'F/ND/24/0000004'],
     ['books-read', '/reading', 'F/ND/24/0000004'],
+    ['timetable', '/timetable', 'F/ND/24/0000004'],
+    ['timetable-empty', '/timetable', 'F/HD/24/3211001'],
+    ['exams', '/exams', 'F/ND/24/0000004'],
+    ['exams-everyone', '/exams?show=all', 'F/ND/24/0000004'],
+    ['timetable-governor', '/timetable', 'F/HD/24/3212002'],
+    ['timetable-edit', '/timetable/edit', 'F/HD/24/3212002'],
+    ['timetable-edit-open', '/timetable/edit', 'F/HD/24/3212002', async (page) => {
+        // A lecture opened for changes.
+        await page.locator('.tt-edit-row summary').first().click();
+    }],
     ['profile', '/profile', 'F/ND/24/0000004'],
     ['settings', '/settings', 'F/ND/24/0000004'],
     ['reset-codes', '/reset-codes', 'F/ND/23/0000003'],
@@ -107,6 +117,8 @@ const pages = [
     ['admin-reports', '/admin/reports', 'F/HD/24/3211001'],
     ['admin-audit', '/admin/audit', 'F/HD/24/3211001'],
     ['admin-settings', '/admin/settings', 'F/HD/24/3211001'],
+    ['admin-timetables', '/timetable/edit?class=full_time%7CND1%7C', 'F/HD/24/3211001'],
+    ['exams-manage', '/exams/manage', 'F/HD/24/3211001'],
     ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/24/3211001'],
     ['election-monitor', 'LINK /elections/manage .upload-row:has-text("Voting open")', 'F/HD/24/3211001'],
     // End to end: these really upload, and fail the run if they don't land

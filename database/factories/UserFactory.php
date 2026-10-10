@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\Level;
+use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Department;
@@ -21,33 +23,45 @@ class UserFactory extends Factory
 
     public function definition(): array
     {
-        // A class the school runs, with a matching matric number.
+        // A class the school runs; the matric number follows whatever level
+        // and programme the account ends up with.
         /** @var SchoolClass $class */
         $class = fake()->randomElement(SchoolClass::all());
-        $level = $class->level;
-        $programme = $class->programme;
-        $type = $level->stage() === 'HND' ? 'HD' : 'ND';
-
-        if ($class->arm === null) {
-            $digits = (string) fake()->unique()->numberBetween(1000000, 9999999);
-        } else {
-            // An HND number carries its course (arm) digit: 3211… is SWD.
-            $position = (int) config('classes.arm_digit', 4) - 1;
-            $rest = (string) fake()->unique()->numberBetween(100000, 999999);
-            $digits = substr($rest, 0, $position).Arms::all()[$class->arm]['digit'].substr($rest, $position);
-        }
 
         return [
             'fullname' => fake()->name(),
-            'matric_number' => sprintf('%s/%s/%02d/%s', $programme->matricLetter(), $type, fake()->numberBetween(20, 25), $digits),
+            'matric_number' => fn (array $attributes) => self::matricFor($attributes['level'], $attributes['programme']),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'department_id' => Department::factory(),
-            'level' => $level,
-            'programme' => $programme,
+            'level' => $class->level,
+            'programme' => $class->programme,
             'password' => static::$password ??= Hash::make('Password1!'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * A unique matric number for the level and programme: the programme
+     * letter, ND or HD, and for HND a course (arm) digit, as 3211… is SWD
+     * (the arm given, or any).
+     */
+    public static function matricFor(Level|string $level, Programme|string $programme, ?string $arm = null): string
+    {
+        $level = $level instanceof Level ? $level : Level::from($level);
+        $programme = $programme instanceof Programme ? $programme : Programme::from($programme);
+        $arms = Arms::forStage($level->stage());
+
+        if ($arms === []) {
+            $digits = (string) fake()->unique()->numberBetween(1000000, 9999999);
+        } else {
+            $position = (int) config('classes.arm_digit', 4) - 1;
+            $rest = (string) fake()->unique()->numberBetween(100000, 999999);
+            $digit = $arm !== null && isset($arms[$arm]) ? $arms[$arm]['digit'] : fake()->randomElement(array_column($arms, 'digit'));
+            $digits = substr($rest, 0, $position).$digit.substr($rest, $position);
+        }
+
+        return sprintf('%s/%s/%02d/%s', $programme->matricLetter(), $level->stage() === 'HND' ? 'HD' : 'ND', fake()->numberBetween(20, 25), $digits);
     }
 
     public function role(Role $role): static

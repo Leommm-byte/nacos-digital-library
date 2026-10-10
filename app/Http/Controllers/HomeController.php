@@ -6,11 +6,14 @@ use App\Enums\BookStatus;
 use App\Enums\ElectionStatus;
 use App\Models\Book;
 use App\Models\Election;
+use App\Models\Exam;
 use App\Models\ReadingProgress;
+use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Support\Catalog;
 use App\Support\Dashboard\ActivityFeed;
 use App\Support\Dashboard\Announcements;
+use App\Support\Timetables\Week;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -78,10 +81,29 @@ class HomeController extends Controller
             'announcements' => Announcements::latest(3),
             'activity' => ActivityFeed::forUser($user),
             'elections' => $this->ballotsWaiting($user),
+            'timetable' => $this->timetable($user),
             'waiting' => Gate::allows('review-uploads')
                 ? Book::where('status', BookStatus::Pending)->where('uploader_id', '!=', $user->id)->count()
                 : null,
         ]);
+    }
+
+    /**
+     * Today's lectures (and the next one) for the student's class, and
+     * their next exam.
+     *
+     * @return array{week: array{days: array<int, array{name: string, short: string, today: bool, slots: list<array{slot: TimetableSlot, state: string|null}>}>, today: int, next: TimetableSlot|null, now: TimetableSlot|null}|null, exam: Exam|null}
+     */
+    private function timetable(User $user): array
+    {
+        $class = $user->schoolClass();
+        $slots = $class !== null ? TimetableSlot::forClass($class)->get() : collect();
+        $today = now()->timezone((string) config('app.display_timezone'))->toDateString();
+
+        return [
+            'week' => $slots->isNotEmpty() ? Week::build($slots) : null,
+            'exam' => Exam::current()->whereDate('date', '>=', $today)->limit(200)->get()->first(fn (Exam $exam) => $exam->isFor($user)),
+        ];
     }
 
     /**

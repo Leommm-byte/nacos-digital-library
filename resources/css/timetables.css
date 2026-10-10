@@ -1,0 +1,325 @@
+/*
+ * Class and exam timetables (resources/views/timetables, exams).
+ */
+@layer components {
+    /* Each course keeps one tint all week. */
+    .tt-tone-green { --tone-bg: var(--tint-green); --tone-fg: var(--tint-green-fg); }
+    .tt-tone-blue { --tone-bg: var(--tint-blue); --tone-fg: var(--tint-blue-fg); }
+    .tt-tone-violet { --tone-bg: var(--tint-violet); --tone-fg: var(--tint-violet-fg); }
+    .tt-tone-yellow { --tone-bg: var(--tint-yellow); --tone-fg: var(--tint-yellow-fg); }
+    .tt-tone-red { --tone-bg: var(--tint-red); --tone-fg: var(--tint-red-fg); }
+
+    .tt-week {
+        display: grid;
+        gap: 1rem;
+
+        @variant md {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @variant xl {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.75rem;
+
+            &.tt-week-6 {
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+            }
+        }
+    }
+
+    .tt-day {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-width: 0;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+
+        &.is-today {
+            border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 55%, var(--border)), var(--shadow-card);
+        }
+    }
+
+    .tt-day-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.125rem 0.25rem 0.25rem;
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .tt-slots {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tt-slot {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        min-width: 0;
+        padding: 0.625rem 0.75rem 0.625rem 0.875rem;
+        border-radius: var(--radius-md);
+        background: var(--tone-bg, var(--surface-2));
+        color: var(--fg);
+        overflow: hidden;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 4px;
+            background: var(--tone-fg, var(--primary));
+        }
+
+        &.is-done {
+            opacity: 0.55;
+        }
+
+        &.is-now {
+            outline: 2px solid var(--tone-fg, var(--primary));
+            outline-offset: 1px;
+        }
+    }
+
+    .tt-time {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        color: var(--tone-fg, var(--muted));
+        font-size: 0.75rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tt-code {
+        font-family: var(--font-display);
+        font-size: 0.9375rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+
+    .tt-title {
+        font-size: 0.8125rem;
+        line-height: 1.35;
+    }
+
+    .tt-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.125rem 0.75rem;
+        margin-top: 0.25rem;
+        color: var(--muted);
+        font-size: 0.75rem;
+
+        & > span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            min-width: 0;
+        }
+
+        & .icon {
+            width: 0.875rem;
+            height: 0.875rem;
+            flex-shrink: 0;
+        }
+    }
+
+    .tt-state {
+        flex-shrink: 0;
+        padding: 0.0625rem 0.5rem;
+        border-radius: 999px;
+        background: var(--tone-fg, var(--primary));
+        color: var(--surface);
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .tt-free {
+        padding: 0.75rem;
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-md);
+        color: var(--muted);
+        font-size: 0.8125rem;
+        text-align: center;
+    }
+
+    /* "Now and next" at the top of the page. */
+    .tt-today {
+        display: grid;
+        gap: 0.75rem;
+
+        @variant sm {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    .tt-today-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.875rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+    }
+
+    .tt-today-label {
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    /* The editor's list of lectures. */
+    .tt-edit-day {
+        scroll-margin-top: calc(var(--header-h) + 1rem);
+    }
+
+    .tt-edit-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .tt-edit-row {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+
+        & > summary {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 3.5rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            list-style: none;
+
+            &::-webkit-details-marker {
+                display: none;
+            }
+        }
+
+        &[open] > summary {
+            border-bottom: 1px solid var(--border);
+        }
+    }
+
+    .tt-swatch {
+        width: 0.375rem;
+        align-self: stretch;
+        flex-shrink: 0;
+        border-radius: 999px;
+        background: var(--tone-fg, var(--primary));
+    }
+
+    .tt-form-grid {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        & > .tt-span-2 {
+            grid-column: span 2;
+        }
+    }
+
+    /* Exam timetable: papers grouped by day. */
+    .exam-days {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .exam-day {
+        display: grid;
+        gap: 0.75rem;
+
+        @variant sm {
+            grid-template-columns: 5.5rem minmax(0, 1fr);
+            gap: 1rem;
+        }
+    }
+
+    .exam-date {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        @variant sm {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0;
+            align-self: start;
+            position: sticky;
+            top: calc(var(--header-h) + 1rem);
+            padding: 0.625rem 0.5rem;
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        &.is-today {
+            border-color: var(--primary);
+        }
+    }
+
+    .exam-date-day {
+        font-family: var(--font-display);
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .exam-date-sub {
+        color: var(--muted);
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+
+    .exam-papers {
+        display: grid;
+        gap: 0.625rem;
+
+        @variant lg {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    .exam-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 0;
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+
+        &.is-mine {
+            border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+            background: color-mix(in srgb, var(--primary-soft) 60%, var(--surface));
+        }
+
+        &.is-past {
+            opacity: 0.6;
+        }
+    }
+}

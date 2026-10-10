@@ -37,6 +37,49 @@
 
     <div class="dashboard mt-10 md:mt-12">
         <div class="min-w-0 space-y-10">
+            @if ($timetable['week'] || $timetable['exam'])
+                @php($week = $timetable['week'])
+                @php($todaySlots = $week ? ($week['days'][$week['today']]['slots'] ?? []) : [])
+                <x-section title="Today" :description="now()->timezone(config('app.display_timezone'))->format('l j F')" icon="calendar-clock" tone="blue">
+                    <x-slot:action>
+                        <a href="{{ route('timetable.show') }}" class="section-link">Timetable <x-icon name="arrow-right" /></a>
+                    </x-slot:action>
+                    @if ($todaySlots !== [])
+                        <ol class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            @foreach ($todaySlots as $item)
+                                @php($slot = $item['slot'])
+                                <li @class(['tt-slot', 'tt-tone-'.$slot->tone(), 'is-now' => $item['state'] === 'now', 'is-done' => $item['state'] === 'done'])>
+                                    <span class="tt-time">
+                                        <span>{{ $slot->timeRange() }}</span>
+                                        @if ($item['state'] === 'now')
+                                            <span class="tt-state">Now</span>
+                                        @elseif ($item['state'] === 'next')
+                                            <span class="tt-state">Next</span>
+                                        @endif
+                                    </span>
+                                    <span class="tt-code">{{ $slot->course_code }}@if ($slot->course_title) <span class="font-sans text-sm font-normal">· {{ $slot->course_title }}</span>@endif</span>
+                                    @if ($slot->venue)
+                                        <span class="tt-meta"><span><x-icon name="map-pin" /> {{ $slot->venue }}</span></span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
+                    @elseif ($week)
+                        <p class="tt-free">No lectures today.@if ($week['next']) Next: {{ $week['next']->course_code }}, {{ $week['next']->dayName() }} {{ \App\Support\Timetables\TimeOfDay::format($week['next']->starts_at) }}.@endif</p>
+                    @endif
+                    @if ($exam = $timetable['exam'])
+                        <a href="{{ route('exams.index') }}" class="continue-card mt-3">
+                            <x-icon-tile name="calendar-days" tone="red" />
+                            <span class="min-w-0 flex-1">
+                                <span class="continue-title">Next exam: {{ $exam->course_code }}@if ($exam->course_title) · {{ $exam->course_title }}@endif</span>
+                                <span class="continue-meta">{{ $exam->date->format('l j F') }}, {{ $exam->timeRange() }}@if ($exam->venue) · {{ $exam->venue }}@endif</span>
+                            </span>
+                            <x-icon name="chevron-right" class="shrink-0 text-muted" />
+                        </a>
+                    @endif
+                </x-section>
+            @endif
+
             @if ($continue->isNotEmpty())
                 <x-section title="Continue reading" description="Pick up where you stopped." icon="book-open" tone="green">
                     <x-slot:action>

@@ -9,6 +9,8 @@ use App\Models\Announcement;
 use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
+use App\Models\Exam;
+use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Support\Audit;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,6 +73,8 @@ class PerformanceBudgetTest extends TestCase
             'elections' => [$this->student, route('elections.index')],
             'election' => [$this->student, route('elections.show', $this->election)],
             'assistant' => [$this->student, route('assistant.index')],
+            'timetable' => [$this->student, route('timetable.show')],
+            'exams' => [$this->student, route('exams.index')],
             'review queue' => [$this->admin, route('review.index')],
             'admin dashboard' => [$this->admin, route('admin.dashboard')],
             'admin users' => [$this->admin, route('admin.users.index')],
@@ -141,6 +145,14 @@ class PerformanceBudgetTest extends TestCase
 
         Book::factory()->count($n)->for($this->department)->uploadedBy($this->student)->status(BookStatus::Pending)->create();
         Announcement::factory()->count($n)->create();
+
+        $class = $this->student->schoolClass() ?? $this->fail('The student has no class.');
+        for ($i = 0; $i < $n; $i++) {
+            $slot = new TimetableSlot(['day' => $i % 5 + 1, 'starts_at' => sprintf('%02d:00', 8 + $i % 8), 'ends_at' => sprintf('%02d:00', 9 + $i % 8), 'course_code' => 'CSC '.(100 + $i), 'venue' => 'Lab 1']);
+            $slot->assignClass($class);
+            $slot->save();
+            Exam::create(['date' => now()->addDays($i + 1)->toDateString(), 'starts_at' => '09:00', 'course_code' => 'MTH '.(100 + $i), 'levels' => $i % 2 ? ['ND1'] : null]);
+        }
         User::factory()->count($n)->for($this->department)->create();
 
         foreach ($books as $book) {

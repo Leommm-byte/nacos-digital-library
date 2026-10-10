@@ -1,12 +1,12 @@
 {{--
     <x-select name="level" label="Level" :options="['ND1' => 'ND1', …]" placeholder="Choose your level" />
 --}}
-@props(['name', 'label', 'options' => [], 'placeholder' => null, 'value' => null])
+@props(['name', 'label', 'options' => [], 'placeholder' => null, 'value' => null, 'bag' => 'default', 'old' => true])
 
 @php
     $id = $attributes->get('id', $name);
-    $error = $errors->first($name);
-    $selected = (string) old($name, $value);
+    $error = $errors->getBag($bag)->first($name);
+    $selected = (string) ($old ? old($name, $value) : $value);
 @endphp
 
 <div>

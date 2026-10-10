@@ -11,8 +11,10 @@ use App\Models\Announcement;
 use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
+use App\Models\Exam;
 use App\Models\ReadingProgress;
 use App\Models\RollEntry;
+use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Notifications\UploadReviewed;
 use App\Support\Classes\Arms;
@@ -164,6 +166,75 @@ class DemoSeeder extends Seeder
         RollEntry::query()->insert($waiting);
 
         Settings::put(['academic_session' => '2026/2027']);
+
+        $this->seedTimetables($users['admin']);
+    }
+
+    /**
+     * A week of lectures for Tobi's class (ND1 Full-time) and the
+     * governor's (HND1 NCC Full-time), and an exam timetable starting next
+     * week.
+     */
+    private function seedTimetables(User $admin): void
+    {
+        $weeks = [
+            [new SchoolClass(Programme::FullTime, Level::ND1), [
+                [1, '08:00', '10:00', 'COM 111', 'Introduction to Computing', 'Dr. A. Bello', 'Lab 1'],
+                [1, '10:00', '12:00', 'MTH 111', 'Logic and Linear Algebra', 'Mr. K. Okafor', 'LT 2'],
+                [1, '13:00', '15:00', 'GNS 101', 'Use of English I', 'Mrs. T. Ade', 'Hall B'],
+                [2, '08:00', '10:00', 'COM 112', 'Introduction to Programming', 'Dr. A. Bello', 'Lab 2'],
+                [2, '11:00', '13:00', 'STA 111', 'Descriptive Statistics', 'Mr. S. Musa', 'LT 1'],
+                [3, '09:00', '11:00', 'COM 113', 'Introduction to the Internet', 'Ms. F. Eze', 'Lab 1'],
+                [3, '14:00', '16:00', 'EED 126', 'Entrepreneurship', 'Mr. J. Obi', 'Hall A'],
+                [4, '08:00', '10:00', 'COM 114', 'Computer Hardware I', 'Engr. B. Lawal', 'Workshop'],
+                [4, '10:00', '12:00', 'MTH 112', 'Functions and Geometry', 'Mr. K. Okafor', 'LT 2'],
+                [5, '09:00', '11:00', 'COM 115', 'Computer Application Packages', 'Ms. F. Eze', 'Lab 3'],
+                [5, '12:00', '13:00', 'GNS 111', 'Citizenship Education', 'Mrs. T. Ade', 'Hall B'],
+            ]],
+            [new SchoolClass(Programme::FullTime, Level::HND1, 'ncc'), [
+                [1, '09:00', '11:00', 'NCC 311', 'Network Fundamentals', 'Dr. O. Salami', 'Network Lab'],
+                [2, '08:00', '10:00', 'NCC 312', 'Cloud Infrastructure', 'Engr. R. Yusuf', 'Lab 4'],
+                [2, '12:00', '14:00', 'COM 311', 'Operating Systems II', 'Dr. A. Bello', 'LT 3'],
+                [3, '10:00', '12:00', 'NCC 313', 'Linux Administration', 'Engr. R. Yusuf', 'Lab 4'],
+                [4, '09:00', '11:00', 'MTH 311', 'Numerical Methods', 'Mr. K. Okafor', 'LT 2'],
+                [5, '10:00', '12:00', 'NCC 314', 'Network Security', 'Dr. O. Salami', 'Network Lab'],
+            ]],
+        ];
+
+        foreach ($weeks as [$class, $lectures]) {
+            foreach ($lectures as [$day, $start, $end, $code, $title, $lecturer, $venue]) {
+                $slot = new TimetableSlot(['day' => $day, 'starts_at' => $start, 'ends_at' => $end, 'course_code' => $code, 'course_title' => $title, 'lecturer' => $lecturer, 'venue' => $venue]);
+                $slot->assignClass($class);
+                $slot->updated_by = $admin->id;
+                $slot->save();
+            }
+        }
+
+        $monday = now()->timezone((string) config('app.display_timezone'))->next('Monday');
+        $papers = [
+            [0, '09:00', '12:00', 'COM 111', 'Introduction to Computing', 'Hall A', ['ND1'], null],
+            [0, '13:00', '15:00', 'NCC 311', 'Network Fundamentals', 'Network Lab', ['HND1'], ['ncc']],
+            [1, '09:00', '11:00', 'GNS 101', 'Use of English I', 'Hall B', ['ND1'], null],
+            [1, '09:00', '12:00', 'SWD 311', 'Web Application Development', 'Lab 2', ['HND1'], ['swd']],
+            [2, '10:00', '12:00', 'MTH 111', 'Logic and Linear Algebra', 'Hall A', ['ND1'], null],
+            [2, '14:00', '16:00', 'GNS 301', 'Communication in English III', 'Hall C', null, null],
+            [3, '09:00', '12:00', 'COM 211', 'Data Structures', 'Hall A', ['ND2'], null],
+            [4, '09:00', '11:00', 'COM 112', 'Introduction to Programming', 'Lab 1', ['ND1'], null],
+        ];
+
+        foreach ($papers as [$offset, $start, $end, $code, $title, $venue, $levels, $arms]) {
+            Exam::create([
+                'date' => $monday->copy()->addDays($offset)->toDateString(),
+                'starts_at' => $start,
+                'ends_at' => $end,
+                'course_code' => $code,
+                'course_title' => $title,
+                'venue' => $venue,
+                'levels' => $levels,
+                'arms' => $arms,
+                'note' => $code === 'COM 112' ? 'Practical: bring your student ID.' : null,
+            ]);
+        }
     }
 
     /**
