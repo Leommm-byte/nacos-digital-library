@@ -24,7 +24,7 @@
     {{-- At a glance; each tile leads to its page. --}}
     <nav aria-label="Your numbers" class="mt-6">
         <ul class="stagger grid grid-cols-2 gap-3 md:grid-cols-4">
-            <li><a href="{{ route('library.index') }}" class="shortcut"><x-icon-tile name="book-open" tone="green" />
+            <li><a href="{{ route('reading.index') }}" class="shortcut"><x-icon-tile name="book-open" tone="green" />
                 <span><strong>{{ number_format($stats['opened']) }} {{ \Illuminate\Support\Str::plural('book', $stats['opened']) }} read</strong><small>{{ $stats['finished'] }} finished</small></span></a></li>
             <li><a href="{{ route('bookmarks.index') }}" class="shortcut"><x-icon-tile name="bookmark" tone="yellow" />
                 <span><strong>{{ number_format($stats['saved']) }} saved</strong><small>For revision</small></span></a></li>
@@ -39,6 +39,9 @@
         <div class="min-w-0 space-y-10">
             @if ($continue->isNotEmpty())
                 <x-section title="Continue reading" description="Pick up where you stopped." icon="book-open" tone="green">
+                    <x-slot:action>
+                        <a href="{{ route('reading.index') }}" class="section-link">See all <x-icon name="arrow-right" /></a>
+                    </x-slot:action>
                     <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         @foreach ($continue as $progress)
                             <li>

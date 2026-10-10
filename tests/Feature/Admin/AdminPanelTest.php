@@ -87,11 +87,71 @@ class AdminPanelTest extends TestCase
             ->assertOk()
             ->assertSee('Updated profile')
             ->assertSee('Changed password')
-            ->assertDontSee('Changed settings</td>', false);
+            ->assertDontSee('audit-action">Changed settings', false);
 
         $this->get(route('admin.audit', ['action' => 'password_changed']))
             ->assertSee('Kemi Adeyemi')
-            ->assertDontSee('Updated profile</td>', false);
+            ->assertDontSee('audit-action">Updated profile', false);
+    }
+
+    #[Test]
+    public function the_audit_log_shows_a_page_at_a_time_grouped_by_day(): void
+    {
+        $this->actingAs($this->admin);
+        $this->travelTo(now()->setTimezone(config('app.display_timezone'))->setTime(12, 0));
+        Audit::record('settings_updated');
+        $this->travel(-1)->days();
+        Audit::record('profile_updated');
+        $this->travelBack();
+
+        for ($i = 0; $i < 30; $i++) {
+            Audit::record('login');
+        }
+
+        $this->get(route('admin.audit'))->assertOk()
+            ->assertSee('Showing <strong>1–25</strong> of <strong>32</strong> entries', false)
+            ->assertSee('Page 1 of 2')
+            ->assertSee('Today')
+            ->assertSee('Export CSV');
+
+        $this->get(route('admin.audit', ['page' => 2]))->assertOk()
+            ->assertSee('Showing <strong>26–32</strong>', false)
+            ->assertSee('Yesterday')
+            ->assertSee('audit-action">Updated profile', false);
+    }
+
+    #[Test]
+    public function the_audit_log_exports_the_filtered_entries_as_csv(): void
+    {
+        $student = User::factory()->create(['fullname' => 'Kemi Adeyemi', 'matric_number' => 'F/ND/24/0000777']);
+        $this->actingAs($student);
+        Audit::record('password_changed');
+        Audit::record('profile_updated');
+        // A name a spreadsheet would run as a formula.
+        $this->actingAs(User::factory()->create(['fullname' => '=HYPERLINK("http://evil")']));
+        Audit::record('login');
+        $this->actingAs($this->admin);
+        Audit::record('settings_updated');
+
+        $response = $this->get(route('admin.audit.export', ['who' => 'kemi']))->assertOk();
+        $this->assertStringContainsString('text/csv', (string) $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('audit-log-', (string) $response->headers->get('Content-Disposition'));
+
+        $csv = $response->streamedContent();
+        $this->assertStringContainsString('Date,Time,Action,"Action code",Name,"Matric number",Subject,Details,"IP address"', $csv);
+        $this->assertStringContainsString('"Changed password",password_changed,"Kemi Adeyemi",F/ND/24/0000777', $csv);
+        $this->assertStringNotContainsString('Changed settings', $csv);
+        $this->assertStringNotContainsString('HYPERLINK', $csv);
+        // Newest first.
+        $this->assertLessThan(strpos($csv, 'Changed password'), strpos($csv, 'Updated profile'));
+
+        // Everything, with the formula kept as text.
+        $all = $this->get(route('admin.audit.export'))->streamedContent();
+        $this->assertStringContainsString('"\'=HYPERLINK(""http://evil"")"', $all);
+
+        // The export itself is logged, and only admins can export.
+        $this->assertDatabaseHas('audit_logs', ['action' => 'audit_exported', 'user_id' => $this->admin->id]);
+        $this->actingAs($student)->get(route('admin.audit.export'))->assertForbidden();
     }
 
     #[Test]

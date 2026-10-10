@@ -38,6 +38,23 @@ class ElectionCandidate extends Model
     ];
 
     /**
+     * Where the candidate's photo is served, or null without one. The
+     * version changes with each new photo, so browsers may keep it.
+     */
+    public function photoUrl(Election|int $election): ?string
+    {
+        if ($this->photo_path === null) {
+            return null;
+        }
+
+        return route('elections.candidates.photo', [
+            'election' => $election instanceof Election ? $election->id : $election,
+            'candidate' => $this->id,
+            'v' => substr(sha1($this->photo_path), 0, 10),
+        ]);
+    }
+
+    /**
      * @return BelongsTo<ElectionPosition, $this>
      */
     public function position(): BelongsTo

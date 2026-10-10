@@ -38,6 +38,7 @@ const pages = [
         await page.locator('.reader-canvas').waitFor({ timeout: 20000 });
     }],
     ['saved', '/saved', 'F/ND/24/0000004'],
+    ['books-read', '/reading', 'F/ND/24/0000004'],
     ['profile', '/profile', 'F/ND/24/0000004'],
     ['settings', '/settings', 'F/ND/24/0000004'],
     ['reset-codes', '/reset-codes', 'F/ND/23/0000003'],

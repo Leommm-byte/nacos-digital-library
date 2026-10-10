@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Elections\BallotSetupController;
+use App\Http\Controllers\Elections\CandidatePhotoController;
 use App\Http\Controllers\Elections\ElectionController;
 use App\Http\Controllers\Elections\ManageElectionController;
 use App\Http\Controllers\Elections\NominalRollController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
 use App\Http\Controllers\Library\LibraryController;
+use App\Http\Controllers\Library\ReadingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Offline\ServiceWorkerController;
 use App\Http\Controllers\Reader\BookFileController;
@@ -40,6 +42,9 @@ require __DIR__.'/auth.php';
 // account.
 Route::get('/elections', [ElectionController::class, 'index'])->name('elections.index');
 Route::get('/elections/{election}', [ElectionController::class, 'show'])->whereNumber('election')->name('elections.show');
+Route::get('/elections/{election}/candidates/{candidate}/photo', CandidatePhotoController::class)
+    ->whereNumber(['election', 'candidate'])
+    ->name('elections.candidates.photo');
 
 Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
@@ -143,7 +148,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/books/{book}', [AdminBookController::class, 'destroy'])->name('books.destroy');
 
         Route::get('/reports', ReportController::class)->name('reports');
-        Route::get('/audit', AuditLogController::class)->name('audit');
+        Route::get('/audit', [AuditLogController::class, 'index'])->name('audit');
+        Route::get('/audit/export', [AuditLogController::class, 'export'])->name('audit.export');
 
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
@@ -164,6 +170,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/assistant', [AssistantController::class, 'destroy'])->name('assistant.destroy');
 
     Route::get('/saved', [BookmarkController::class, 'index'])->name('bookmarks.index');
+    Route::get('/reading', [ReadingController::class, 'index'])->name('reading.index');
     Route::post('/library/{book}/bookmark', [BookmarkController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('bookmarks.store');
