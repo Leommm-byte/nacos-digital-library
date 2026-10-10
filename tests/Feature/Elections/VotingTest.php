@@ -10,6 +10,7 @@ use App\Models\ElectionPosition;
 use App\Models\User;
 use App\Support\Elections\LiveResults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -204,6 +205,31 @@ class VotingTest extends TestCase
         }
 
         $this->assertSame(2, $election->ballotCount());
+    }
+
+    #[Test]
+    public function a_ballot_never_waits_for_the_results_file_and_is_caught_up_later(): void
+    {
+        $election = $this->election();
+        LiveResults::publish($election);
+        $president = $this->position($election, 'President');
+        $choice = $this->candidate($election, 'President');
+
+        // Another request is writing the file right now.
+        $lock = Cache::lock("elections:{$election->id}:publish", 10);
+        $this->assertTrue($lock->get());
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('elections.vote', $election), ['choices' => [$president->id => $choice->id]])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $election->ballotCount());
+        $this->assertSame(0, LiveResults::read($election)['ballots'] ?? null);
+
+        // That writer finishes; the scheduler (or the next ballot) catches up.
+        $lock->release();
+        $this->artisan('elections:close')->assertSuccessful();
+        $this->assertSame(1, LiveResults::read($election)['ballots'] ?? null);
     }
 
     #[Test]

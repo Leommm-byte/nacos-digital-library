@@ -46,6 +46,66 @@ class LiveResults
     }
 
     /**
+     * After a ballot: brings the file up to date without making the voter
+     * wait. If another request is already writing it, this only marks the
+     * file stale and returns; that writer goes round once more, so the
+     * ballot still appears within a moment. Under a rush, voters never
+     * queue for the file (each waiting request held a PHP worker, and the
+     * load test showed the site stalling).
+     *
+     * A writer rewrites at most a few times in a row; anything still
+     * stale after that is picked up by the next ballot or by the
+     * scheduler (elections:close, every minute).
+     */
+    public static function refresh(Election $election): void
+    {
+        if ($election->status === ElectionStatus::Draft) {
+            return;
+        }
+
+        Cache::put(self::staleKey($election->id), true, 600);
+        self::catchUp($election->id);
+    }
+
+    /**
+     * Rewrites the file of every election that a ballot marked stale but
+     * whose writer gave up (scheduler).
+     */
+    public static function catchUpAll(): void
+    {
+        Election::query()->where('status', ElectionStatus::Open)->pluck('id')
+            ->each(fn ($id) => self::catchUp((int) $id));
+    }
+
+    private static function catchUp(int $electionId): void
+    {
+        $stale = self::staleKey($electionId);
+        $lock = Cache::lock("elections:{$electionId}:publish", 10);
+
+        if (! $lock->get()) {
+            return;
+        }
+
+        try {
+            for ($round = 0; $round < 3 && Cache::pull($stale); $round++) {
+                // Fresh each time: the election may have closed meanwhile.
+                $election = Election::query()->find($electionId);
+                if ($election === null) {
+                    return;
+                }
+                self::write($election);
+            }
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private static function staleKey(int $electionId): string
+    {
+        return "elections:{$electionId}:stale";
+    }
+
+    /**
      * The published results, publishing them first if the file is missing.
      *
      * @return array<string, mixed>|null
@@ -89,7 +149,12 @@ class LiveResults
         // the same moment.
         return DB::transaction(function () use ($election) {
             $ballots = $election->ballotCount();
-            $electorate = $election->electorate()->count();
+            // Can't change while a roll-only election is open (the roll is
+            // locked); elsewhere a minute's delay is fine. Counting it on
+            // every ballot was the slowest part of a rush.
+            $electorate = $election->status === ElectionStatus::Open
+                ? (int) Cache::remember("elections:{$election->id}:electorate", 60, fn () => $election->electorate()->count())
+                : $election->electorate()->count();
 
             $positions = $election->positions()->with('candidates')->get()->map(function (ElectionPosition $position) use ($ballots) {
                 $total = (int) $position->candidates->sum('votes_count');

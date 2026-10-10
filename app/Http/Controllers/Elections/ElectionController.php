@@ -90,7 +90,7 @@ class ElectionController extends Controller
 
         // Records that this person voted (as election_voters does), never how.
         Audit::record('election_voted', $election, ['title' => $election->title]);
-        LiveResults::publish($election);
+        LiveResults::refresh($election);
 
         return redirect()->route('elections.show', $election)->with('voted', true);
     }
