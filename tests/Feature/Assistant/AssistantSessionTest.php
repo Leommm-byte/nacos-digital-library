@@ -10,9 +10,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
- * The load test (tests/load) found students signed out right after asking
- * the assistant. These requests carry only the cookies a browser would,
- * with sessions in the database as on the server.
+ * A student stays signed in after asking the assistant. These requests
+ * carry only the cookies a browser would, with sessions in the database as
+ * on the server.
  */
 class AssistantSessionTest extends TestCase
 {

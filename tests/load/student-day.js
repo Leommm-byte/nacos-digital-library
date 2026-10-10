@@ -41,15 +41,6 @@ export const options = {
             ],
             gracefulRampDown: '20s',
         },
-        // One student signs in and checks every 15 s that the session
-        // holds (it once ended after about two minutes under load).
-        session: {
-            executor: 'per-vu-iterations',
-            exec: 'session',
-            vus: 1,
-            iterations: 1,
-            maxDuration: '4m',
-        },
         // Voters arrive steadily, 3 a second, during the peak. (Starting
         // 100 at the same instant mostly measured bcrypt: the password
         // checks filled the CPU for a few seconds.)
@@ -84,6 +75,10 @@ export const options = {
         'http_req_duration{name:vote}': ['p(95)<2000'],
     },
     summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
+    // Students sign in once and stay signed in, as in a browser. (k6
+    // otherwise empties the cookie jar before every iteration, which signed
+    // every student out after their first round.)
+    noCookiesReset: true,
 };
 
 // Every failed request is logged (kind, status, address) so a failing
@@ -93,38 +88,16 @@ const http_ = {
     post: (url, body, params) => logged(http.post(url, body, params), params),
 };
 
-// For diagnosis: the first page a signed-in student sees signed out, the
-// request before it and the cookies that request set.
-let previous = 'none';
-let loggedOut = false;
-let lastSet = '';
-let beforeLast = '';
-
-const SESSION_COOKIE = 'nacos-yabatech-session';
-const setCookies = (res) => Object.entries(res.cookies)
-    .map(([name, list]) => list.map((c) => `${name}=${String(c.value).slice(0, 12)};max_age=${c.max_age};path=${c.path}`).join(','))
-    .join(' ') || 'none';
-
 function logged(res, params) {
-    const name = params?.tags?.name ?? '?';
     if (res.status === 0 || res.status >= 400) {
-        console.warn(`FAILED ${name} ${res.status} ${res.error || ''} ${res.url}`);
+        console.warn(`FAILED ${params?.tags?.name ?? '?'} ${res.status} ${res.error || ''} ${res.url}`);
     }
-    const page = typeof res.body === 'string' && res.body.includes('<html');
-    const sent = (res.request.cookies[SESSION_COOKIE] || []).map((c) => c.value);
-    if (signedIn && !loggedOut && !name.startsWith('login') && page && !res.body.includes('data-user=')) {
-        loggedOut = true;
-        const same = sent.map((v) => (v === lastSet ? 'same' : v === beforeLast ? 'older' : `other(${v.length})`)).join('+') || 'none';
-        console.warn(`SIGNED OUT at ${name} ${res.url.replace(BASE, '')} after ${previous} (iteration ${exec.vu.iterationInScenario}, sent ${sent.length} session cookies: ${same}; last set ${lastSet.length})`);
-    }
-    const set = (res.cookies[SESSION_COOKIE] || [])[0];
-    if (set) {
-        beforeLast = lastSet;
-        lastSet = set.value;
-    }
-    previous = `${name} ${res.status} set[${setCookies(res)}]`;
     return res;
 }
+
+// The page came back with the student still signed in (a signed-out
+// student lands on the login page, also a 200).
+const signedInPage = (r) => r.status === 200 && r.body.includes('data-user=');
 
 const matric = (n) => `F/ND/25/${String(n).padStart(7, '0')}`;
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -158,23 +131,23 @@ export function student() {
     }
 
     const home = http_.get(`${BASE}/`, { tags: { name: 'home' } });
-    check(home, { 'home ok': (r) => r.status === 200 });
+    check(home, { 'home ok, signed in': signedInPage });
     csrf = token(home) || csrf;
     think();
 
     const library = http_.get(`${BASE}/library?page=${1 + Math.floor(Math.random() * 20)}`, { tags: { name: 'library' } });
-    check(library, { 'library ok': (r) => r.status === 200 });
+    check(library, { 'library ok': signedInPage });
     think();
 
     const search = http_.get(`${BASE}/library?q=${encodeURIComponent(pick(SEARCHES))}`, { tags: { name: 'search' } });
-    check(search, { 'search ok': (r) => r.status === 200 });
+    check(search, { 'search ok': signedInPage });
     const links = search.html().find('a.book-card-link').toArray().map((a) => a.attr('href'));
     const bookUrl = links.length ? pick(links) : library.html().find('a.book-card-link').first().attr('href');
     think();
 
     if (bookUrl) {
         const book = http_.get(bookUrl, { tags: { name: 'book' } });
-        check(book, { 'book ok': (r) => r.status === 200 });
+        check(book, { 'book ok': signedInPage });
         think();
 
         const reader = http_.get(`${bookUrl}/read`, { tags: { name: 'reader' } });
@@ -188,12 +161,12 @@ export function student() {
     }
 
     if (exec.vu.iterationInScenario % 2 === 0) {
-        check(http_.get(`${BASE}/saved`, { tags: { name: 'saved' } }), { 'saved ok': (r) => r.status === 200 });
+        check(http_.get(`${BASE}/saved`, { tags: { name: 'saved' } }), { 'saved ok': signedInPage });
         think();
     }
 
     const elections = http_.get(`${BASE}/elections`, { tags: { name: 'elections' } });
-    check(elections, { 'elections ok': (r) => r.status === 200 });
+    check(elections, { 'elections ok': signedInPage });
     const electionUrl = elections.html().find('.election-card a').first().attr('href');
     if (electionUrl) {
         const election = http_.get(electionUrl, { tags: { name: 'election' } });
@@ -207,42 +180,12 @@ export function student() {
     }
 
     if (csrf && exec.vu.iterationInScenario % 3 === 0) {
-        // The panel posts with the token of the page it's on; it should be
-        // the same one the home page had.
-        const page = http_.get(`${BASE}/saved`, { tags: { name: 'saved' } });
-        const current = token(page);
-        if (current !== csrf) {
-            const landed = page.url.replace(BASE, '');
-            console.warn(`TOKEN CHANGED during iteration ${exec.vu.iterationInScenario} of VU ${exec.vu.idInTest}, saved page landed on ${landed}`);
-        }
         const answer = http_.post(`${BASE}/assistant`, { _token: csrf, message: `Find books on ${pick(SEARCHES)}` }, {
-            headers: { Accept: 'application/json' },
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             tags: { name: 'assistant' },
         });
-        if (answer.status === 419) {
-            console.warn(`ASSISTANT 419 on iteration ${exec.vu.iterationInScenario} of VU ${exec.vu.idInTest}, token ${current === csrf ? 'unchanged' : 'changed'}`);
-        }
         check(answer, { 'assistant answered': (r) => r.status === 200 && r.json('messages.1.role') === 'assistant' });
         think();
-    }
-}
-
-export function session() {
-    const form = http_.get(`${BASE}/login`, { tags: { name: 'login page' } });
-    const res = http.post(`${BASE}/login`, { _token: token(form), matric_number: matric(1400), password: PASSWORD },
-        { tags: { name: 'login' }, redirects: 0 });
-    for (const [name, cookies] of Object.entries(res.cookies)) {
-        for (const c of cookies) {
-            console.warn(`SESSION cookie ${name}: max_age=${c.max_age} expires=${c.expires} path=${c.path} secure=${c.secure}`);
-        }
-    }
-    http_.get(res.headers.Location || `${BASE}/`, { tags: { name: 'home' } });
-    const started = Date.now();
-    for (let i = 0; i < 14; i++) {
-        sleep(15);
-        const page = http_.get(`${BASE}/saved`, { tags: { name: 'saved' } });
-        const landed = page.url.replace(BASE, '');
-        console.warn(`SESSION after ${Math.round((Date.now() - started) / 1000)}s: ${page.status} ${landed}`);
     }
 }
 
