@@ -14,6 +14,12 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-avail
     && sed -ri 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf \
     && a2enmod rewrite headers
 
+# Behind an HTTPS tunnel (ngrok, cloudflared) requests arrive as plain http
+# with X-Forwarded-Proto: https. Marking them secure makes the app link its
+# CSS/JS as https://, which the phone's browser would otherwise block on an
+# https page. Local image only; production doesn't use this file.
+RUN echo 'SetEnvIf X-Forwarded-Proto "^https$" HTTPS=on' > /etc/apache2/conf-enabled/zz-forwarded-https.conf
+
 COPY php.ini /usr/local/etc/php/conf.d/zz-app.ini
 COPY entrypoint.sh /usr/local/bin/app-entrypoint
 RUN chmod +x /usr/local/bin/app-entrypoint
