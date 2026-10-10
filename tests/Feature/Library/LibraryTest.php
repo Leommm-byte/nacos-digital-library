@@ -139,11 +139,14 @@ class LibraryTest extends TestCase
     {
         $uploader = User::factory()->for($this->department)->create();
         $pending = $this->book(['uploader_id' => $uploader->id], BookStatus::Pending);
-        $governor = User::factory()->role(Role::Governor)->create();
+        // Reviewers: the governor of the book's level, not another level's.
+        $governor = User::factory()->role(Role::Governor)->create(['level' => $pending->level]);
+        $otherLevel = User::factory()->role(Role::Governor)->create(['level' => $pending->level === Level::ND1 ? Level::ND2 : Level::ND1]);
 
         $this->actingAs($this->student)->get(route('library.show', $pending))->assertNotFound();
         $this->actingAs($uploader)->get(route('library.show', $pending))->assertOk()->assertSee('only visible to you and reviewers');
         $this->actingAs($governor)->get(route('library.show', $pending))->assertOk();
+        $this->actingAs($otherLevel)->get(route('library.show', $pending))->assertNotFound();
     }
 
     #[Test]

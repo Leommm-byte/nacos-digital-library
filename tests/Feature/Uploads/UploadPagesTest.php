@@ -77,7 +77,7 @@ class UploadPagesTest extends TestCase
         $this->actingAs(User::factory()->create())->get(route('uploads.show', $book))->assertNotFound();
         $this->getJson(route('uploads.status', $book))->assertNotFound();
 
-        $governor = User::factory()->role(Role::Governor)->create();
+        $governor = User::factory()->role(Role::Governor)->create(['level' => $book->level]);
         $this->actingAs($governor)->get(route('uploads.show', $book))->assertOk();
     }
 

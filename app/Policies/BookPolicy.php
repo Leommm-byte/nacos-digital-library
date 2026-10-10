@@ -9,8 +9,9 @@ use App\Models\User;
 
 /**
  * Who may see and change a book. As in the original app, only approved
- * books are public to students; uploaders see their own submissions and
- * governors and admins see everything they may need to review.
+ * books are public to students; uploaders see their own submissions,
+ * governors see their own level's (the ones they review) and admins see
+ * everything.
  */
 class BookPolicy
 {
@@ -18,7 +19,7 @@ class BookPolicy
     {
         return $book->status === BookStatus::Approved
             || $this->isUploader($user, $book)
-            || $user->hasRole(Role::Governor);
+            || $this->looksAfter($user, $book);
     }
 
     public function create(User $user): bool
@@ -54,11 +55,17 @@ class BookPolicy
     }
 
     /**
-     * Approve, reject or request changes. Nobody reviews their own upload.
+     * Approve, reject or request changes: governors for their own level,
+     * admins for every level. Nobody reviews their own upload.
      */
     public function review(User $user, Book $book): bool
     {
-        return $user->hasRole(Role::Governor) && ! $this->isUploader($user, $book);
+        return $this->looksAfter($user, $book) && ! $this->isUploader($user, $book);
+    }
+
+    private function looksAfter(User $user, Book $book): bool
+    {
+        return $user->hasRole(Role::Admin) || ($user->hasRole(Role::Governor) && $book->level === $user->level);
     }
 
     private function isUploader(User $user, Book $book): bool

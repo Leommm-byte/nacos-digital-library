@@ -5,7 +5,7 @@
 @endphp
 
 <x-layouts.admin title="Exam timetable">
-    <x-page-header title="Exam timetable" :subtitle="$count.' '.\Illuminate\Support\Str::plural('paper', $count).' · seen by every student'">
+    <x-page-header title="Exam timetable" :subtitle="$count.' '.\Illuminate\Support\Str::plural('paper', $count).' · '.($published ? 'visible to students' : 'hidden from students')">
         <x-slot:actions>
             <x-button href="{{ route('exams.index', ['show' => 'all']) }}" variant="secondary" icon="eye">See it as students do</x-button>
         </x-slot:actions>
@@ -26,6 +26,25 @@
             @endif
         </x-alert>
     @endif
+
+    <x-card class="mb-6 flex flex-wrap items-center justify-between gap-4" id="visibility">
+        <div class="flex min-w-0 items-center gap-3">
+            <x-icon-tile :name="$published ? 'eye' : 'eye-off'" :tone="$published ? 'green' : 'yellow'" size="sm" />
+            <div class="min-w-0">
+                <h2 class="text-base">{{ $published ? 'Visible to students' : 'Hidden from students' }}</h2>
+                <p class="text-sm text-muted">{{ $published ? 'Students see their papers here and on their home page.' : 'Prepare it here; students see "not out yet" until you show it.' }}</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ route('exams.publish') }}"
+            data-confirm="{{ $published ? 'Hide the exam timetable from students?' : 'Show the exam timetable to every student now?' }}">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="published" value="{{ $published ? 0 : 1 }}">
+            <x-button :variant="$published ? 'secondary' : 'primary'" :icon="$published ? 'eye-off' : 'eye'">
+                {{ $published ? 'Hide from students' : 'Show to students' }}
+            </x-button>
+        </form>
+    </x-card>
 
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-6">
@@ -109,7 +128,7 @@
                             <x-field name="note" id="add-note" label="Note (optional)" bag="add" :old="$addFailed" maxlength="200" placeholder="Bring your ID card" />
                         </div>
                     </div>
-                    @include('exams.partials.audience', ['useOld' => $addFailed])
+                    @include('exams.partials.audience', ['exam' => null, 'useOld' => $addFailed])
                     <x-button icon="plus" class="w-full">Add paper</x-button>
                 </form>
             </x-card>
