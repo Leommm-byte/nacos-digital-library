@@ -2,13 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Enums\Level;
-use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Department;
 use App\Models\User;
 use App\Support\Classes\Arms;
+use App\Support\Classes\SchoolClass;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -22,18 +21,20 @@ class UserFactory extends Factory
 
     public function definition(): array
     {
-        $level = fake()->randomElement(Level::cases());
-        $programme = fake()->randomElement(Programme::cases());
+        // A class the school runs, with a matching matric number.
+        /** @var SchoolClass $class */
+        $class = fake()->randomElement(SchoolClass::all());
+        $level = $class->level;
+        $programme = $class->programme;
         $type = $level->stage() === 'HND' ? 'HD' : 'ND';
-        $arms = Arms::forStage($level->stage());
 
-        if ($arms === []) {
+        if ($class->arm === null) {
             $digits = (string) fake()->unique()->numberBetween(1000000, 9999999);
         } else {
             // An HND number carries its course (arm) digit: 3211… is SWD.
             $position = (int) config('classes.arm_digit', 4) - 1;
             $rest = (string) fake()->unique()->numberBetween(100000, 999999);
-            $digits = substr($rest, 0, $position).fake()->randomElement(array_column($arms, 'digit')).substr($rest, $position);
+            $digits = substr($rest, 0, $position).Arms::all()[$class->arm]['digit'].substr($rest, $position);
         }
 
         return [

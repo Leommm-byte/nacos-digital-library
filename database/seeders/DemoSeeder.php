@@ -59,7 +59,11 @@ class DemoSeeder extends Seeder
                     'fullname' => $name,
                     'matric_number' => $matric,
                     'email' => strtolower(explode(' ', $name)[0]).'@example.test',
-                    'level' => $role === Role::Student ? Level::ND1 : Level::HND1,
+                    'level' => match ($role) {
+                        Role::Student => Level::ND1,
+                        Role::CourseRep => Level::ND2,
+                        default => Level::HND1,
+                    },
                     'programme' => Programme::FullTime,
                     'password' => self::PASSWORD,
                 ]);
