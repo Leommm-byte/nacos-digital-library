@@ -3917,6 +3917,107 @@
         }
     }
 
+
+    /* Offline: "Keep offline" on a book, the offline page and its list. */
+    .keep-offline {
+        display: contents;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .keep-offline-error {
+        flex-basis: 100%;
+        color: var(--danger);
+        font-size: 0.875rem;
+    }
+
+    .offline-hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem;
+        text-align: center;
+    }
+
+    .offline-books {
+        display: grid;
+        gap: 0.5rem;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    .offline-book {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+    }
+
+    .offline-book-link {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 3rem;
+        justify-content: center;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-md);
+
+        &:hover .offline-book-title {
+            text-decoration: underline;
+        }
+    }
+
+    .offline-book-title {
+        overflow: hidden;
+        color: var(--link);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .offline-book-meta {
+        color: var(--muted);
+        font-size: 0.8125rem;
+    }
+
+
+    /* "Install the app" card on the home pages (resources/js/install.js). */
+    .install-banner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1rem;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+        animation: enter var(--duration-slow) var(--ease-out) both;
+
+        &[hidden] {
+            display: none;
+        }
+
+        > div:nth-child(2) {
+            flex-basis: 14rem;
+        }
+    }
+
+    .install-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+
 }
 
 @media print {

@@ -18,6 +18,7 @@ use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
 use App\Http\Controllers\Library\LibraryController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Offline\ServiceWorkerController;
 use App\Http\Controllers\Reader\BookFileController;
 use App\Http\Controllers\Reader\ReaderController;
 use App\Http\Controllers\Reader\ReadingProgressController;
@@ -26,6 +27,12 @@ use App\Http\Controllers\Uploads\UploadController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+
+// Offline support (PR 14): the service worker and the two pages it keeps on
+// the phone. Public and the same for everyone, so they hold nothing personal.
+Route::get('/sw.js', ServiceWorkerController::class)->name('service-worker');
+Route::view('/offline', 'offline.index')->name('offline');
+Route::view('/offline/read', 'offline.reader')->name('offline.read');
 
 require __DIR__.'/auth.php';
 

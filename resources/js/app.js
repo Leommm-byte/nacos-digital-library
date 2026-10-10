@@ -7,6 +7,8 @@ import { initPreview } from './preview';
 import { initBookmarks } from './bookmarks';
 import { initAutosubmit } from './autosubmit';
 import { initToast } from './toast';
+import { initOffline } from './offline';
+import { initInstall } from './install';
 
 initTheme();
 initMenus();
@@ -17,6 +19,8 @@ initPreview();
 initBookmarks();
 initAutosubmit();
 initToast();
+initOffline();
+initInstall();
 
 // The reader (and PDF.js with it) only loads on the reading page.
 if (document.querySelector('[data-reader]')) {

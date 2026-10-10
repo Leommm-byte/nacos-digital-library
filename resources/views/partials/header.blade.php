@@ -90,7 +90,7 @@
                             <x-theme-toggle />
                         </div>
                         @if (Route::has('logout'))
-                            <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-border pt-1">
+                            <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-border pt-1" data-logout>
                                 @csrf
                                 <button type="submit" class="menu-item text-danger"><x-icon name="log-out" /> Log out</button>
                             </form>

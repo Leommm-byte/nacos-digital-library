@@ -4,7 +4,7 @@
  * CI runs it on every push to a claude/** branch (.github/workflows/screenshots.yml).
  */
 import { chromium } from 'playwright';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const base = process.env.APP_URL ?? 'http://127.0.0.1:8000';
 const out = process.argv[2] ?? 'screenshots';
@@ -145,6 +145,25 @@ const pages = [
         await askAssistant(page, 'Find books for ND1', before + 1, '#assistant-panel');
         return 'viewport';
     }],
+    // End to end: keeps the first book on the phone, goes offline and opens
+    // it again. Fails the run if the offline reader can't draw the page.
+    ['offline-reader', 'FIRST_BOOK', 'F/ND/24/0000004', async (page) => {
+        const keep = page.locator('[data-keep-offline-save]');
+        if (await keep.isVisible()) {
+            await keep.click();
+        }
+        await page.locator('[data-keep-offline-remove]').waitFor({ state: 'visible', timeout: 30000 });
+        await page.evaluate(() => navigator.serviceWorker.ready);
+        // Let the worker store the reader (PDF.js) too.
+        await page.waitForTimeout(3000);
+        await page.context().setOffline(true);
+        await page.goto(`${page.url().replace(/\/$/, '')}/read`);
+        await page.locator('[data-offline-reader] .reader-canvas').waitFor({ timeout: 20000 });
+    }],
+    ['offline', '/offline', 'F/ND/24/0000004', async (page) => {
+        await page.locator('[data-offline-books] li').first().waitFor({ timeout: 5000 });
+    }],
+    ['offline-guest', '/offline', null],
     ['styleguide', '/styleguide', 'F/ND/24/0000004'],
 ];
 
@@ -242,6 +261,36 @@ async function linkUrl(context, spec) {
     return (href ?? `${base}${from}`) + suffix;
 }
 
+// Accessibility: every screen is checked with axe-core after it's
+// photographed. Serious and critical problems fail the run; everything is
+// listed in accessibility.md next to the screenshots.
+const axeSource = await readFile(new URL('../node_modules/axe-core/axe.min.js', import.meta.url), 'utf8');
+const axeFindings = new Map();
+
+async function checkAccessibility(page, name, where) {
+    // Evaluated through the browser's debugging protocol, so the page's
+    // Content-Security-Policy doesn't block it.
+    await page.evaluate(axeSource);
+    const violations = await page.evaluate(async () => {
+        const result = await window.axe.run(document, {
+            resultTypes: ['violations'],
+            runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] },
+        });
+        return result.violations.map((v) => ({
+            id: v.id,
+            impact: v.impact,
+            help: v.help,
+            targets: v.nodes.slice(0, 3).map((n) => n.target.join(' ')),
+        }));
+    });
+    for (const violation of violations) {
+        const key = `${violation.id}|${name}`;
+        const entry = axeFindings.get(key) ?? { ...violation, page: name, where: [] };
+        entry.where.push(where);
+        axeFindings.set(key, entry);
+    }
+}
+
 const failures = [];
 const browser = await chromium.launch();
 await mkdir(out, { recursive: true });
@@ -280,9 +329,12 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
                 const shot = before ? await before(page) : null;
                 await page.waitForTimeout(250);
                 await page.screenshot({ path: `${out}/${name}--${viewportName}--${theme}.png`, fullPage: shot !== 'viewport' });
+                await checkAccessibility(page, name, `${viewportName} ${theme}`);
             } catch (error) {
                 failures.push(`${name} (${viewportName}, ${theme}): ${error.message.split('\n')[0]}`);
             }
+            // Back online for the next screen, even if this one failed.
+            await page.context().setOffline(false);
             await page.close();
         }
 
@@ -294,6 +346,21 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
 
 await browser.close();
 console.log(`Saved screenshots to ${out}/`);
+
+const findings = [...axeFindings.values()].sort((a, b) => a.page.localeCompare(b.page) || a.id.localeCompare(b.id));
+const serious = findings.filter((f) => f.impact === 'serious' || f.impact === 'critical');
+await writeFile(`${out}/accessibility.md`, [
+    '# Accessibility (axe-core)',
+    '',
+    findings.length ? `${findings.length} findings, ${serious.length} serious or critical.` : 'No findings.',
+    '',
+    ...findings.map((f) => `- **${f.impact}** \`${f.id}\` on **${f.page}** (${f.where.join(', ')}): ${f.help}. ${f.targets.map((t) => `\`${t}\``).join(', ')}`),
+    '',
+].join('\n'));
+console.log(`Accessibility: ${findings.length} findings, ${serious.length} serious or critical (see accessibility.md).`);
+for (const f of serious) {
+    failures.push(`accessibility: ${f.impact} ${f.id} on ${f.page} (${f.where.join(', ')}): ${f.help} ${f.targets.join(', ')}`);
+}
 
 if (failures.length) {
     // Still publish the screenshots, but make the run fail visibly.

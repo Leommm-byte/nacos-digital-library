@@ -282,12 +282,28 @@ export async function initReader() {
         state.saveTimer = setTimeout(save, SAVE_DELAY);
     }
 
+    // The page is also remembered on the phone, so a book kept offline
+    // reopens where it was left. The offline reader has no server to tell.
+    function remember() {
+        try {
+            if (root.dataset.book) {
+                localStorage.setItem(`reader-page:${root.dataset.book}`, String(state.page));
+            }
+        } catch {
+            // Storage unavailable (private browsing): nothing to do.
+        }
+    }
+
     function save() {
         if (state.page === state.savedPage) {
             return;
         }
 
         state.savedPage = state.page;
+        remember();
+        if (!root.dataset.progressUrl) {
+            return;
+        }
         fetch(root.dataset.progressUrl, {
             method: 'POST',
             body: progressData(),
@@ -306,7 +322,8 @@ export async function initReader() {
         }
 
         state.savedPage = state.page;
-        if (!navigator.sendBeacon?.(root.dataset.progressUrl, progressData())) {
+        remember();
+        if (root.dataset.progressUrl && !navigator.sendBeacon?.(root.dataset.progressUrl, progressData())) {
             save();
         }
     }

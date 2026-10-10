@@ -19,6 +19,8 @@
         </div>
     </section>
 
+    @include('partials.install-banner')
+
     {{-- At a glance; each tile leads to its page. --}}
     <nav aria-label="Your numbers" class="mt-6">
         <ul class="stagger grid grid-cols-2 gap-3 md:grid-cols-4">

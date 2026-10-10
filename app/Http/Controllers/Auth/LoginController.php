@@ -52,6 +52,11 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')->with('status', 'You have been logged out.');
+        // Books kept offline are deleted by resources/js/offline.js; this
+        // also clears PDFs the browser cached while reading, so the next
+        // person on a shared phone can't open them.
+        return redirect()->route('login')
+            ->with('status', 'You have been logged out.')
+            ->header('Clear-Site-Data', '"cache"');
     }
 }

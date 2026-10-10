@@ -39,6 +39,8 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run build
+      - name: Performance budget
+        run: node scripts/check-budget.mjs
       - run: npm audit --audit-level=high
 
   tests:
@@ -83,3 +85,6 @@ jobs:
           php artisan view:cache
           for f in storage/framework/views/*.php; do php -l "$f" > /dev/null || exit 1; done
       - run: php artisan test
+      - name: Queries per page (PerformanceBudgetTest)
+        if: always()
+        run: cat storage/logs/query-budget.txt 2>/dev/null || true
