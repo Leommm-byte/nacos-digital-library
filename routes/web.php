@@ -17,6 +17,7 @@ use App\Http\Controllers\Elections\NominalRollController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
+use App\Http\Controllers\Library\ReadingController;
 use App\Http\Controllers\Library\LibraryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Offline\ServiceWorkerController;
@@ -168,6 +169,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/assistant', [AssistantController::class, 'destroy'])->name('assistant.destroy');
 
     Route::get('/saved', [BookmarkController::class, 'index'])->name('bookmarks.index');
+    Route::get('/reading', [ReadingController::class, 'index'])->name('reading.index');
     Route::post('/library/{book}/bookmark', [BookmarkController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('bookmarks.store');

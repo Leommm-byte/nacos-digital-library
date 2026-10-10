@@ -64,6 +64,7 @@ class PerformanceBudgetTest extends TestCase
             'book' => [$this->student, route('library.show', $this->book)],
             'reader' => [$this->student, route('books.read', $this->book)],
             'saved' => [$this->student, route('bookmarks.index')],
+            'books read' => [$this->student, route('reading.index')],
             'my uploads' => [$this->student, route('uploads.index')],
             'notifications' => [$this->student, route('notifications.index')],
             'announcements' => [$this->student, route('announcements.index')],
@@ -74,6 +75,7 @@ class PerformanceBudgetTest extends TestCase
             'admin dashboard' => [$this->admin, route('admin.dashboard')],
             'admin users' => [$this->admin, route('admin.users.index')],
             'admin books' => [$this->admin, route('admin.books.index')],
+            'audit log' => [$this->admin, route('admin.audit')],
         ];
 
         $small = array_map(fn (array $page) => $this->queries(...$page), $pages);
