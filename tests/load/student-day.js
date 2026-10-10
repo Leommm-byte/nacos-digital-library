@@ -93,10 +93,21 @@ const http_ = {
     post: (url, body, params) => logged(http.post(url, body, params), params),
 };
 
+// For diagnosis: the first request that unexpectedly lands on the login
+// page, and the one before it.
+let previous = 'none';
+let loggedOut = false;
+
 function logged(res, params) {
+    const name = params?.tags?.name ?? '?';
     if (res.status === 0 || res.status >= 400) {
-        console.warn(`FAILED ${params?.tags?.name ?? '?'} ${res.status} ${res.error || ''} ${res.url}`);
+        console.warn(`FAILED ${name} ${res.status} ${res.error || ''} ${res.url}`);
     }
+    if (signedIn && !loggedOut && !name.startsWith('login') && /\/login(\?|$)/.test(res.url)) {
+        loggedOut = true;
+        console.warn(`SIGNED OUT at ${name} after ${previous} (iteration ${exec.vu.iterationInScenario})`);
+    }
+    previous = `${name} ${res.status}`;
     return res;
 }
 
