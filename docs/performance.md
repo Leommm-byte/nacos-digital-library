@@ -94,7 +94,9 @@ DreamHost's terms don't allow load testing shared servers.
   the install card don't appear when a phone opens the dev machine by its
   IP (`http://192.168…`). To try them on a phone, use Chrome's USB port
   forwarding (`chrome://inspect`, forward 8080 to `localhost:8080`) or an
-  HTTPS tunnel.
+  HTTPS tunnel (`ngrok http 8080`, or `cloudflared tunnel --url
+  http://localhost:8080`). The local image marks tunnelled requests as
+  HTTPS, so the page's CSS and JS load over https too.
 
 ## Accessibility
 
