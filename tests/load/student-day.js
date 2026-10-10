@@ -172,10 +172,19 @@ export function student() {
     }
 
     if (csrf && exec.vu.iterationInScenario % 3 === 0) {
+        // The panel posts with the token of the page it's on; it should be
+        // the same one the home page had.
+        const current = token(http_.get(`${BASE}/saved`, { tags: { name: 'saved' } }));
+        if (current !== csrf) {
+            console.warn(`TOKEN CHANGED during iteration ${exec.vu.iterationInScenario} of VU ${exec.vu.idInTest}`);
+        }
         const answer = http_.post(`${BASE}/assistant`, { _token: csrf, message: `Find books on ${pick(SEARCHES)}` }, {
             headers: { Accept: 'application/json' },
             tags: { name: 'assistant' },
         });
+        if (answer.status === 419) {
+            console.warn(`ASSISTANT 419 on iteration ${exec.vu.iterationInScenario} of VU ${exec.vu.idInTest}, token ${current === csrf ? 'unchanged' : 'changed'}`);
+        }
         check(answer, { 'assistant answered': (r) => r.status === 200 && r.json('messages.1.role') === 'assistant' });
         think();
     }
