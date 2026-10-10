@@ -97,8 +97,6 @@ jobs:
               sleep 10
             done
           ) > db-sample.log &
-          # Every query, to follow one student's session row afterwards.
-          mysql -h127.0.0.1 -uroot -proot -e "set global log_output = 'TABLE'; set global general_log = 'ON';"
           k6 run --log-output=file=k6.log -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
 
       - name: Failed requests by kind and status
@@ -109,28 +107,8 @@ jobs:
             echo '```'; } | tee -a load-test-summary.md
           grep -o 'SESSION [^"]*' k6.log 2>/dev/null || true
           grep -o 'SIGNED OUT [^"]*' k6.log 2>/dev/null | head -n 6 || true
-          grep -o 'SIGNED OUT [^"]*' k6.log 2>/dev/null | sed -E 's/=[^;, ]*;/=…;/g; s/jar [^)]*/jar …/; s/\/library\/[0-9]+/\/library\/N/g; s/\?page=[0-9]+//' | sort | uniq -c | sort -rn | head -n 15 || true
+          grep -o 'SIGNED OUT [^"]*' k6.log 2>/dev/null | sed -E 's/=[^;, ]*;/=…;/g; s/other\([0-9]+\)/other/g; s/last set [0-9]+/last set N/; s/\/library\/[0-9]+/\/library\/N/g; s/\?page=[0-9]+//' | sort | uniq -c | sort -rn | head -n 15 || true
           grep -o 'ASSISTANT 419[^"]*\|TOKEN CHANGED[^"]*' k6.log 2>/dev/null | sed -E 's/ of VU [0-9]+//' | sort | uniq -c | sort -rn | head -n 10 || true
-
-      - name: One student's session row, query by query
-        if: always()
-        run: |
-          r() { mysql -h127.0.0.1 -uroot -proot -N -e "$1" 2>/dev/null; }
-          r "set global general_log = 'OFF';"
-          user=$(r "select user_id from nacos.assistant_messages order by id limit 1")
-          echo "user $user"
-          r "select convert(argument using utf8mb4) from mysql.general_log where command_type in ('Execute', 'Query') and convert(argument using utf8mb4) like '%sessions%' and convert(argument using utf8mb4) not like 'select%' limit 400000" > session-queries.log
-          echo "statements on sessions by kind:"
-          cut -c1-40 session-queries.log | sed -E "s/'[^']*'/?/g" | sort | uniq -c | sort -rn | head
-          ids=$(grep -E "\`user_id\` = $user[ ,]" session-queries.log | grep -oE "where \`id\` = '[^']+'" | grep -oE "'[^']+'" | tr -d "'" | awk '!seen[$0]++' | head -n 3)
-          echo "session ids of user $user: $ids"
-          for id in $ids; do
-            echo "== $id"
-            r "select event_time, convert(argument using utf8mb4) from mysql.general_log where command_type in ('Execute', 'Query') and convert(argument using utf8mb4) like '%$id%' order by event_time" \
-              | sed -E "s/'[A-Za-z0-9+\/=]{80,}'/'(payload)'/g" | cut -c1-260 | head -n 60
-          done
-          echo "deletes on sessions:"
-          grep -i "^delete" session-queries.log | sed -E "s/[0-9]{9,}/N/g" | sort | uniq -c | head
 
       - name: Database during the run
         if: always()

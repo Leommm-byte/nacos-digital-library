@@ -97,9 +97,10 @@ const http_ = {
 // request before it and the cookies that request set.
 let previous = 'none';
 let loggedOut = false;
+let lastSet = '';
+let beforeLast = '';
 
 const SESSION_COOKIE = 'nacos-yabatech-session';
-const jarSession = () => (http.cookieJar().cookiesForURL(BASE)[SESSION_COOKIE] || ['-'])[0].slice(0, 12);
 const setCookies = (res) => Object.entries(res.cookies)
     .map(([name, list]) => list.map((c) => `${name}=${String(c.value).slice(0, 12)};max_age=${c.max_age};path=${c.path}`).join(','))
     .join(' ') || 'none';
@@ -110,9 +111,16 @@ function logged(res, params) {
         console.warn(`FAILED ${name} ${res.status} ${res.error || ''} ${res.url}`);
     }
     const page = typeof res.body === 'string' && res.body.includes('<html');
+    const sent = (res.request.cookies[SESSION_COOKIE] || []).map((c) => c.value);
     if (signedIn && !loggedOut && !name.startsWith('login') && page && !res.body.includes('data-user=')) {
         loggedOut = true;
-        console.warn(`SIGNED OUT at ${name} ${res.url.replace(BASE, '')} after ${previous} (iteration ${exec.vu.iterationInScenario}, jar ${jarSession()})`);
+        const same = sent.map((v) => (v === lastSet ? 'same' : v === beforeLast ? 'older' : `other(${v.length})`)).join('+') || 'none';
+        console.warn(`SIGNED OUT at ${name} ${res.url.replace(BASE, '')} after ${previous} (iteration ${exec.vu.iterationInScenario}, sent ${sent.length} session cookies: ${same}; last set ${lastSet.length})`);
+    }
+    const set = (res.cookies[SESSION_COOKIE] || [])[0];
+    if (set) {
+        beforeLast = lastSet;
+        lastSet = set.value;
     }
     previous = `${name} ${res.status} set[${setCookies(res)}]`;
     return res;
