@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Enums\Level;
-use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Department;
 use App\Models\User;
+use App\Support\Classes\Arms;
+use App\Support\Classes\SchoolClass;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -21,13 +21,25 @@ class UserFactory extends Factory
 
     public function definition(): array
     {
-        $level = fake()->randomElement(Level::cases());
-        $programme = fake()->randomElement(Programme::cases());
-        $type = str_starts_with($level->value, 'HND') ? 'HD' : 'ND';
+        // A class the school runs, with a matching matric number.
+        /** @var SchoolClass $class */
+        $class = fake()->randomElement(SchoolClass::all());
+        $level = $class->level;
+        $programme = $class->programme;
+        $type = $level->stage() === 'HND' ? 'HD' : 'ND';
+
+        if ($class->arm === null) {
+            $digits = (string) fake()->unique()->numberBetween(1000000, 9999999);
+        } else {
+            // An HND number carries its course (arm) digit: 3211… is SWD.
+            $position = (int) config('classes.arm_digit', 4) - 1;
+            $rest = (string) fake()->unique()->numberBetween(100000, 999999);
+            $digits = substr($rest, 0, $position).Arms::all()[$class->arm]['digit'].substr($rest, $position);
+        }
 
         return [
             'fullname' => fake()->name(),
-            'matric_number' => sprintf('%s/%s/%02d/%07d', $programme->matricLetter(), $type, fake()->numberBetween(20, 25), fake()->unique()->numberBetween(1000000, 9999999)),
+            'matric_number' => sprintf('%s/%s/%02d/%s', $programme->matricLetter(), $type, fake()->numberBetween(20, 25), $digits),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'department_id' => Department::factory(),

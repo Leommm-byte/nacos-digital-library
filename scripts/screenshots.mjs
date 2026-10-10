@@ -57,16 +57,16 @@ const pages = [
     ['upload-changes', 'LINK /uploads .upload-row:has-text("Changes requested")', 'F/ND/24/0000004'],
     ['upload-edit', 'LINK /uploads .upload-row:has-text("Changes requested") /edit', 'F/ND/24/0000004'],
     ['notifications', '/notifications', 'F/ND/24/0000004'],
-    ['review-queue', '/review', 'F/HD/22/0000002'],
-    ['home-reviewer', '/', 'F/HD/22/0000002'],
+    ['review-queue', '/review', 'F/HD/24/3212002'],
+    ['home-reviewer', '/', 'F/HD/24/3212002'],
     ['announcements', '/announcements', 'F/ND/24/0000004'],
-    ['announcements-manage', '/announcements/manage', 'F/HD/22/0000002'],
-    ['announcement-new', '/announcements/create', 'F/HD/22/0000002'],
-    ['review-book', 'LINK /review .upload-row', 'F/HD/22/0000002', async (page) => {
+    ['announcements-manage', '/announcements/manage', 'F/HD/24/3212002'],
+    ['announcement-new', '/announcements/create', 'F/HD/24/3212002'],
+    ['review-book', 'LINK /review .upload-row', 'F/HD/24/3212002', async (page) => {
         // The page previews are drawn by PDF.js.
         await page.locator('.review-preview canvas').first().waitFor({ timeout: 20000 });
     }],
-    ['review-approved', 'LINK /review?status=approved .upload-row', 'F/HD/22/0000002'],
+    ['review-approved', 'LINK /review?status=approved .upload-row', 'F/HD/24/3212002'],
     ['elections', '/elections', 'F/ND/24/0000004'],
     ['election-guest', 'LINK /elections .election-card a', null],
     ['election-ballot', 'LINK /elections .election-card a', 'F/ND/24/0000004', async (page) => {
@@ -79,7 +79,7 @@ const pages = [
     ['election-results', 'LINK /elections .upload-row', 'F/ND/24/0000004'],
     // End to end: the governor votes on the first run; later runs show the
     // "you have voted" state. Fails the run if the vote isn't recorded.
-    ['election-voted', 'LINK /elections .election-card a', 'F/HD/22/0000002', async (page) => {
+    ['election-voted', 'LINK /elections .election-card a', 'F/HD/24/3212002', async (page) => {
         if (await page.locator('[data-ballot]').count()) {
             for (const position of await page.locator('.ballot-position').all()) {
                 await position.locator('.ballot-option').first().click();
@@ -90,25 +90,25 @@ const pages = [
         }
         await page.locator('.vote-done').waitFor({ timeout: 10000 });
     }],
-    ['elections-manage', '/elections/manage', 'F/HD/21/0000001'],
-    ['election-new', '/elections/manage/create', 'F/HD/21/0000001'],
-    ['nominal-roll', '/nominal-roll', 'F/HD/21/0000001'],
-    ['admin-dashboard', '/admin', 'F/HD/21/0000001'],
-    ['admin-users', '/admin/users', 'F/HD/21/0000001'],
-    ['admin-user', 'LINK /admin/users?q=Tobi .user-cell', 'F/HD/21/0000001'],
-    ['admin-accounts', '/admin/accounts', 'F/HD/21/0000001'],
+    ['elections-manage', '/elections/manage', 'F/HD/24/3211001'],
+    ['election-new', '/elections/manage/create', 'F/HD/24/3211001'],
+    ['nominal-roll', '/nominal-roll', 'F/HD/24/3211001'],
+    ['admin-dashboard', '/admin', 'F/HD/24/3211001'],
+    ['admin-users', '/admin/users', 'F/HD/24/3211001'],
+    ['admin-user', 'LINK /admin/users?q=Tobi .user-cell', 'F/HD/24/3211001'],
+    ['admin-accounts', '/admin/accounts', 'F/HD/24/3211001'],
     // End to end: creates the accounts of one class and lands on its slips.
-    ['admin-slips', '/admin/accounts', 'F/HD/21/0000001', async (page) => {
+    ['admin-slips', '/admin/accounts', 'F/HD/24/3211001', async (page) => {
         await page.locator('input[name="classes[]"]:not([disabled])').first().check();
         await page.click('form[action$="/admin/accounts"] button[type=submit]');
         await page.waitForURL(/\/admin\/accounts\/slips$/, { timeout: 30000 });
     }],
-    ['admin-books', '/admin/books', 'F/HD/21/0000001'],
-    ['admin-reports', '/admin/reports', 'F/HD/21/0000001'],
-    ['admin-audit', '/admin/audit', 'F/HD/21/0000001'],
-    ['admin-settings', '/admin/settings', 'F/HD/21/0000001'],
-    ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/21/0000001'],
-    ['election-monitor', 'LINK /elections/manage .upload-row:has-text("Voting open")', 'F/HD/21/0000001'],
+    ['admin-books', '/admin/books', 'F/HD/24/3211001'],
+    ['admin-reports', '/admin/reports', 'F/HD/24/3211001'],
+    ['admin-audit', '/admin/audit', 'F/HD/24/3211001'],
+    ['admin-settings', '/admin/settings', 'F/HD/24/3211001'],
+    ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/24/3211001'],
+    ['election-monitor', 'LINK /elections/manage .upload-row:has-text("Voting open")', 'F/HD/24/3211001'],
     // End to end: these really upload, and fail the run if they don't land
     // on the thank-you page.
     ['upload-pdf-chosen', '/upload', 'F/ND/24/0000004', async (page) => {

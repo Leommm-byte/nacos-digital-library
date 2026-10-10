@@ -15,6 +15,9 @@
             <div class="mt-4 flex flex-wrap gap-2">
                 <x-badge variant="primary">{{ $user->role->label() }}</x-badge>
                 <x-badge data-preview-text="level">{{ $user->level->label() }}</x-badge>
+                @if ($user->arm)
+                    <x-badge>{{ \App\Support\Classes\Arms::short($user->arm) }}</x-badge>
+                @endif
                 <x-badge data-preview-text="programme">{{ $user->programme->label() }}</x-badge>
             </div>
 
@@ -58,7 +61,7 @@
                 <div>
                     <span class="field-label">Matric number</span>
                     <p class="field-input flex items-center bg-surface-2 text-muted">{{ $user->matric_number }}</p>
-                    <p class="mt-1.5 text-sm text-muted">Your matric number can't be changed. If it's wrong, ask an admin.</p>
+                    <p class="mt-1.5 text-sm text-muted">Your matric number can't be changed. If it's wrong, ask an admin. @if ($user->arm) Your course, {{ \App\Support\Classes\Arms::name($user->arm) }} ({{ \App\Support\Classes\Arms::short($user->arm) }}), comes from it.@endif</p>
                 </div>
 
                 <x-select name="department_id" label="Department" :options="$departments" :value="$user->department_id" data-preview="department_id" :disabled="$classLocked" required />

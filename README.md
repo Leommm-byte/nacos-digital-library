@@ -65,8 +65,8 @@ password **`Password1!`**.
 
 | Role | Matric number |
 |---|---|
-| Admin | `F/HD/21/0000001` |
-| Governor | `F/HD/22/0000002` |
+| Admin | `F/HD/24/3211001` |
+| Governor | `F/HD/24/3212002` |
 | Course Rep | `F/ND/23/0000003` |
 | Student | `F/ND/24/0000004` |
 

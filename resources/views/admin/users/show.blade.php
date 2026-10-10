@@ -8,7 +8,7 @@
 @endphp
 
 <x-layouts.admin :title="$user->fullname">
-    <x-page-header :title="$user->fullname" :subtitle="$user->matric_number.' · '.$user->level->label().' '.$user->programme->label().' · '.$user->department->name" :back="route('admin.users.index')" back-label="Users">
+    <x-page-header :title="$user->fullname" :subtitle="$user->matric_number.' · '.$user->classLabel().' · '.$user->department->name" :back="route('admin.users.index')" back-label="Users">
         <x-slot:actions>
             <x-badge :variant="$user->role === \App\Enums\Role::Student ? 'neutral' : 'primary'">{{ $user->role->label() }}</x-badge>
             @if ($user->isSuspended())
@@ -36,7 +36,7 @@
             <x-card>
                 <dl class="profile-summary mt-0 sm:grid-cols-2">
                     <div><dt>Email</dt><dd>{{ $user->email ?? 'Not given' }}@if ($user->email && ! $user->email_verified_at) <span class="text-xs font-normal text-muted">(not confirmed)</span>@endif</dd></div>
-                    <div><dt>Nominal roll</dt><dd>{{ $roll ? (trim(($roll->level?->label() ?? '').' '.($roll->programme?->label() ?? '')) ?: 'On the roll') : 'Not on the roll' }}</dd></div>
+                    <div><dt>Nominal roll</dt><dd>{{ $roll ? ($roll->classLabel() ?: 'On the roll') : 'Not on the roll' }}</dd></div>
                     <div><dt>Two-step verification</dt><dd>{{ $user->hasTwoFactorEnabled() ? 'On' : 'Off' }}</dd></div>
                     <div><dt>Last login</dt><dd>{{ $user->last_login_at?->timezone($zone)->format('j M Y, g:i a') ?? 'Never' }}</dd></div>
                     <div><dt>Joined</dt><dd>{{ $user->created_at->timezone($zone)->format('j M Y') }}</dd></div>
@@ -86,6 +86,9 @@
                             <x-select name="programme" label="Programme" :options="$programmeOptions" :value="$user->programme->value" />
                         </div>
                         <x-select name="department_id" label="Department" :options="$departments" :value="$user->department_id" />
+                        @if ($user->arm)
+                            <p class="text-xs text-muted">Course: {{ \App\Support\Classes\Arms::name($user->arm) }} ({{ \App\Support\Classes\Arms::short($user->arm) }}), from the matric number.</p>
+                        @endif
                         <x-button size="sm" variant="secondary" class="w-full">Save class</x-button>
                     </form>
                 </x-card>

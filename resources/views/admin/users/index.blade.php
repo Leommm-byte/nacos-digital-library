@@ -2,6 +2,7 @@
     $roles = ['' => 'Any role'] + collect(\App\Enums\Role::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all();
     $statuses = ['' => 'Any status', 'active' => 'Active', 'suspended' => 'Suspended'];
     $levels = ['' => 'Any level'] + collect(\App\Enums\Level::cases())->mapWithKeys(fn ($l) => [$l->value => $l->label()])->all();
+    $arms = ['' => 'Any course'] + collect(\App\Support\Classes\Arms::all())->map(fn ($a) => $a['stage'].' '.$a['short'])->all();
     $programmes = ['' => 'Any programme'] + collect(\App\Enums\Programme::cases())->mapWithKeys(fn ($p) => [$p->value => $p->label()])->all();
 @endphp
 
@@ -21,6 +22,7 @@
         <x-select name="status" label="Status" :options="$statuses" :value="$filters['status'] ?? ''" />
         <x-select name="level" label="Level" :options="$levels" :value="$filters['level'] ?? ''" />
         <x-select name="programme" label="Programme" :options="$programmes" :value="$filters['programme'] ?? ''" />
+        <x-select name="arm" label="Course" :options="$arms" :value="$filters['arm'] ?? ''" />
         <div class="filter-actions"><x-button variant="secondary" icon="search">Filter</x-button></div>
     </form>
 
@@ -47,7 +49,7 @@
                                 </a>
                             </td>
                             <td class="whitespace-nowrap">{{ $user->matric_number }}</td>
-                            <td class="whitespace-nowrap">{{ $user->level->label() }} · {{ $user->programme->label() }}</td>
+                            <td class="whitespace-nowrap">{{ trim($user->level->label().' '.\App\Support\Classes\Arms::short($user->arm)) }} · {{ $user->programme->label() }}</td>
                             <td><x-badge :variant="$user->role === \App\Enums\Role::Student ? 'neutral' : 'primary'">{{ $user->role->label() }}</x-badge></td>
                             <td>
                                 @if ($user->isSuspended())

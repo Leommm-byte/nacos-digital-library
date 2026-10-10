@@ -6,6 +6,8 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Support\Classes\Arms;
+use App\Support\Classes\SchoolClass;
 use App\Support\MatricNumber;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -30,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property int $department_id
  * @property Level $level
  * @property Programme $programme
+ * @property string|null $arm
  * @property Role $role
  * @property UserStatus $status
  * @property bool $must_change_password
@@ -88,6 +91,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // just created (not re-read from the database) has them too;
         // strict mode would otherwise throw.
         'display_name' => null,
+        'arm' => null,
         'email_verified_at' => null,
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
@@ -115,7 +119,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Normalise matric numbers so lookups are case-insensitive, and keep the
-     * entry year it contains (used for election eligibility).
+     * entry year and arm (HND SWD or NCC) it contains.
      *
      * @return Attribute<string, string>
      */
@@ -124,7 +128,23 @@ class User extends Authenticatable implements MustVerifyEmail
         return Attribute::make(set: fn (string $value) => [
             'matric_number' => MatricNumber::normalize($value),
             'entry_year' => MatricNumber::entryYear($value),
+            'arm' => Arms::fromMatric($value),
         ]);
+    }
+
+    /**
+     * The student's class: programme, level and arm. Null when the school
+     * doesn't run that combination (an old account, say).
+     */
+    public function schoolClass(): ?SchoolClass
+    {
+        return SchoolClass::make($this->programme, $this->level, $this->arm);
+    }
+
+    /** "HND1 SWD Full-time", or level and programme when not a class. */
+    public function classLabel(): string
+    {
+        return $this->schoolClass()?->label() ?? implode(' ', array_filter([$this->level->label(), Arms::short($this->arm), $this->programme->label()]));
     }
 
     public function firstName(): string

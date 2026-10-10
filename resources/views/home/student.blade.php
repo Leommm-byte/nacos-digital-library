@@ -6,7 +6,7 @@
                 <p class="hero-eyebrow">{{ $greeting }}</p>
                 <h1 class="hero-title">{{ $user->greetingName() }}</h1>
                 <div class="mt-4 flex flex-wrap gap-2">
-                    <span class="hero-chip">{{ $user->level->label() }}</span>
+                    <span class="hero-chip">{{ trim($user->level->label().' '.\App\Support\Classes\Arms::short($user->arm)) }}</span>
                     <span class="hero-chip">{{ $user->department->name }}</span>
                     <span class="hero-chip">{{ $user->role->label() }}</span>
                 </div>
@@ -159,7 +159,7 @@
                 </div>
                 <dl class="profile-summary">
                     <div><dt>Matric number</dt><dd>{{ $user->matric_number }}</dd></div>
-                    <div><dt>Class</dt><dd>{{ $user->level->label() }} · {{ $user->programme->label() }}</dd></div>
+                    <div><dt>Class</dt><dd>{{ trim($user->level->label().' '.\App\Support\Classes\Arms::short($user->arm)) }} · {{ $user->programme->label() }}</dd></div>
                     <div><dt>Department</dt><dd>{{ $user->department->name }}</dd></div>
                     <div><dt>Member since</dt><dd>{{ $user->created_at->timezone(config('app.display_timezone'))->format('F Y') }}</dd></div>
                 </dl>

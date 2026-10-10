@@ -2,12 +2,10 @@
     $zone = config('app.display_timezone');
     $import = session('import');
     $mismatches = session('mismatches', []);
-    $programmes = \App\Enums\Programme::cases();
-    $levels = \App\Enums\Level::cases();
-    $uploaded = collect($classes)->filter(fn ($class, $key) => ! str_starts_with($key, '|') && ! str_ends_with($key, '|'))->count();
-    $unsorted = collect($classes)->filter(fn ($class, $key) => str_starts_with($key, '|') || str_ends_with($key, '|'))->sum('total');
-    $programmeOptions = ['' => 'Choose…'] + collect($programmes)->mapWithKeys(fn ($p) => [$p->value => $p->label()])->all();
-    $levelOptions = ['' => 'Choose…'] + collect($levels)->mapWithKeys(fn ($l) => [$l->value => $l->label()])->all();
+    $schoolClasses = \App\Support\Classes\SchoolClass::all();
+    $byProgramme = collect($schoolClasses)->groupBy(fn ($c) => $c->programme->value);
+    $uploaded = count($classes);
+    $classOptions = ['' => 'Choose…'] + collect($schoolClasses)->mapWithKeys(fn ($c) => [$c->key() => $c->label()])->all();
 @endphp
 
 <x-layouts.admin title="Nominal roll">
@@ -45,20 +43,21 @@
             <ul class="grid grid-cols-3 gap-3">
                 <li class="stat-tile"><strong>{{ number_format($total) }}</strong><small>On the roll</small></li>
                 <li class="stat-tile"><strong>{{ number_format($withAccount) }}</strong><small>Have an account</small></li>
-                <li class="stat-tile"><strong>{{ $uploaded }}<span class="text-muted">/{{ count($programmes) * count($levels) }}</span></strong><small>Classes uploaded</small></li>
+                <li class="stat-tile"><strong>{{ $uploaded }}<span class="text-muted">/{{ count($schoolClasses) }}</span></strong><small>Classes uploaded</small></li>
             </ul>
 
             <x-section title="Classes" description="Download a class's template, send it to its governor, then upload the list they return. Uploading a class replaces that class only." icon="users" tone="green">
                 <div class="space-y-4">
-                    @foreach ($programmes as $p)
+                    @foreach ($byProgramme as $programmeClasses)
+                        @php($p = $programmeClasses->first()->programme)
                         <div class="roll-programme">
                             <h3 class="roll-programme-title">{{ $p->label() }} <span class="text-sm font-normal text-muted">· matric numbers start with {{ $p->matricLetter() }}/</span></h3>
                             <ul class="roll-classes">
-                                @foreach ($levels as $l)
-                                    @php($class = $classes[$p->value.'|'.$l->value] ?? null)
+                                @foreach ($programmeClasses as $c)
+                                    @php($class = $classes[$c->key()] ?? null)
                                     <li @class(['roll-class', 'is-empty' => ! $class])>
                                         <div class="min-w-0 flex-1">
-                                            <p class="font-semibold">{{ $l->label() }}</p>
+                                            <p class="font-semibold">{{ $c->shortLabel() }}</p>
                                             <p class="text-xs text-muted">
                                                 @if ($class)
                                                     {{ number_format($class['total']) }} {{ \Illuminate\Support\Str::plural('student', $class['total']) }} · {{ \Illuminate\Support\Carbon::parse($class['updated'])->timezone($zone)->format('j M') }}
@@ -67,8 +66,8 @@
                                                 @endif
                                             </p>
                                         </div>
-                                        <a href="{{ route('roll.template', ['programme' => $p->value, 'level' => $l->value]) }}" class="icon-btn" aria-label="Template for {{ $l->label() }} {{ $p->label() }}" title="Template"><x-icon name="file-text" /></a>
-                                        <a href="{{ route('roll.index', ['programme' => $p->value, 'level' => $l->value]) }}#import" class="icon-btn" aria-label="Upload {{ $l->label() }} {{ $p->label() }}" title="Upload"><x-icon name="upload" /></a>
+                                        <a href="{{ route('roll.template', ['class' => $c->key()]) }}" class="icon-btn" aria-label="Template for {{ $c->label() }}" title="Template"><x-icon name="file-text" /></a>
+                                        <a href="{{ route('roll.index', ['class' => $c->key()]) }}#import" class="icon-btn" aria-label="Upload {{ $c->label() }}" title="Upload"><x-icon name="upload" /></a>
                                     </li>
                                 @endforeach
                             </ul>
@@ -100,7 +99,7 @@
                                 <span class="roll-matric">{{ $entry->matric_number }}</span>
                                 <span class="min-w-0 flex-1 truncate">{{ $entry->fullname ?? '—' }}</span>
                                 @if ($entry->level || $entry->programme)
-                                    <x-badge class="shrink-0">{{ trim(($entry->level?->label() ?? '').' '.($entry->programme?->label() ?? '')) }}</x-badge>
+                                    <x-badge class="shrink-0">{{ $entry->classLabel() }}</x-badge>
                                 @endif
                                 @unless ($lockedBy)
                                     <form method="POST" action="{{ route('roll.students.destroy', ['entry' => $entry, 'q' => $search ?: null, 'page' => $entries->currentPage() > 1 ? $entries->currentPage() : null]) }}" data-confirm="Take {{ $entry->matric_number }}{{ $entry->fullname ? ' ('.$entry->fullname.')' : '' }} off the roll? They won't be able to vote in elections limited to the roll.">
@@ -128,10 +127,7 @@
                 <form method="POST" action="{{ route('roll.store') }}" enctype="multipart/form-data" novalidate>
                     @csrf
                     <fieldset class="space-y-4" @disabled($lockedBy)>
-                    <div class="grid grid-cols-2 gap-3">
-                        <x-select name="programme" label="Programme" :options="$programmeOptions" :value="$programme?->value" />
-                        <x-select name="level" label="Level" :options="$levelOptions" :value="$level?->value" />
-                    </div>
+                    <x-select name="class" label="Class" :options="$classOptions" :value="$selected?->key()" />
 
                     <div>
                         <label for="roll" class="field-label">Class list</label>
@@ -192,15 +188,10 @@
                         <x-field name="matric_number" id="add-matric" label="Matric number" bag="student" required maxlength="32" placeholder="F/ND/24/1234567" autocomplete="off" />
                         <x-field name="fullname" id="add-name" label="Full name" bag="student" required maxlength="150" placeholder="Surname first" autocomplete="off" />
                         <x-field name="email" id="add-email" label="Email (optional)" type="email" bag="student" maxlength="255" autocomplete="off" />
-                        <div class="grid grid-cols-2 gap-3">
-                            <x-select name="programme" id="add-programme" label="Programme" :options="$programmeOptions" :value="$programme?->value" />
-                            <x-select name="level" id="add-level" label="Level" :options="$levelOptions" :value="$level?->value" />
-                        </div>
-                        @foreach (['programme', 'level'] as $field)
-                            @if ($errors->getBag('student')->has($field))
-                                <p class="field-error">{{ $errors->getBag('student')->first($field) }}</p>
-                            @endif
-                        @endforeach
+                        <x-select name="class" id="add-class" label="Class" :options="$classOptions" :value="$selected?->key()" />
+                        @if ($errors->getBag('student')->has('class'))
+                            <p class="field-error">{{ $errors->getBag('student')->first('class') }}</p>
+                        @endif
                         @if (session('confirmStudent'))
                             <label class="flex items-start gap-3 text-sm">
                                 <input type="checkbox" name="confirm" value="1" class="mt-0.5 size-4 accent-[var(--primary)]">

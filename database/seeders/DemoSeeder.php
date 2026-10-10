@@ -15,6 +15,8 @@ use App\Models\ReadingProgress;
 use App\Models\RollEntry;
 use App\Models\User;
 use App\Notifications\UploadReviewed;
+use App\Support\Classes\Arms;
+use App\Support\Classes\SchoolClass;
 use App\Support\Elections\BallotBox;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
@@ -42,8 +44,8 @@ class DemoSeeder extends Seeder
         $cs = Department::where('slug', 'computer-science')->firstOrFail();
 
         $accounts = [
-            ['Ada Admin', 'F/HD/21/0000001', Role::Admin],
-            ['Gbenga Governor', 'F/HD/22/0000002', Role::Governor],
+            ['Ada Admin', 'F/HD/24/3211001', Role::Admin],
+            ['Gbenga Governor', 'F/HD/24/3212002', Role::Governor],
             ['Chika CourseRep', 'F/ND/23/0000003', Role::CourseRep],
             ['Tobi Student', 'F/ND/24/0000004', Role::Student],
         ];
@@ -57,7 +59,11 @@ class DemoSeeder extends Seeder
                     'fullname' => $name,
                     'matric_number' => $matric,
                     'email' => strtolower(explode(' ', $name)[0]).'@example.test',
-                    'level' => $role === Role::Student ? Level::ND1 : Level::HND1,
+                    'level' => match ($role) {
+                        Role::Student => Level::ND1,
+                        Role::CourseRep => Level::ND2,
+                        default => Level::HND1,
+                    },
                     'programme' => Programme::FullTime,
                     'password' => self::PASSWORD,
                 ]);
@@ -133,14 +139,23 @@ class DemoSeeder extends Seeder
         // Students on the roll without an account yet, three per class, so
         // "Create accounts" has someone to create.
         $waiting = [];
-        foreach ([[Programme::PartTime, Level::HND1], [Programme::PartTime, Level::ND2], [Programme::Codfel, Level::ND1], [Programme::Codfel, Level::HND2]] as $c => [$programme, $level]) {
+        $classes = [
+            new SchoolClass(Programme::PartTime, Level::HND1, 'swd'),
+            new SchoolClass(Programme::PartTime, Level::HND1, 'ncc'),
+            new SchoolClass(Programme::PartTime, Level::ND2),
+            new SchoolClass(Programme::Codfel, Level::ND1),
+        ];
+        foreach ($classes as $c => $class) {
             for ($i = 1; $i <= 3; $i++) {
+                // HND numbers carry the course digit: 3211… SWD, 3212… NCC.
+                $digits = $class->arm !== null ? sprintf('321%s%03d', Arms::all()[$class->arm]['digit'], $c * 10 + $i) : sprintf('%07d', 9000000 + $c * 10 + $i);
                 $waiting[] = [
-                    'matric_number' => sprintf('%s/%s/24/%07d', $programme->matricLetter(), str_starts_with($level->value, 'HND') ? 'HD' : 'ND', 9000000 + $c * 10 + $i),
+                    'matric_number' => sprintf('%s/%s/24/%s', $class->programme->matricLetter(), $class->level->stage() === 'HND' ? 'HD' : 'ND', $digits),
                     'fullname' => strtoupper(fake()->lastName()).' '.fake()->firstName(),
                     'email' => null,
-                    'programme' => $programme->value,
-                    'level' => $level->value,
+                    'programme' => $class->programme->value,
+                    'level' => $class->level->value,
+                    'arm' => $class->arm,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -167,6 +182,7 @@ class DemoSeeder extends Seeder
             'email' => null,
             'level' => $user->level->value,
             'programme' => $user->programme->value,
+            'arm' => $user->arm,
             'created_at' => now(),
             'updated_at' => now(),
         ])->all());

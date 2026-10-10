@@ -2,6 +2,7 @@
     $editing = $election->exists;
     $levels = old('levels', $election->levels ?? []);
     $programmes = old('programmes', $election->programmes ?? []);
+    $arms = old('arms', $election->arms ?? []);
     $yearOptions = ['' => 'Any year'] + $years;
     $rollOnly = $errors->any() ? (bool) old('roll_only') : $election->roll_only;
 @endphp
@@ -80,6 +81,24 @@
                     <p class="field-error">{{ $message }}</p>
                 @enderror
             </fieldset>
+
+            @if (\App\Support\Classes\Arms::all() !== [])
+                <fieldset>
+                    <legend class="field-label">Courses</legend>
+                    <div class="chip-options">
+                        @foreach (\App\Support\Classes\Arms::all() as $key => $arm)
+                            <label class="chip-option">
+                                <input type="checkbox" name="arms[]" value="{{ $key }}" class="sr-only" @checked(in_array($key, (array) $arms, true))>
+                                <span>{{ $arm['stage'] }} {{ $arm['short'] }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-1.5 text-sm text-muted">None ticked means every course. Ticking one limits the election to its students, so ND students can't vote in it. {{ \App\Support\Classes\Arms::hint() }}</p>
+                    @error('arms')
+                        <p class="field-error">{{ $message }}</p>
+                    @enderror
+                </fieldset>
+            @endif
 
             <div>
                 <p class="field-label">Matric entry years</p>
