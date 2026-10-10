@@ -102,10 +102,10 @@
                 </x-card>
 
                 <x-card class="space-y-4">
-                    <h2 class="upload-step"><span>3</span> Cover <span class="font-normal text-muted">(optional)</span></h2>
+                    <h2 class="upload-step" id="cover-heading"><span>3</span> Cover <span class="font-normal text-muted">(optional)</span></h2>
                     <p class="text-sm text-muted">Skip this and we'll use the first page.</p>
                     <div class="upload-cover">
-                        <input id="cover" name="cover" type="file" accept="image/jpeg,image/png,image/webp" class="field-input field-file" data-upload-cover
+                        <input id="cover" name="cover" type="file" aria-labelledby="cover-heading" accept="image/jpeg,image/png,image/webp" class="field-input field-file" data-upload-cover
                             @error('cover') aria-invalid="true" aria-describedby="cover-error" @enderror>
                         @error('cover')
                             <p id="cover-error" class="field-error">{{ $message }}</p>

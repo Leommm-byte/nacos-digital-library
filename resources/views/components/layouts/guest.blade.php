@@ -32,13 +32,13 @@
     </aside>
 
     <div class="auth-main">
-        <div class="auth-topbar">
+        <header class="auth-topbar">
             <a href="{{ url('/') }}" class="auth-logo auth-logo-compact">
                 <img src="{{ asset('images/logo-96.webp') }}" alt="" width="36" height="36" decoding="async">
                 <span>NACOS <span class="text-yellow-300">YabaTech</span></span>
             </a>
             <x-theme-toggle />
-        </div>
+        </header>
 
         <main id="main" tabindex="-1" class="auth-card animate-enter outline-none">
             @include('partials.flash')

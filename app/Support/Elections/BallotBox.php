@@ -17,6 +17,12 @@ use Illuminate\Support\Str;
  * ballot impossible, even from two requests at once); what was voted goes
  * into election_votes with random ids and no voter or time. Both are
  * written in one transaction, so a ballot counts fully or not at all.
+ *
+ * Many ballots for the same candidates arrive at once near closing time.
+ * Each ballot locks its candidates' rows first, always in id order, so
+ * ballots wait their turn for a few milliseconds instead of deadlocking
+ * (found by the load test, tests/load); a deadlock that still happens is
+ * retried.
  */
 class BallotBox
 {
@@ -40,6 +46,13 @@ class BallotBox
                     throw new BallotRejected('Voting for this election has closed.');
                 }
 
+                // Before anything is inserted: the vote rows' foreign keys
+                // would otherwise take shared locks on these rows that the
+                // count updates below then have to upgrade.
+                $candidates = array_values($picked);
+                sort($candidates);
+                ElectionCandidate::query()->whereKey($candidates)->orderBy('id')->lockForUpdate()->get(['id']);
+
                 DB::table('election_voters')->insert([
                     'election_id' => $election->id,
                     'user_id' => $user->id,
@@ -60,10 +73,10 @@ class BallotBox
 
                 DB::table('election_votes')->insert($rows);
 
-                foreach ($picked as $candidateId) {
+                foreach ($candidates as $candidateId) {
                     ElectionCandidate::query()->whereKey($candidateId)->increment('votes_count');
                 }
-            });
+            }, attempts: 3);
         } catch (UniqueConstraintViolationException) {
             throw new AlreadyVoted;
         }

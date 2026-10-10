@@ -7,7 +7,9 @@
 
 @php
     $user = auth()->user();
-    $mb = max(0.1, round($file->size_bytes / 1048576, 1));
+    $size = $file->size_bytes < 1048576
+        ? max(1, (int) round($file->size_bytes / 1024)).' KB'
+        : round($file->size_bytes / 1048576, 1).' MB';
 @endphp
 
 <div class="keep-offline" data-keep-offline hidden
@@ -20,7 +22,7 @@
     data-watermark="{{ $user?->matric_number }}"
     data-owner="{{ $user ? \App\Support\Offline::owner($user) : '' }}">
     <x-button type="button" variant="secondary" icon="hard-drive-download" data-keep-offline-save>
-        Keep offline <span class="font-normal text-muted">· {{ $mb }} MB</span>
+        Keep offline <span class="font-normal text-muted">· {{ $size }}</span>
     </x-button>
     <x-button type="button" variant="secondary" icon="hard-drive-download" data-keep-offline-progress disabled hidden>
         Saving… <span data-keep-offline-percent>0%</span>

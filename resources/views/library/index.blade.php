@@ -60,7 +60,7 @@
     @else
         <ul class="stagger mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 xl:grid-cols-6">
             @foreach ($books as $book)
-                <li class="flex"><x-book-card :book="$book" :saved="isset($bookmarked[$book->id])" class="w-full" /></li>
+                <li class="flex"><x-book-card :book="$book" :saved="isset($bookmarked[$book->id])" heading="h2" class="w-full" /></li>
             @endforeach
         </ul>
 

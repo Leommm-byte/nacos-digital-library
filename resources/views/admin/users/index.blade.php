@@ -29,7 +29,7 @@
             <x-button href="{{ route('admin.users.index') }}" variant="secondary">Clear filters</x-button>
         </x-empty-state>
     @else
-        <div class="table-scroll">
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways">
             <table class="admin-table">
                 <thead>
                     <tr><th>Name</th><th>Matric number</th><th>Class</th><th>Role</th><th>Status</th></tr>

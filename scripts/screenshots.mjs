@@ -156,8 +156,12 @@ const pages = [
         await page.evaluate(() => navigator.serviceWorker.ready);
         // Let the worker store the reader (PDF.js) too.
         await page.waitForTimeout(3000);
+        const id = await page.locator('[data-keep-offline]').getAttribute('data-id');
         await page.context().setOffline(true);
-        await page.goto(`${page.url().replace(/\/$/, '')}/read`);
+        // Playwright's offline mode doesn't reach the service worker's own
+        // requests, so the offline reader is opened directly; the book
+        // itself must come from the copy on the phone.
+        await page.goto(`${base}/offline/read?book=${encodeURIComponent(id)}`);
         await page.locator('[data-offline-reader] .reader-canvas').waitFor({ timeout: 20000 });
     }],
     ['offline', '/offline', 'F/ND/24/0000004', async (page) => {

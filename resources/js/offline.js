@@ -243,7 +243,7 @@ function bookRow(entry, onRemove) {
     title.textContent = entry.title;
     const meta = document.createElement('span');
     meta.className = 'offline-book-meta';
-    meta.textContent = [entry.author, entry.level, `${(entry.size / 1048576).toFixed(1)} MB`].filter(Boolean).join(' · ');
+    meta.textContent = [entry.author, entry.level, fileSize(entry.size)].filter(Boolean).join(' · ');
     link.append(title, meta);
 
     const button = document.createElement('button');
@@ -257,11 +257,17 @@ function bookRow(entry, onRemove) {
     return row;
 }
 
+function fileSize(bytes) {
+    return bytes < 1048576 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
 /* Offline reader -------------------------------------------------------- */
 
 async function setupOfflineReader(root) {
+    // Shown in place of /library/<id>/read, or opened as /offline/read?book=<id>.
     const match = window.location.pathname.match(/^\/library\/([^/]+)\/read$/);
-    const entry = match ? await find(decodeURIComponent(match[1])) : null;
+    const id = match ? decodeURIComponent(match[1]) : new URLSearchParams(window.location.search).get('book');
+    const entry = id ? await find(id) : null;
 
     if (!entry) {
         window.location.replace('/offline');
