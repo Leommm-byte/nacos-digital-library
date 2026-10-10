@@ -103,7 +103,7 @@ class LayoutTest extends TestCase
 
         $items = Navigation::primary(User::factory()->role(Role::Student)->make());
 
-        $this->assertSame(['home', 'library.index', 'bookmarks.index', 'elections.index', 'profile.edit'], array_column($items, 'route'));
+        $this->assertSame(['home', 'library.index', 'timetable.show', 'elections.index', 'profile.edit'], array_column($items, 'route'));
         $this->assertSame([true, false, false, false, false], array_column($items, 'active'));
     }
 
@@ -112,7 +112,7 @@ class LayoutTest extends TestCase
     {
         $user = User::factory()->make();
 
-        foreach (['library.index', 'bookmarks.index', 'elections.index', 'profile.edit'] as $name) {
+        foreach (['library.index', 'timetable.show', 'elections.index', 'profile.edit'] as $name) {
             Route::get('/'.$name, fn () => '')->name($name);
         }
         Route::getRoutes()->refreshNameLookups();

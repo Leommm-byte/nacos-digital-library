@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Support\Classes\SchoolClass;
 use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -90,5 +91,14 @@ class AppServiceProvider extends ServiceProvider
         // Who may open the reset-code page; which students they may issue
         // codes for is UserPolicy::issueResetCode.
         Gate::define('issue-reset-codes', fn (User $user) => $user->hasRole(Role::CourseRep));
+
+        // Timetables: a class sees its own; its governor keeps it; admins
+        // see and keep every class's, and the exam timetable.
+        Gate::define('view-timetable', fn (User $user, SchoolClass $class) => $user->hasRole(Role::Admin)
+            || $user->schoolClass()?->key() === $class->key());
+        Gate::define('edit-timetable', fn (User $user, SchoolClass $class) => $user->hasRole(Role::Admin)
+            || ($user->role === Role::Governor && $user->schoolClass()?->key() === $class->key()));
+        Gate::define('view-all-timetables', fn (User $user) => $user->hasRole(Role::Admin));
+        Gate::define('manage-exams', fn (User $user) => $user->hasRole(Role::Admin));
     }
 }

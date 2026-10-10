@@ -19,7 +19,7 @@ class Navigation
         $items = [
             ['route' => 'home', 'label' => 'Home', 'icon' => 'house', 'match' => 'home'],
             ['route' => 'library.index', 'label' => 'Library', 'icon' => 'library-big', 'match' => 'library.*', 'auth' => true],
-            ['route' => 'bookmarks.index', 'label' => 'Saved', 'icon' => 'bookmark', 'match' => 'bookmarks.*', 'auth' => true],
+            ['route' => 'timetable.show', 'label' => 'Timetable', 'icon' => 'calendar-clock', 'match' => ['timetable.*', 'exams.*'], 'auth' => true],
             ['route' => 'elections.index', 'label' => 'Elections', 'icon' => 'vote', 'match' => 'elections.*', 'auth' => true],
             ['route' => 'profile.edit', 'label' => 'Profile', 'icon' => 'user', 'match' => 'profile.*', 'auth' => true],
         ];
@@ -35,7 +35,7 @@ class Navigation
                 'route' => $item['route'],
                 'label' => $item['label'],
                 'icon' => $item['icon'],
-                'active' => request()->routeIs($item['match']),
+                'active' => request()->routeIs(...(array) $item['match']),
             ];
         }
 
