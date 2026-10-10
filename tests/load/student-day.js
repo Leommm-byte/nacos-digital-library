@@ -41,6 +41,15 @@ export const options = {
             ],
             gracefulRampDown: '20s',
         },
+        // One student signs in and checks every 15 s that the session
+        // holds (it once ended after about two minutes under load).
+        session: {
+            executor: 'per-vu-iterations',
+            exec: 'session',
+            vus: 1,
+            iterations: 1,
+            maxDuration: '4m',
+        },
         // Voters arrive steadily, 3 a second, during the peak. (Starting
         // 100 at the same instant mostly measured bcrypt: the password
         // checks filled the CPU for a few seconds.)
@@ -189,6 +198,25 @@ export function student() {
         }
         check(answer, { 'assistant answered': (r) => r.status === 200 && r.json('messages.1.role') === 'assistant' });
         think();
+    }
+}
+
+export function session() {
+    const form = http_.get(`${BASE}/login`, { tags: { name: 'login page' } });
+    const res = http.post(`${BASE}/login`, { _token: token(form), matric_number: matric(1400), password: PASSWORD },
+        { tags: { name: 'login' }, redirects: 0 });
+    for (const [name, cookies] of Object.entries(res.cookies)) {
+        for (const c of cookies) {
+            console.warn(`SESSION cookie ${name}: max_age=${c.max_age} expires=${c.expires} path=${c.path} secure=${c.secure}`);
+        }
+    }
+    http_.get(res.headers.Location || `${BASE}/`, { tags: { name: 'home' } });
+    const started = Date.now();
+    for (let i = 0; i < 14; i++) {
+        sleep(15);
+        const page = http_.get(`${BASE}/saved`, { tags: { name: 'saved' } });
+        const landed = page.url.replace(BASE, '');
+        console.warn(`SESSION after ${Math.round((Date.now() - started) / 1000)}s: ${page.status} ${landed}`);
     }
 }
 
