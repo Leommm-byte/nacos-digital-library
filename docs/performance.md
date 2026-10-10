@@ -45,6 +45,21 @@ show the same count.
 machine is not DreamHost, so read the numbers as "does anything fall over
 or grow out of hand", not as exact live timings.
 
+Latest run (October 2026, test machine): 11,212 requests from up to 210
+students at once, none failed, every check passed. 95th percentiles: pages
+27–52 ms, search 83 ms, the assistant 66 ms, a ballot 59 ms, a PDF page
+range 31 ms, live results 1 ms (a static file), logging in 202 ms. All
+300 ballots were recorded once and the live results showed 300.
+
+Things the test found and that are fixed: ballots for the same candidates
+deadlocked under a rush (candidates are now locked in id order, with
+retries), and voters queued behind each other to rewrite the results file
+(a ballot now only marks it stale; one writer catches up).
+
+The script keeps each student's cookies between rounds (`noCookiesReset`),
+as a browser does, and every page check requires the signed-in page, so a
+student signed out by mistake fails the run instead of browsing as a guest.
+
 To run it on your machine against the Docker stack:
 
 ```
