@@ -52,7 +52,9 @@ export const options = {
     thresholds: {
         http_req_failed: ['rate<0.01'],
         checks: ['rate>0.99'],
-        'http_req_duration{name:login}': page,
+        // Passwords are checked with bcrypt, slow on purpose against
+        // guessing; 100 voters signing in at the same instant queue up.
+        'http_req_duration{name:login}': ['p(95)<5000'],
         'http_req_duration{name:home}': page,
         'http_req_duration{name:library}': page,
         'http_req_duration{name:search}': ['p(95)<2000'],
@@ -69,6 +71,20 @@ export const options = {
     summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
 };
 
+// Every failed request is logged (kind, status, address) so a failing
+// run says what failed, not just how many.
+const http_ = {
+    get: (url, params) => logged(http.get(url, params), params),
+    post: (url, body, params) => logged(http.post(url, body, params), params),
+};
+
+function logged(res, params) {
+    if (res.status === 0 || res.status >= 400) {
+        console.warn(`FAILED ${params?.tags?.name ?? '?'} ${res.status} ${res.error || ''} ${res.url}`);
+    }
+    return res;
+}
+
 const matric = (n) => `F/ND/25/${String(n).padStart(7, '0')}`;
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const think = () => sleep(2 + Math.random() * 3);
@@ -78,8 +94,8 @@ function token(response) {
 }
 
 function login(n) {
-    const form = http.get(`${BASE}/login`, { tags: { name: 'login page' } });
-    const res = http.post(`${BASE}/login`, {
+    const form = http_.get(`${BASE}/login`, { tags: { name: 'login page' } });
+    const res = http_.post(`${BASE}/login`, {
         _token: token(form),
         matric_number: matric(n),
         password: PASSWORD,
@@ -100,57 +116,57 @@ export function student() {
         }
     }
 
-    const home = http.get(`${BASE}/`, { tags: { name: 'home' } });
+    const home = http_.get(`${BASE}/`, { tags: { name: 'home' } });
     check(home, { 'home ok': (r) => r.status === 200 });
     csrf = token(home) || csrf;
     think();
 
-    const library = http.get(`${BASE}/library?page=${1 + Math.floor(Math.random() * 20)}`, { tags: { name: 'library' } });
+    const library = http_.get(`${BASE}/library?page=${1 + Math.floor(Math.random() * 20)}`, { tags: { name: 'library' } });
     check(library, { 'library ok': (r) => r.status === 200 });
     think();
 
-    const search = http.get(`${BASE}/library?q=${encodeURIComponent(pick(SEARCHES))}`, { tags: { name: 'search' } });
+    const search = http_.get(`${BASE}/library?q=${encodeURIComponent(pick(SEARCHES))}`, { tags: { name: 'search' } });
     check(search, { 'search ok': (r) => r.status === 200 });
     const links = search.html().find('a.book-card-link').toArray().map((a) => a.attr('href'));
     const bookUrl = links.length ? pick(links) : library.html().find('a.book-card-link').first().attr('href');
     think();
 
     if (bookUrl) {
-        const book = http.get(bookUrl, { tags: { name: 'book' } });
+        const book = http_.get(bookUrl, { tags: { name: 'book' } });
         check(book, { 'book ok': (r) => r.status === 200 });
         think();
 
-        const reader = http.get(`${bookUrl}/read`, { tags: { name: 'reader' } });
+        const reader = http_.get(`${bookUrl}/read`, { tags: { name: 'reader' } });
         check(reader, { 'reader ok': (r) => r.status === 200 });
         const src = reader.html().find('[data-reader]').attr('data-src');
         if (src) {
-            const range = http.get(src, { headers: { Range: 'bytes=0-262143' }, tags: { name: 'pdf range' } });
+            const range = http_.get(src, { headers: { Range: 'bytes=0-262143' }, tags: { name: 'pdf range' } });
             check(range, { 'pdf range served': (r) => r.status === 206 || r.status === 200 });
         }
         think();
     }
 
     if (exec.vu.iterationInScenario % 2 === 0) {
-        check(http.get(`${BASE}/saved`, { tags: { name: 'saved' } }), { 'saved ok': (r) => r.status === 200 });
+        check(http_.get(`${BASE}/saved`, { tags: { name: 'saved' } }), { 'saved ok': (r) => r.status === 200 });
         think();
     }
 
-    const elections = http.get(`${BASE}/elections`, { tags: { name: 'elections' } });
+    const elections = http_.get(`${BASE}/elections`, { tags: { name: 'elections' } });
     check(elections, { 'elections ok': (r) => r.status === 200 });
     const electionUrl = elections.html().find('.election-card a').first().attr('href');
     if (electionUrl) {
-        const election = http.get(electionUrl, { tags: { name: 'election' } });
+        const election = http_.get(electionUrl, { tags: { name: 'election' } });
         check(election, { 'election ok': (r) => r.status === 200 });
         const live = election.html().find('[data-live-results]').attr('data-live-results');
         // A watcher polls the results every 10 seconds for half a minute.
         for (let i = 0; live && i < 3; i++) {
-            check(http.get(live, { tags: { name: 'live results' } }), { 'live results ok': (r) => r.status === 200 });
+            check(http_.get(live, { tags: { name: 'live results' } }), { 'live results ok': (r) => r.status === 200 });
             sleep(10);
         }
     }
 
     if (csrf && exec.vu.iterationInScenario % 3 === 0) {
-        const answer = http.post(`${BASE}/assistant`, { _token: csrf, message: `Find books on ${pick(SEARCHES)}` }, {
+        const answer = http_.post(`${BASE}/assistant`, { _token: csrf, message: `Find books on ${pick(SEARCHES)}` }, {
             headers: { Accept: 'application/json' },
             tags: { name: 'assistant' },
         });
@@ -169,9 +185,9 @@ export function voter() {
         return;
     }
 
-    const elections = http.get(`${BASE}/elections`, { tags: { name: 'elections' } });
+    const elections = http_.get(`${BASE}/elections`, { tags: { name: 'elections' } });
     const url = elections.html().find('.election-card a').first().attr('href');
-    const ballot = http.get(url, { tags: { name: 'election' } });
+    const ballot = http_.get(url, { tags: { name: 'election' } });
     const form = ballot.html().find('form[data-ballot]');
 
     if (!check(form, { 'ballot shown': (f) => f.size() === 1 })) {
@@ -188,7 +204,7 @@ export function voter() {
 
     sleep(5 + Math.random() * 10);
 
-    const res = http.post(form.attr('action'), { _token: form.find('input[name=_token]').attr('value'), ...choices }, { tags: { name: 'vote' } });
+    const res = http_.post(form.attr('action'), { _token: form.find('input[name=_token]').attr('value'), ...choices }, { tags: { name: 'vote' } });
     check(res, { 'vote counted': (r) => r.status === 200 && r.body.includes('Your vote is in') });
 }
 

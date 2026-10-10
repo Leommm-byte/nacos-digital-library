@@ -32,7 +32,10 @@ nominal roll, an open election):
 
 It fails if more than 1% of requests fail, a check fails, or a request
 type's 95th percentile goes over its limit (1.5 s for pages, 2 s for
-search, the assistant and voting, 300 ms for live results). Afterwards
+search, the assistant and voting, 300 ms for live results, 5 s for
+logging in, which checks the password with bcrypt, slow on purpose, while
+100 voters sign in at the same moment). Each failed request is logged
+with its kind and status. Afterwards
 the workflow checks every ballot was recorded once and the live results
 show the same count.
 
