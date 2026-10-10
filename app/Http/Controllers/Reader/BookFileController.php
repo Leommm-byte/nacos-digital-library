@@ -16,8 +16,11 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
  * PDF.js fetches only the pages being read instead of the whole file
  * before showing page 1.
  *
- * The URL carries a version (?v=) taken from the file's hash. A matching
- * version may be cached privately for a year; a new upload changes it.
+ * The browser may keep a copy but must check with the server before using
+ * it (ETag, answered with an empty 304 while the file is unchanged). So a
+ * book is never downloaded twice, and nobody can open a cached copy once
+ * the student has logged out on a shared phone. Books kept for offline
+ * reading live in the service worker's cache instead (resources/sw).
  */
 class BookFileController extends Controller
 {
@@ -40,13 +43,8 @@ class BookFileController extends Controller
         $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_INLINE, 'book.pdf');
         $response->setEtag($file->sha256);
         $response->setPrivate();
-
-        if ($request->query('v') === substr($file->sha256, 0, 12)) {
-            $response->setMaxAge(31536000);
-            $response->setImmutable();
-        } else {
-            $response->headers->addCacheControlDirective('no-cache');
-        }
+        $response->headers->addCacheControlDirective('no-cache');
+        $response->isNotModified($request);
 
         return $response;
     }

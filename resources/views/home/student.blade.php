@@ -39,7 +39,7 @@
         <div class="min-w-0 space-y-10">
             @if ($continue->isNotEmpty())
                 <x-section title="Continue reading" description="Pick up where you stopped." icon="book-open" tone="green">
-                    <ul class="grid gap-3 sm:grid-cols-2">
+                    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         @foreach ($continue as $progress)
                             <li>
                                 <a href="{{ route('books.read', $progress->book) }}" class="continue-card">

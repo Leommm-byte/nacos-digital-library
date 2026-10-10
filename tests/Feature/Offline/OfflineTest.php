@@ -88,12 +88,18 @@ class OfflineTest extends TestCase
     }
 
     #[Test]
-    public function logging_out_clears_the_browser_cache(): void
+    public function signed_in_pages_are_never_stored_by_the_browser(): void
     {
-        $this->actingAs($this->student)
-            ->post(route('logout'))
+        $page = $this->actingAs($this->student)->get(route('home'))->assertOk();
+        $this->assertStringContainsString('no-store', (string) $page->headers->get('Cache-Control'));
+
+        // Logging out is instant: no Clear-Site-Data, which makes Chrome go
+        // through its whole cache.
+        $this->post(route('logout'))
             ->assertRedirect(route('login'))
-            ->assertHeader('Clear-Site-Data', '"cache"');
+            ->assertHeaderMissing('Clear-Site-Data');
+
+        $this->assertStringNotContainsString('no-store', (string) $this->get(route('login'))->headers->get('Cache-Control'));
     }
 
     #[Test]

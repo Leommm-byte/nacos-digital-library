@@ -98,6 +98,11 @@ class DemoSeeder extends Seeder
         // Tobi is part-way through two books and has finished one, so the
         // dashboard's "Continue reading" and stats have something to show.
         foreach (Book::approved()->where('level', Level::ND1)->take(3)->get() as $i => $book) {
+            if ($i === 0) {
+                // A long title, as real uploads have, so the screenshots
+                // show how cards cope with one on a phone.
+                $book->forceFill(['title' => 'Introduction to Data Structures and Algorithms: Lecture Notes and Past Questions (2024/2025 Session)'])->save();
+            }
             $pages = $book->page_count ?? 10;
             ReadingProgress::upsert([[
                 'user_id' => $users['student']->id,
