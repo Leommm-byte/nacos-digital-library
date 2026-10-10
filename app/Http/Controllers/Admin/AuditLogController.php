@@ -103,13 +103,15 @@ class AuditLogController extends Controller
      */
     private function filters(Request $request): array
     {
-        /** @var array{action?: string|null, who?: string|null, from?: string|null, to?: string|null} */
-        return $request->validate([
+        /** @var array{action?: string|null, who?: string|null, from?: string|null, to?: string|null} $filters */
+        $filters = $request->validate([
             'action' => ['nullable', 'string', 'max:64'],
             'who' => ['nullable', 'string', 'max:100'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
         ]);
+
+        return $filters;
     }
 
     /**
