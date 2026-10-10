@@ -106,7 +106,8 @@ jobs:
             grep -o 'FAILED [^"]*' k6.log 2>/dev/null | awk '{print $2, $3, $4}' | sort | uniq -c | sort -rn | head -n 20
             echo '```'; } | tee -a load-test-summary.md
           grep -o 'SESSION [^"]*' k6.log 2>/dev/null || true
-          grep -o 'SIGNED OUT [^"]*' k6.log 2>/dev/null | sort | uniq -c | sort -rn | head -n 15 || true
+          grep -o 'SIGNED OUT [^"]*' k6.log 2>/dev/null | head -n 6 || true
+          grep -o 'SIGNED OUT [^"]*' k6.log 2>/dev/null | sed -E 's/=[^;, ]*;/=…;/g; s/jar [^)]*/jar …/; s/\/library\/[0-9]+/\/library\/N/g; s/\?page=[0-9]+//' | sort | uniq -c | sort -rn | head -n 15 || true
           grep -o 'ASSISTANT 419[^"]*\|TOKEN CHANGED[^"]*' k6.log 2>/dev/null | sed -E 's/ of VU [0-9]+//' | sort | uniq -c | sort -rn | head -n 10 || true
 
       - name: Database during the run

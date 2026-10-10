@@ -93,21 +93,28 @@ const http_ = {
     post: (url, body, params) => logged(http.post(url, body, params), params),
 };
 
-// For diagnosis: the first request that unexpectedly lands on the login
-// page, and the one before it.
+// For diagnosis: the first page a signed-in student sees signed out, the
+// request before it and the cookies that request set.
 let previous = 'none';
 let loggedOut = false;
+
+const SESSION_COOKIE = 'nacos-yabatech-session';
+const jarSession = () => (http.cookieJar().cookiesForURL(BASE)[SESSION_COOKIE] || ['-'])[0].slice(0, 12);
+const setCookies = (res) => Object.entries(res.cookies)
+    .map(([name, list]) => list.map((c) => `${name}=${String(c.value).slice(0, 12)};max_age=${c.max_age};path=${c.path}`).join(','))
+    .join(' ') || 'none';
 
 function logged(res, params) {
     const name = params?.tags?.name ?? '?';
     if (res.status === 0 || res.status >= 400) {
         console.warn(`FAILED ${name} ${res.status} ${res.error || ''} ${res.url}`);
     }
-    if (signedIn && !loggedOut && !name.startsWith('login') && /\/login(\?|$)/.test(res.url)) {
+    const page = typeof res.body === 'string' && res.body.includes('<html');
+    if (signedIn && !loggedOut && !name.startsWith('login') && page && !res.body.includes('data-user=')) {
         loggedOut = true;
-        console.warn(`SIGNED OUT at ${name} after ${previous} (iteration ${exec.vu.iterationInScenario})`);
+        console.warn(`SIGNED OUT at ${name} ${res.url.replace(BASE, '')} after ${previous} (iteration ${exec.vu.iterationInScenario}, jar ${jarSession()})`);
     }
-    previous = `${name} ${res.status}`;
+    previous = `${name} ${res.status} set[${setCookies(res)}]`;
     return res;
 }
 
