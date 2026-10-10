@@ -81,15 +81,41 @@ class SignupTest extends TestCase
     }
 
     #[Test]
-    public function matric_numbers_must_match_a_known_format(): void
+    public function matric_numbers_have_seven_digits_and_a_current_entry_year(): void
     {
-        foreach (['12345', 'F/ND/24', 'X/ND/24/1234567', 'F/ND/18/1234567'] as $matric) {
+        $this->travelTo(now()->setDate(2026, 10, 1));
+
+        foreach (['12345', 'F/ND/24', 'X/ND/24/1234567', 'ND/2019/CS/1234'] as $matric) {
             $this->post('/signup', $this->form(['matric_number' => $matric]))
-                ->assertSessionHasErrors('matric_number');
+                ->assertSessionHasErrors(['matric_number' => 'Enter the matric number as printed on the ID card, for example F/ND/24/1234567.']);
         }
 
-        $this->post('/signup', $this->form(['matric_number' => 'ND/2019/CS/1234']))
+        // Exactly seven digits after the year.
+        foreach (['F/ND/24/123456', 'F/ND/24/12345678'] as $matric) {
+            $this->post('/signup', $this->form(['matric_number' => $matric]))
+                ->assertSessionHasErrors(['matric_number' => 'The last part of a matric number has 7 digits, for example F/ND/24/1234567.']);
+        }
+
+        // A year that hasn't started, or one from long ago.
+        $this->post('/signup', $this->form(['matric_number' => 'F/ND/27/1234567']))
+            ->assertSessionHasErrors(['matric_number' => "This matric number's year (2027) hasn't started yet. Check it against the ID card."]);
+        $this->post('/signup', $this->form(['matric_number' => 'F/ND/15/1234567']))
+            ->assertSessionHasErrors(['matric_number' => 'This matric number is from 2015, too long ago for a current student.']);
+
+        $this->post('/signup', $this->form(['matric_number' => 'f/nd/26/1234567']))
             ->assertSessionHasNoErrors();
+    }
+
+    #[Test]
+    public function a_student_can_say_what_to_call_them_at_signup(): void
+    {
+        $this->post('/signup', $this->form(['display_name' => ' Ada-Mae ']))
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('status', 'Welcome to NACOS YabaTech, Ada-Mae!');
+
+        $user = User::where('matric_number', 'F/ND/24/1234567')->firstOrFail();
+        $this->assertSame('Ada Obi', $user->fullname);
+        $this->assertSame('Ada-Mae', $user->display_name);
     }
 
     #[Test]

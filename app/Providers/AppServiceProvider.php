@@ -57,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
 
             return (new MailMessage)
                 ->subject('Reset your '.config('app.name').' password')
-                ->greeting('Hello '.$user->firstName().',')
+                ->greeting('Hello '.$user->greetingName().',')
                 ->line('We received a request to reset the password for '.$user->matric_number.'.')
                 ->action('Choose a new password', $url)
                 ->line('The link works for 60 minutes and only once.')
@@ -69,7 +69,7 @@ class AppServiceProvider extends ServiceProvider
 
             return (new MailMessage)
                 ->subject('Verify your email for '.config('app.name'))
-                ->greeting('Hello '.$user->firstName().',')
+                ->greeting('Hello '.$user->greetingName().',')
                 ->line('Confirm this is your email address so you can reset your password by email if you ever forget it.')
                 ->action('Verify email address', $url)
                 ->line("If you didn't add this address to a NACOS YabaTech account, you can ignore this email.");

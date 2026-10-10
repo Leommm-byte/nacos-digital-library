@@ -27,7 +27,7 @@ class SignupController extends Controller
     public function store(SignupRequest $request): RedirectResponse
     {
         $user = User::create($request->safe()->only([
-            'fullname', 'matric_number', 'email', 'department_id', 'level', 'programme', 'password',
+            'fullname', 'display_name', 'matric_number', 'email', 'department_id', 'level', 'programme', 'password',
         ]));
 
         Audit::record('user_registered', $user, userId: $user->id);
@@ -36,6 +36,6 @@ class SignupController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('home')->with('status', 'Welcome to NACOS YabaTech, '.$user->firstName().'!');
+        return redirect()->route('home')->with('status', 'Welcome to NACOS YabaTech, '.$user->greetingName().'!');
     }
 }

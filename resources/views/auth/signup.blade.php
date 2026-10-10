@@ -5,7 +5,8 @@
     <form method="POST" action="{{ route('signup.store') }}" class="mt-6 space-y-4" novalidate>
         @csrf
 
-        <x-field name="fullname" label="Full name" autocomplete="name" required autofocus />
+        <x-field name="fullname" label="Full name" autocomplete="name" hint="As on your school records." required autofocus />
+        <x-field name="display_name" label="What should we call you? (optional)" autocomplete="nickname" maxlength="30" hint="Used in greetings. Leave it empty to use your first name." />
         <x-field name="matric_number" label="Matric number" placeholder="F/ND/24/1234567" hint="As printed on your school ID card." autocomplete="username" autocapitalize="characters" spellcheck="false" required class="uppercase placeholder:normal-case" />
 
         <x-field name="email" label="Email (optional)" type="email" autocomplete="email" hint="Lets you reset your password yourself if you forget it. We'll send a link to confirm it." />

@@ -5,14 +5,20 @@ namespace App\Support;
 use App\Enums\Programme;
 
 /**
- * YabaTech matric number formats, as accepted by the original app:
- *   F/ND/24/1234567    programme letter (F full-time, P part-time, D CODFEL),
- *                      ND/HND/HD, two-digit entry year (19 onwards), number
- *   ND/2019/CS/1234    older format: level, year, department code, number
+ * YabaTech matric numbers: F/ND/24/1234567 is the programme letter (F
+ * full-time, P part-time, D CODFEL), ND or HND/HD, the two-digit entry
+ * year and seven digits.
+ *
+ * The older ND/2019/CS/1234 format (students who have left by now) is no
+ * longer accepted, but its entry year and level are still read, for any
+ * account that has one.
  */
 class MatricNumber
 {
-    public const PATTERN = '#^(?:[FPD]/(?:ND|HND|HD)/(?:19|[2-9][0-9])/[0-9]{3,10}|(?:ND|HND)/[0-9]{4}/[A-Z]{2,4}/[0-9]{3,6})$#';
+    public const PATTERN = '#^[FPD]/(?:ND|HND|HD)/[0-9]{2}/[0-9]{7}$#';
+
+    /** Entry years older than this many years are not current students. */
+    public const MAX_YEARS_AGO = 10;
 
     public static function normalize(?string $value): string
     {
@@ -21,7 +27,36 @@ class MatricNumber
 
     public static function isValid(?string $value): bool
     {
-        return preg_match(self::PATTERN, self::normalize($value)) === 1;
+        return self::problem($value) === null;
+    }
+
+    /**
+     * What is wrong with a matric number, in plain words, or null when it
+     * is fine: the format, seven final digits, and an entry year that has
+     * started and isn't from long ago.
+     */
+    public static function problem(?string $value): ?string
+    {
+        $value = self::normalize($value);
+
+        if (preg_match(self::PATTERN, $value) !== 1) {
+            return preg_match('#^[FPD]/(?:ND|HND|HD)/[0-9]{2}/[0-9]+$#', $value) === 1
+                ? 'The last part of a matric number has 7 digits, for example F/ND/24/1234567.'
+                : 'Enter the matric number as printed on the ID card, for example F/ND/24/1234567.';
+        }
+
+        $year = (int) self::entryYear($value);
+        $now = now()->timezone((string) config('app.display_timezone', 'Africa/Lagos'))->year;
+
+        if ($year > $now) {
+            return "This matric number's year ({$year}) hasn't started yet. Check it against the ID card.";
+        }
+
+        if ($year < $now - self::MAX_YEARS_AGO) {
+            return "This matric number is from {$year}, too long ago for a current student.";
+        }
+
+        return null;
     }
 
     /**

@@ -147,6 +147,29 @@ class ProfileTest extends TestCase
     }
 
     #[Test]
+    public function a_student_chooses_what_we_call_them(): void
+    {
+        $user = User::factory()->create(['fullname' => 'Oluwatobiloba Adeyemi']);
+
+        $this->actingAs($user)->get(route('home'))->assertSee('Oluwatobiloba');
+
+        $this->put('/profile', $this->form($user, ['display_name' => '  Tobi  ']))->assertSessionHasNoErrors();
+        $this->assertSame('Tobi', $user->fresh()?->display_name);
+
+        // Greetings use it; official places keep the full name.
+        $this->get(route('home'))->assertSee('<h1 class="hero-title">Tobi</h1>', false);
+        $this->get('/profile')->assertSee('Oluwatobiloba Adeyemi');
+
+        $this->put('/profile', $this->form($user, ['display_name' => 'Tobi <3']))->assertSessionHasErrors('display_name');
+        $this->put('/profile', $this->form($user, ['display_name' => str_repeat('a', 31)]))->assertSessionHasErrors('display_name');
+
+        // Emptied, it's the first name again.
+        $this->put('/profile', $this->form($user, ['display_name' => '']))->assertSessionHasNoErrors();
+        $this->assertNull($user->fresh()?->display_name);
+        $this->assertSame('Oluwatobiloba', $user->fresh()?->greetingName());
+    }
+
+    #[Test]
     public function the_previous_login_is_shown(): void
     {
         $user = User::factory()->create();
