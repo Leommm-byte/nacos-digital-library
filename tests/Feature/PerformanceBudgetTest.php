@@ -82,7 +82,7 @@ class PerformanceBudgetTest extends TestCase
         $this->addData(20);
         $large = array_map(fn (array $page) => $this->queries(...$page), $pages);
 
-        $report = ["Queries per page (cold cache): small data -> 10x data, budget ".self::MAX_QUERIES];
+        $report = ['Queries per page (cold cache): small data -> 10x data, budget '.self::MAX_QUERIES];
         foreach ($pages as $name => $page) {
             $report[] = sprintf('  %-22s %3d -> %3d', $name, $small[$name], $large[$name]);
         }
