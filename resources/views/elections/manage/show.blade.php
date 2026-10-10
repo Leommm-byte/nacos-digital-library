@@ -71,7 +71,7 @@
                                             @php($editBag = $errors->getBag('candidate-edit-'.$candidate->id))
                                             <li>
                                                 <div class="setup-candidate">
-                                                    <x-candidate-avatar :name="$candidate->name" size="sm" />
+                                                    <x-candidate-avatar :name="$candidate->name" :photo="$candidate->photoUrl($election)" />
                                                     <div class="min-w-0 flex-1">
                                                         <p class="font-semibold">{{ $candidate->name }}</p>
                                                         <p class="text-xs text-muted">{{ $candidate->matric_number ?? 'No matric number' }}@if ($candidate->user_id) · has an account @endif</p>

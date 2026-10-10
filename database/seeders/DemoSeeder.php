@@ -21,6 +21,7 @@ use App\Support\Elections\LiveResults;
 use App\Support\Settings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Sample data for local development and testing only. Never runs in
@@ -229,15 +230,47 @@ class DemoSeeder extends Seeder
             $position = $election->positions()->create(['title' => $title, 'sort_order' => $order++]);
 
             foreach ($students->random($count)->values() as $i => $candidate) {
-                $position->candidates()->create([
+                $row = $position->candidates()->create([
                     'user_id' => $candidate->id,
                     'name' => $candidate->fullname,
                     'matric_number' => $candidate->matric_number,
                     'manifesto' => $manifestos[($order + $i) % count($manifestos)],
                     'sort_order' => $i,
                 ]);
+
+                // Every other candidate has a photo, so both looks can be seen.
+                if ($i % 2 === 0) {
+                    $path = "candidate-photos/{$election->id}/{$row->id}-demo.jpg";
+                    Storage::disk('private')->put($path, $this->portrait($row->id));
+                    $row->update(['photo_path' => $path]);
+                }
             }
         }
+    }
+
+    /**
+     * A plain illustrated portrait (head and shoulders) standing in for a
+     * candidate's photo in demo data.
+     */
+    private function portrait(int $seed): string
+    {
+        $palettes = [
+            [[214, 234, 220], [36, 120, 72], [92, 64, 51]],
+            [[219, 228, 245], [52, 84, 160], [141, 98, 72]],
+            [[244, 232, 205], [168, 112, 24], [74, 52, 40]],
+            [[232, 222, 244], [104, 72, 160], [198, 140, 100]],
+        ];
+        [$background, $clothes, $skin] = $palettes[$seed % count($palettes)];
+
+        $image = imagecreatetruecolor(480, 480);
+        imagefill($image, 0, 0, (int) imagecolorallocate($image, ...$background));
+        imagefilledellipse($image, 240, 520, 400, 340, (int) imagecolorallocate($image, ...$clothes));
+        imagefilledellipse($image, 240, 210, 190, 220, (int) imagecolorallocate($image, ...$skin));
+
+        ob_start();
+        imagejpeg($image, null, 85);
+
+        return (string) ob_get_clean();
     }
 
     /**

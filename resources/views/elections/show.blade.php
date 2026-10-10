@@ -50,7 +50,7 @@
                                     @foreach ($position->candidates as $candidate)
                                         <label class="ballot-option">
                                             <input type="radio" name="choices[{{ $position->id }}]" value="{{ $candidate->id }}" class="sr-only" @checked($chosen === (string) $candidate->id) data-ballot-choice>
-                                            <x-candidate-avatar :name="$candidate->name" />
+                                            <x-candidate-avatar :name="$candidate->name" :photo="$candidate->photoUrl($election)" size="lg" />
                                             <span class="min-w-0 flex-1">
                                                 <span class="ballot-option-name">{{ $candidate->name }}</span>
                                                 @if ($candidate->manifesto)

@@ -193,8 +193,51 @@ function initLiveResults() {
     schedule();
 }
 
+/**
+ * Candidate form: shows the chosen photo straight away, cropped like the
+ * saved one, and greys the current one out when "Remove photo" is ticked.
+ */
+function initPhotoPickers() {
+    for (const picker of document.querySelectorAll('[data-photo-picker]')) {
+        const input = picker.querySelector('[data-photo-input]');
+        const preview = picker.querySelector('[data-photo-preview]');
+        const remove = picker.querySelector('[data-photo-remove]');
+        const original = preview.innerHTML;
+        let url = null;
+
+        input.addEventListener('change', () => {
+            if (url) {
+                URL.revokeObjectURL(url);
+                url = null;
+            }
+            const file = input.files[0];
+            if (!file) {
+                preview.innerHTML = original;
+                return;
+            }
+            url = URL.createObjectURL(file);
+            const frame = document.createElement('span');
+            frame.className = 'candidate-avatar candidate-avatar-xl has-photo';
+            const img = document.createElement('img');
+            img.alt = '';
+            img.src = url;
+            frame.append(img);
+            preview.replaceChildren(frame);
+            if (remove) {
+                remove.checked = false;
+                preview.classList.remove('is-removed');
+            }
+        });
+
+        remove?.addEventListener('change', () => {
+            preview.classList.toggle('is-removed', remove.checked);
+        });
+    }
+}
+
 export function initElections() {
     initCountdowns();
     initBallot();
     initLiveResults();
+    initPhotoPickers();
 }

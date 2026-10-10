@@ -5,7 +5,8 @@ namespace App\Support\Uploads;
 use GdImage;
 
 /**
- * Re-encodes uploaded images with GD: scanned pages and covers.
+ * Re-encodes uploaded images with GD: scanned pages, covers and candidate
+ * photos.
  *
  * Re-encoding turns any JPEG, PNG or WebP into a plain JPEG, applies the
  * camera's rotation, drops metadata (such as a phone's GPS location) and
@@ -38,6 +39,40 @@ class Images
         $data = (string) ob_get_clean();
 
         return ['data' => $data, 'width' => imagesx($canvas), 'height' => imagesy($canvas)];
+    }
+
+    /**
+     * A square JPEG of $side pixels, for candidate photos. Portrait photos
+     * are cropped nearer the top than the middle, where faces usually are.
+     *
+     * @return array{data: string, width: int, height: int}
+     */
+    public static function squareJpeg(string $bytes, int $side, int $quality = 82): array
+    {
+        $image = @imagecreatefromstring($bytes);
+
+        if (! $image instanceof GdImage) {
+            throw new UnreadableImage('Not a readable image.');
+        }
+
+        $image = self::orient($image, $bytes);
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $crop = min($width, $height);
+        $x = intdiv($width - $crop, 2);
+        $y = intdiv($height - $crop, 4);
+
+        $size = min($side, $crop);
+        $canvas = imagecreatetruecolor($size, $size);
+        imagefill($canvas, 0, 0, (int) imagecolorallocate($canvas, 255, 255, 255));
+        imagecopyresampled($canvas, $image, 0, 0, $x, $y, $size, $size, $crop, $crop);
+        imageinterlace($canvas, true);
+
+        ob_start();
+        imagejpeg($canvas, null, $quality);
+        $data = (string) ob_get_clean();
+
+        return ['data' => $data, 'width' => $size, 'height' => $size];
     }
 
     private static function fit(GdImage $image, int $maxSide): GdImage

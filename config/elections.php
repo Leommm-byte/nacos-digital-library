@@ -12,4 +12,9 @@ return [
     // How often open election pages check for new results (plus jitter).
     'poll_seconds' => 10,
 
+    // Candidate photos: the largest file accepted, and the side of the
+    // square stored (shown at most about 160 px wide, on HiDPI screens).
+    'photo_max_kb' => 8192,
+    'photo_side' => 480,
+
 ];

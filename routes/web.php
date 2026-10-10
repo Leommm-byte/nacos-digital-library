@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Elections\BallotSetupController;
+use App\Http\Controllers\Elections\CandidatePhotoController;
 use App\Http\Controllers\Elections\ElectionController;
 use App\Http\Controllers\Elections\ManageElectionController;
 use App\Http\Controllers\Elections\NominalRollController;
@@ -40,6 +41,9 @@ require __DIR__.'/auth.php';
 // account.
 Route::get('/elections', [ElectionController::class, 'index'])->name('elections.index');
 Route::get('/elections/{election}', [ElectionController::class, 'show'])->whereNumber('election')->name('elections.show');
+Route::get('/elections/{election}/candidates/{candidate}/photo', CandidatePhotoController::class)
+    ->whereNumber(['election', 'candidate'])
+    ->name('elections.candidates.photo');
 
 Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');

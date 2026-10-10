@@ -9,9 +9,13 @@ use App\Models\ElectionPosition;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\MatricNumber;
+use App\Support\Uploads\Images;
+use App\Support\Uploads\UnreadableImage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -76,7 +80,9 @@ class BallotSetupController extends Controller
     {
         Gate::authorize('update', $election);
 
+        $paths = $position->candidates()->whereNotNull('photo_path')->pluck('photo_path')->all();
         $position->delete();
+        Storage::disk('private')->delete($paths);
         Audit::record('election_position_removed', $election, ['position' => $position->title]);
 
         return $this->back($election)->with('status', "{$position->title} removed.");
@@ -86,12 +92,18 @@ class BallotSetupController extends Controller
     {
         Gate::authorize('update', $election);
 
-        $data = $this->validatedCandidate($request, $election, "candidate-{$position->id}");
+        $bag = "candidate-{$position->id}";
+        $data = $this->validatedCandidate($request, $election, $bag);
+        $photo = $this->photo($request, $bag);
 
         $candidate = $position->candidates()->create([
             ...$data,
             'sort_order' => (int) $position->candidates()->max('sort_order') + 1,
         ]);
+
+        if ($photo !== null) {
+            $this->savePhoto($election, $candidate, $photo);
+        }
 
         Audit::record('election_candidate_added', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
 
@@ -102,7 +114,18 @@ class BallotSetupController extends Controller
     {
         Gate::authorize('update', $election);
 
-        $candidate->update($this->validatedCandidate($request, $election, "candidate-edit-{$candidate->id}", $candidate));
+        $bag = "candidate-edit-{$candidate->id}";
+        $data = $this->validatedCandidate($request, $election, $bag, $candidate);
+        $photo = $this->photo($request, $bag);
+
+        $candidate->update($data);
+
+        if ($photo !== null) {
+            $this->savePhoto($election, $candidate, $photo);
+        } elseif ($request->boolean('remove_photo') && $candidate->photo_path !== null) {
+            Storage::disk('private')->delete($candidate->photo_path);
+            $candidate->update(['photo_path' => null]);
+        }
 
         return $this->back($election, "position-{$position->id}")->with('status', 'Candidate saved.');
     }
@@ -112,6 +135,11 @@ class BallotSetupController extends Controller
         Gate::authorize('update', $election);
 
         $candidate->delete();
+
+        if ($candidate->photo_path !== null) {
+            Storage::disk('private')->delete($candidate->photo_path);
+        }
+
         Audit::record('election_candidate_removed', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$candidate->name} removed.");
@@ -162,6 +190,46 @@ class BallotSetupController extends Controller
             // Linked to the student's account when there is one.
             'user_id' => $userId !== null ? (int) $userId : null,
         ];
+    }
+
+    /**
+     * The chosen photo as a square JPEG, or null when none was chosen.
+     */
+    private function photo(Request $request, string $bag): ?string
+    {
+        $request->validateWithBag($bag, [
+            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:'.config('elections.photo_max_kb')],
+        ], [
+            'photo.mimes' => 'Choose a JPG, PNG or WebP photo.',
+            'photo.max' => 'The photo must be '.intdiv((int) config('elections.photo_max_kb'), 1024).' MB or smaller.',
+        ]);
+
+        $file = $request->file('photo');
+
+        if (! $file instanceof UploadedFile) {
+            return null;
+        }
+
+        try {
+            return Images::squareJpeg((string) file_get_contents($file->getRealPath()), (int) config('elections.photo_side'))['data'];
+        } catch (UnreadableImage) {
+            throw ValidationException::withMessages(['photo' => 'This photo couldn\'t be read. Try saving it as a JPG.'])->errorBag($bag);
+        }
+    }
+
+    private function savePhoto(Election $election, ElectionCandidate $candidate, string $jpeg): void
+    {
+        $disk = Storage::disk('private');
+        $old = $candidate->photo_path;
+
+        // A new name each time, so browsers don't keep showing the old one.
+        $path = "candidate-photos/{$election->id}/{$candidate->id}-".now()->format('YmdHis').'.jpg';
+        $disk->put($path, $jpeg);
+        $candidate->update(['photo_path' => $path]);
+
+        if ($old !== null && $old !== $path) {
+            $disk->delete($old);
+        }
     }
 
     private function back(Election $election, ?string $anchor = null): RedirectResponse

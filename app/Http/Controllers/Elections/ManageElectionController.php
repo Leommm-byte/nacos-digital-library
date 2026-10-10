@@ -15,6 +15,7 @@ use App\Support\Elections\LiveResults;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -100,6 +101,7 @@ class ManageElectionController extends Controller
 
         $election->delete();
         LiveResults::forget($election);
+        Storage::disk('private')->deleteDirectory("candidate-photos/{$election->id}");
         Audit::record('election_deleted', $election, ['title' => $election->title]);
 
         return redirect()->route('elections.manage')->with('status', 'Draft election deleted.');

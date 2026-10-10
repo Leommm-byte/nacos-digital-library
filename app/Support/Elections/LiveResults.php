@@ -156,7 +156,7 @@ class LiveResults
                 ? (int) Cache::remember("elections:{$election->id}:electorate", 60, fn () => $election->electorate()->count())
                 : $election->electorate()->count();
 
-            $positions = $election->positions()->with('candidates')->get()->map(function (ElectionPosition $position) use ($ballots) {
+            $positions = $election->positions()->with('candidates')->get()->map(function (ElectionPosition $position) use ($ballots, $election) {
                 $total = (int) $position->candidates->sum('votes_count');
                 $top = (int) $position->candidates->max('votes_count');
                 $leaders = $position->candidates->where('votes_count', $top)->count();
@@ -169,6 +169,7 @@ class LiveResults
                     'candidates' => $position->candidates->map(fn (ElectionCandidate $candidate) => [
                         'id' => $candidate->id,
                         'name' => $candidate->name,
+                        'photo' => $candidate->photoUrl($election),
                         'votes' => $candidate->votes_count,
                         'percent' => $total > 0 ? round($candidate->votes_count / $total * 100, 1) : 0.0,
                         // Ahead (or the winner, once closed); ties are marked.

@@ -49,6 +49,7 @@
                                 };
                             @endphp
                             <li @class(['results-candidate', 'is-leading' => $candidate['leading'], 'is-winner' => $winner]) data-result-candidate="{{ $candidate['id'] }}">
+                                <x-candidate-avatar :name="$candidate['name']" :photo="$candidate['photo'] ?? null" />
                                 <div class="results-candidate-head">
                                     <span class="results-candidate-name">{{ $candidate['name'] }}</span>
                                     <span class="badge {{ $winner ? 'badge-accent' : 'badge-primary' }}" data-result-badge @if ($badge === '') hidden @endif>

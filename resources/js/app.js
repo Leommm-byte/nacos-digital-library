@@ -40,8 +40,8 @@ if (document.querySelector('[data-pdf-preview]')) {
     import('./review').then(({ initReviewPreview }) => initReviewPreview());
 }
 
-// Election countdowns, the ballot and live results.
-if (document.querySelector('[data-countdown], [data-ballot], [data-live-results]')) {
+// Election countdowns, the ballot, live results and candidate photos.
+if (document.querySelector('[data-countdown], [data-ballot], [data-live-results], [data-photo-picker]')) {
     import('./elections').then(({ initElections }) => initElections());
 }
 
