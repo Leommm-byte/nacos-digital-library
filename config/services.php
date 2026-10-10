@@ -18,8 +18,9 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
-    // Optional: improves the text of scanned uploads (ImproveScanPage).
-    // Without a key, scans keep the text read on the uploader's device.
+    // Optional: improves the text of scanned uploads (ImproveScanPage) and
+    // gives AI answers in the assistant (config/assistant.php). Without a
+    // key, scans keep the device text and the assistant answers by keyword.
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL', 'claude-opus-5-5'),

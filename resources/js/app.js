@@ -40,3 +40,8 @@ if (document.querySelector('[data-pdf-preview]')) {
 if (document.querySelector('[data-countdown], [data-ballot], [data-live-results]')) {
     import('./elections').then(({ initElections }) => initElections());
 }
+
+// The assistant chat (floating panel on signed-in pages, and /assistant).
+if (document.querySelector('[data-assistant]')) {
+    import('./assistant').then(({ initAssistant }) => initAssistant());
+}

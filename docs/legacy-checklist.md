@@ -296,12 +296,12 @@ New:
 
 Keep:
 
-- [ ] Floating assistant button and chat panel on home.
-- [ ] Find books by title, check my upload statuses, list my bookmarks, latest notifications, my recent activity, otherwise a help menu (legacy was keyword matching, not AI).
+- [x] Floating assistant button and chat panel on home (now on every signed-in page, plus /assistant) (PR 13).
+- [x] Find books by title, check my upload statuses, list my bookmarks, latest notifications, my recent activity, otherwise a help menu (legacy was keyword matching, not AI). Kept as the free helper, plus reading, elections and how-tos; AI answers and study help when an API key is set (PR 13).
 
 Fix:
 
-- [ ] No CSRF check on messages; answers inserted as raw HTML.
+- [x] No CSRF check on messages; answers inserted as raw HTML. Messages are CSRF-checked POSTs and answers are text blocks and links drawn with the DOM, never HTML (PR 13).
 
 ## Offline, install and general UX (PR 2 and PR 14)
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Support\Assistant\Tutor;
 use App\Support\Audit;
 use App\Support\Settings;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +27,9 @@ class SettingController extends Controller
                 'pdf_max_mb' => Settings::get('pdf_max_mb', (string) intdiv((int) config('uploads.pdf_max_kb'), 1024)),
                 'uploads_per_day' => Settings::get('uploads_per_day', (string) config('uploads.per_day')),
                 'uploads_pending' => Settings::get('uploads_pending', (string) config('uploads.pending')),
+                'assistant_daily_limit' => Settings::get('assistant_daily_limit', (string) config('assistant.daily_limit')),
             ],
+            'aiKey' => Tutor::available(),
             'departments' => Department::query()->withCount('users')->orderBy('name')->get(),
         ]);
     }
@@ -39,6 +42,7 @@ class SettingController extends Controller
             'pdf_max_mb' => ['required', 'integer', 'min:1', 'max:50'],
             'uploads_per_day' => ['required', 'integer', 'min:1', 'max:200'],
             'uploads_pending' => ['required', 'integer', 'min:1', 'max:500'],
+            'assistant_daily_limit' => ['nullable', 'integer', 'min:0', 'max:200'],
         ], [
             'academic_session.regex' => 'Write the session like 2026/2027.',
             'pdf_max_mb.max' => 'Keep PDFs to 50 MB or less; shared hosting limits uploads.',
@@ -51,6 +55,10 @@ class SettingController extends Controller
             'uploads_per_day' => (int) $data['uploads_per_day'],
             'uploads_pending' => (int) $data['uploads_pending'],
         ];
+
+        if (isset($data['assistant_daily_limit'])) {
+            $values['assistant_daily_limit'] = (int) $data['assistant_daily_limit'];
+        }
 
         Settings::put($values);
         Audit::record('settings_updated', null, $values);
