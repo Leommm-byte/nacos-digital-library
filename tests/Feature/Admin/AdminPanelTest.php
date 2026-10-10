@@ -78,6 +78,8 @@ class AdminPanelTest extends TestCase
         $this->actingAs($student);
         Audit::record('profile_updated');
         Audit::record('password_changed');
+        // A random name could contain "kemi" too (Akemi).
+        $this->admin->forceFill(['fullname' => 'Tunde Bakare'])->save();
         $this->actingAs($this->admin);
         Audit::record('settings_updated');
 
