@@ -10,6 +10,7 @@ use App\Models\Election;
 use App\Models\RollEntry;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Classes\Arms;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
 use Illuminate\Http\RedirectResponse;
@@ -136,7 +137,7 @@ class ManageElectionController extends Controller
     }
 
     /**
-     * @return array{title: string, description: string|null, levels: list<string>|null, programmes: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool}
+     * @return array{title: string, description: string|null, levels: list<string>|null, programmes: list<string>|null, arms: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool}
      */
     private function validated(Request $request): array
     {
@@ -149,6 +150,8 @@ class ManageElectionController extends Controller
             'levels.*' => [Rule::enum(Level::class)],
             'programmes' => ['nullable', 'array'],
             'programmes.*' => [Rule::enum(Programme::class)],
+            'arms' => ['nullable', 'array'],
+            'arms.*' => [Rule::in(array_keys(Arms::all()))],
             'entry_year_from' => ['nullable', 'integer', Rule::in($years)],
             'entry_year_to' => ['nullable', 'integer', Rule::in($years)],
         ]);
@@ -166,11 +169,15 @@ class ManageElectionController extends Controller
         // Every level ticked is the same as no limit.
         $levels = count($levels) === count(Level::cases()) ? [] : $levels;
 
+        /** @var list<string> $arms */
+        $arms = array_values(array_unique((array) ($data['arms'] ?? [])));
+
         return [
             'title' => (string) $data['title'],
             'description' => isset($data['description']) ? (string) $data['description'] : null,
             'levels' => $levels === [] ? null : $levels,
             'programmes' => $programmes === [] ? null : $programmes,
+            'arms' => $arms === [] ? null : $arms,
             'entry_year_from' => isset($data['entry_year_from']) ? (int) $data['entry_year_from'] : null,
             'entry_year_to' => isset($data['entry_year_to']) ? (int) $data['entry_year_to'] : null,
             'roll_only' => $request->boolean('roll_only'),

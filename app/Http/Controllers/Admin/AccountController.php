@@ -9,6 +9,8 @@ use App\Models\Department;
 use App\Models\RollEntry;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Classes\Arms;
+use App\Support\Classes\SchoolClass;
 use App\Support\TemporaryPassword;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -32,21 +34,27 @@ class AccountController extends Controller
 
     public function index(): View
     {
+        $order = array_map(fn (SchoolClass $class) => $class->key(), SchoolClass::all());
         $classes = DB::table('nominal_roll as r')
             ->leftJoin('users as u', 'u.matric_number', '=', 'r.matric_number')
             ->whereNotNull('r.programme')
             ->whereNotNull('r.level')
-            ->selectRaw('r.programme, r.level, count(*) as total, sum(case when u.id is null then 1 else 0 end) as missing, sum(case when u.id is null and r.fullname is null then 1 else 0 end) as no_name')
-            ->groupBy('r.programme', 'r.level')
+            ->selectRaw('r.programme, r.level, r.arm, count(*) as total, sum(case when u.id is null then 1 else 0 end) as missing, sum(case when u.id is null and r.fullname is null then 1 else 0 end) as no_name')
+            ->groupBy('r.programme', 'r.level', 'r.arm')
             ->get()
             ->map(fn ($row) => [
-                'key' => $row->programme.'|'.$row->level,
-                'label' => (Level::tryFrom((string) $row->level)?->label() ?? $row->level).' '.(Programme::tryFrom((string) $row->programme)?->label() ?? $row->programme),
+                'key' => $row->programme.'|'.$row->level.'|'.$row->arm,
+                'label' => implode(' ', array_filter([
+                    Level::tryFrom((string) $row->level)?->label() ?? $row->level,
+                    Arms::short($row->arm),
+                    Programme::tryFrom((string) $row->programme)?->label() ?? $row->programme,
+                ])),
                 'total' => (int) $row->total,
                 'missing' => (int) $row->missing,
                 'noName' => (int) $row->no_name,
             ])
-            ->sortBy('label')
+            // In the school's order: programme, level, course.
+            ->sortBy(fn (array $class) => array_search($class['key'], $order, true) === false ? PHP_INT_MAX : array_search($class['key'], $order, true))
             ->values();
 
         return view('admin.accounts.index', [
@@ -59,7 +67,7 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'classes' => ['required', 'array', 'min:1'],
-            'classes.*' => ['string', 'regex:/^[a-z_]+\|[A-Z0-9]+$/'],
+            'classes.*' => ['string', 'regex:/^[a-z_]+\|[A-Z0-9]+(\|[a-z0-9_]*)?$/'],
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')->where('is_active', true)],
         ], [
             'classes.required' => 'Tick at least one class.',
@@ -107,7 +115,7 @@ class AccountController extends Controller
                     'name' => $user->fullname,
                     'matric' => $user->matric_number,
                     'password' => $password,
-                    'class' => $user->level->label().' '.$user->programme->label(),
+                    'class' => $entry->classLabel(),
                 ];
             }
         });
@@ -151,8 +159,9 @@ class AccountController extends Controller
             ->whereNotIn('matric_number', fn ($query) => $query->select('matric_number')->from('users'))
             ->where(function (Builder $query) use ($classes) {
                 foreach ($classes as $class) {
-                    [$programme, $level] = explode('|', $class, 2);
-                    $query->orWhere(fn (Builder $query) => $query->where('programme', $programme)->where('level', $level));
+                    [$programme, $level, $arm] = array_pad(explode('|', $class, 3), 3, '');
+                    $query->orWhere(fn (Builder $query) => $query->where('programme', $programme)->where('level', $level)
+                        ->when($arm === '', fn ($query) => $query->whereNull('arm'), fn ($query) => $query->where('arm', $arm)));
                 }
             });
     }

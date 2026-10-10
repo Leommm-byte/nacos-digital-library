@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Elections;
 
 use App\Enums\ElectionStatus;
-use App\Enums\Level;
-use App\Enums\Programme;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Election;
 use App\Models\RollEntry;
 use App\Rules\ValidMatricNumber;
 use App\Support\Audit;
+use App\Support\Classes\SchoolClass;
 use App\Support\Elections\RollImport;
 use App\Support\Elections\RollTemplate;
 use App\Support\MatricNumber;
@@ -25,7 +24,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * The nominal roll: the official list of current students, kept class by
- * class (programme and level). Admins upload each class's list as the
+ * class (programme, level and, for HND, the course: SWD or NCC). Admins upload each class's list as the
  * governor returns it (Excel or CSV); uploading a class replaces that class
  * only, or adds to it. Single students can be added or removed too.
  *
@@ -53,20 +52,28 @@ class NominalRollController extends Controller
             ->fragment('find');
 
         $classes = [];
-        foreach (RollEntry::query()->toBase()->selectRaw('programme, level, count(*) as total, max(updated_at) as updated')->groupBy('programme', 'level')->get() as $row) {
-            $classes[($row->programme ?? '').'|'.($row->level ?? '')] = ['total' => (int) $row->total, 'updated' => $row->updated];
+        $unsorted = 0;
+        foreach (RollEntry::query()->toBase()->selectRaw('programme, level, arm, count(*) as total, max(updated_at) as updated')->groupBy('programme', 'level', 'arm')->get() as $row) {
+            $class = SchoolClass::fromKey($row->programme.'|'.$row->level.'|'.$row->arm);
+
+            if ($class === null) {
+                // An earlier import without a class, or one the school no longer runs.
+                $unsorted += (int) $row->total;
+            } else {
+                $classes[$class->key()] = ['total' => (int) $row->total, 'updated' => $row->updated];
+            }
         }
 
         return view('elections.roll', [
             'entries' => $entries,
             'search' => $search,
             'classes' => $classes,
+            'unsorted' => $unsorted,
             'total' => RollEntry::query()->count(),
             'withAccount' => RollEntry::query()->whereIn('matric_number', fn ($query) => $query->select('matric_number')->from('users'))->count(),
             'lastImport' => AuditLog::query()->where('action', 'roll_imported')->latest('id')->with('user:id,fullname')->first(),
             'lockedBy' => self::lockedBy(),
-            'programme' => Programme::tryFrom($request->string('programme')->toString()),
-            'level' => Level::tryFrom($request->string('level')->toString()),
+            'selected' => SchoolClass::fromKey($request->string('class')->toString()),
         ]);
     }
 
@@ -78,20 +85,21 @@ class NominalRollController extends Controller
 
         $data = $request->validate([
             'mode' => ['nullable', 'in:replace,add'],
-            'programme' => ['required', Rule::enum(Programme::class)],
-            'level' => ['required', Rule::enum(Level::class)],
+            'class' => ['required', Rule::in(self::classKeys())],
             'roll' => ['required', 'file', 'max:5120', 'extensions:xlsx,csv,txt'],
         ], [
-            'programme.required' => 'Choose the programme of this class.',
-            'level.required' => 'Choose the level of this class.',
+            'class.required' => 'Choose the class.',
+            'class.in' => 'Choose the class.',
             'roll.required' => 'Choose the class list (Excel or CSV).',
             'roll.extensions' => 'Upload the Excel file (.xlsx) or a CSV.',
             'roll.max' => 'The file must be 5 MB or smaller.',
         ]);
 
-        $programme = Programme::from((string) $data['programme']);
-        $level = Level::from((string) $data['level']);
-        $class = $level->label().' '.$programme->label();
+        $schoolClass = SchoolClass::fromKey((string) $data['class']);
+        if ($schoolClass === null) {
+            abort(422);
+        }
+        $class = $schoolClass->label();
 
         /** @var UploadedFile $file */
         $file = $request->file('roll');
@@ -107,28 +115,33 @@ class NominalRollController extends Controller
         }
 
         // The class written at the top of the file must be the one chosen.
-        if (($parsed['programme'] !== null && $parsed['programme'] !== $programme) || ($parsed['level'] !== null && $parsed['level'] !== $level)) {
-            $fileClass = trim(($parsed['level'] ?? $level)->label().' '.($parsed['programme'] ?? $programme)->label());
+        if (($parsed['programme'] !== null && $parsed['programme'] !== $schoolClass->programme)
+            || ($parsed['level'] !== null && $parsed['level'] !== $schoolClass->level)
+            || ($parsed['arm'] !== null && $parsed['arm'] !== $schoolClass->arm)) {
+            $fileLevel = $parsed['level'] ?? $schoolClass->level;
+            $fileArm = $parsed['arm'] ?? ($fileLevel->stage() === $schoolClass->level->stage() ? $schoolClass->arm : null);
+            $fileClass = (new SchoolClass($parsed['programme'] ?? $schoolClass->programme, $fileLevel, $fileArm))->label();
 
             return back()->withInput()->withErrors(['roll' => "This file is for {$fileClass}, but you chose {$class}. Check the class or the file."]);
         }
 
-        $mismatches = RollImport::mismatches($parsed['rows'], $programme, $level);
+        $mismatches = RollImport::mismatches($parsed['rows'], $schoolClass);
 
         if ($mismatches !== [] && ! $request->boolean('confirm')) {
             return back()->withInput()
-                ->withErrors(['roll' => count($mismatches).' of '.count($parsed['rows'])." matric numbers don't look like {$class} (programme letter or ND/HND). Wrong class or wrong file? If the list is right, tick \"Import anyway\" and upload it again."])
+                ->withErrors(['roll' => count($mismatches).' of '.count($parsed['rows'])." matric numbers don't look like {$class} (programme letter, ND/HND or course digit). Wrong class or wrong file? If the list is right, tick \"Import anyway\" and upload it again."])
                 ->with('mismatches', array_slice($mismatches, 0, 10));
         }
 
         $replace = $request->input('mode', 'replace') !== 'add';
-        $result = RollImport::saveClass($parsed['rows'], $programme, $level, $replace);
+        $result = RollImport::saveClass($parsed['rows'], $schoolClass, $replace);
 
         Audit::record('roll_imported', null, [
             'class' => $class,
             'mode' => $replace ? 'replace' : 'add',
-            'programme' => $programme->value,
-            'level' => $level->value,
+            'programme' => $schoolClass->programme->value,
+            'level' => $schoolClass->level->value,
+            'arm' => $schoolClass->arm,
             'file' => $file->getClientOriginalName(),
             ...$result,
             'skipped' => count($parsed['skipped']),
@@ -156,13 +169,17 @@ class NominalRollController extends Controller
             'matric_number' => ['required', 'string', 'max:32', new ValidMatricNumber],
             'fullname' => ['required', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:255'],
-            'programme' => ['required', Rule::enum(Programme::class)],
-            'level' => ['required', Rule::enum(Level::class)],
+            'class' => ['required', Rule::in(self::classKeys())],
+        ], [
+            'class.required' => 'Choose the class.',
+            'class.in' => 'Choose the class.',
         ]);
 
-        $programme = Programme::from((string) $data['programme']);
-        $level = Level::from((string) $data['level']);
-        $class = $level->label().' '.$programme->label();
+        $schoolClass = SchoolClass::fromKey((string) $data['class']);
+        if ($schoolClass === null) {
+            abort(422);
+        }
+        $class = $schoolClass->label();
         $matric = (string) $data['matric_number'];
         $row = [$matric => [
             'matric_number' => $matric,
@@ -170,13 +187,13 @@ class NominalRollController extends Controller
             'email' => isset($data['email']) ? strtolower((string) $data['email']) : null,
         ]];
 
-        if (RollImport::mismatches($row, $programme, $level) !== [] && ! $request->boolean('confirm')) {
+        if (RollImport::mismatches($row, $schoolClass) !== [] && ! $request->boolean('confirm')) {
             return back()->withInput()->withErrors([
-                'matric_number' => "{$matric} doesn't look like {$class} (programme letter or ND/HND). Check the class, or tick \"It's right\" and add again.",
+                'matric_number' => "{$matric} doesn't look like {$class} (programme letter, ND/HND or course digit). Check the class, or tick \"It's right\" and add again.",
             ], 'student')->with('confirmStudent', true);
         }
 
-        $result = RollImport::saveClass($row, $programme, $level, false);
+        $result = RollImport::saveClass($row, $schoolClass, false);
         Audit::record('roll_student_added', null, ['matric' => $matric, 'name' => $row[$matric]['fullname'], 'class' => $class, 'moved' => $result['moved'] > 0]);
 
         return redirect()->route('roll.index', ['q' => $matric])
@@ -197,7 +214,7 @@ class NominalRollController extends Controller
         Audit::record('roll_student_removed', null, [
             'matric' => $entry->matric_number,
             'name' => $entry->fullname,
-            'class' => trim(($entry->level?->label() ?? '').' '.($entry->programme?->label() ?? '')),
+            'class' => $entry->classLabel(),
         ]);
 
         // Back to the same page of the list, where the student was.
@@ -207,6 +224,14 @@ class NominalRollController extends Controller
         ]));
 
         return redirect()->to($back.'#find')->with('status', "{$entry->matric_number} is off the roll.");
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function classKeys(): array
+    {
+        return array_map(fn (SchoolClass $class) => $class->key(), SchoolClass::all());
     }
 
     /**
@@ -231,11 +256,10 @@ class NominalRollController extends Controller
      */
     public function template(Request $request): BinaryFileResponse
     {
-        $programme = Programme::tryFrom($request->string('programme')->toString());
-        $level = Level::tryFrom($request->string('level')->toString());
+        $class = SchoolClass::fromKey($request->string('class')->toString());
 
         return response()
-            ->download(RollTemplate::make($programme, $level), RollTemplate::filename($programme, $level), [
+            ->download(RollTemplate::make($class?->programme, $class?->level, $class?->arm), RollTemplate::filename($class?->programme, $class?->level, $class?->arm), [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ])
             ->deleteFileAfterSend();

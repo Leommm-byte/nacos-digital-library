@@ -73,7 +73,7 @@ class NominalRollTest extends TestCase
      */
     private function upload(UploadedFile $file, array $overrides = []): array
     {
-        return ['programme' => 'full_time', 'level' => 'HND1', 'roll' => $file, ...$overrides];
+        return ['class' => 'full_time|HND1|swd', 'roll' => $file, ...$overrides];
     }
 
     #[Test]
@@ -82,10 +82,10 @@ class NominalRollTest extends TestCase
         $this->travelTo(now()->setDate(2026, 10, 1));
 
         $this->actingAs($this->admin)
-            ->post(route('roll.store'), $this->upload($this->csv("F/HD/26/0000001\nF/HD/27/0000002\nF/HD/26/000003\n")))
+            ->post(route('roll.store'), $this->upload($this->csv("F/HD/26/0001001\nF/HD/27/0001002\nF/HD/26/000003\n")))
             ->assertSessionHas('import', fn (array $import) => $import['total'] === 1 && $import['skippedCount'] === 2);
 
-        $this->assertSame(['F/HD/26/0000001'], RollEntry::pluck('matric_number')->all());
+        $this->assertSame(['F/HD/26/0001001'], RollEntry::pluck('matric_number')->all());
     }
 
     #[Test]
@@ -109,7 +109,7 @@ class NominalRollTest extends TestCase
     {
         foreach ([Role::Student, Role::CourseRep, Role::Governor] as $role) {
             $this->actingAs(User::factory()->role($role)->create())->get(route('roll.index'))->assertForbidden();
-            $this->post(route('roll.store'), $this->upload($this->csv("F/HD/24/1234567\n")))->assertForbidden();
+            $this->post(route('roll.store'), $this->upload($this->csv("F/HD/24/1231567\n")))->assertForbidden();
             $this->get(route('roll.template'))->assertForbidden();
         }
 
@@ -125,17 +125,17 @@ class NominalRollTest extends TestCase
             ['Level', 'HND1'],
             [],
             ['Matric number', 'Full name', 'Email (optional)'],
-            ['f/hd/24/2222222', 'OBI  Ada', 'ADA@EXAMPLE.COM'],
+            ['f/hd/24/2221222', 'OBI  Ada', 'ADA@EXAMPLE.COM'],
             ['not a matric', 'Someone'],
-            ['F/HD/24/2222222', 'Duplicate'],
-            ['F/HD/23/3333333', 'BELLO Tunde'],
+            ['F/HD/24/2221222', 'Duplicate'],
+            ['F/HD/23/3331333', 'BELLO Tunde'],
         ]);
 
         $this->actingAs($this->admin)->post(route('roll.store'), $this->upload($file))
             ->assertRedirect(route('roll.index'))
             ->assertSessionHas('import.total', 2);
 
-        $ada = RollEntry::where('matric_number', 'F/HD/24/2222222')->firstOrFail();
+        $ada = RollEntry::where('matric_number', 'F/HD/24/2221222')->firstOrFail();
         $this->assertSame('OBI Ada', $ada->fullname);
         $this->assertSame('ada@example.com', $ada->email);
         $this->assertSame(Level::HND1, $ada->level);
@@ -143,7 +143,7 @@ class NominalRollTest extends TestCase
         $this->assertSame(1, session('import')['skippedCount']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'roll_imported', 'user_id' => $this->admin->id]);
 
-        $this->get(route('roll.index', ['q' => 'tunde']))->assertSee('F/HD/23/3333333')->assertDontSee('F/HD/24/2222222')->assertSee('2 students');
+        $this->get(route('roll.index', ['q' => 'tunde']))->assertSee('F/HD/23/3331333')->assertDontSee('F/HD/24/2221222')->assertSee('2 students');
     }
 
     #[Test]
@@ -153,7 +153,7 @@ class NominalRollTest extends TestCase
 
         $this->actingAs($this->admin)
             ->post(route('roll.store'), $this->upload($file))
-            ->assertSessionHasErrors(['roll' => 'This file is for ND1 Part-time, but you chose HND1 Full-time. Check the class or the file.']);
+            ->assertSessionHasErrors(['roll' => 'This file is for ND1 Part-time, but you chose HND1 SWD Full-time. Check the class or the file.']);
 
         $this->assertSame(0, RollEntry::count());
     }
@@ -162,7 +162,7 @@ class NominalRollTest extends TestCase
     public function matric_numbers_from_another_kind_of_class_need_confirming(): void
     {
         // ND part-time numbers in an HND1 full-time list.
-        $content = "Matric number,Full name\nF/HD/24/0000001,Right\nP/ND/24/0000002,Wrong\n";
+        $content = "Matric number,Full name\nF/HD/24/0001001,Right\nP/ND/24/0000002,Wrong\n";
 
         $this->actingAs($this->admin)
             ->post(route('roll.store'), $this->upload($this->csv($content)))
@@ -177,18 +177,18 @@ class NominalRollTest extends TestCase
     #[Test]
     public function uploading_a_class_replaces_that_class_only(): void
     {
-        RollEntry::create(['matric_number' => 'F/HD/19/0000001', 'programme' => 'full_time', 'level' => 'HND1']);
-        RollEntry::create(['matric_number' => 'F/HD/24/0000002', 'programme' => 'full_time', 'level' => 'HND1']);
+        RollEntry::create(['matric_number' => 'F/HD/19/0001001', 'programme' => 'full_time', 'level' => 'HND1', 'arm' => 'swd']);
+        RollEntry::create(['matric_number' => 'F/HD/24/0001002', 'programme' => 'full_time', 'level' => 'HND1', 'arm' => 'swd']);
         RollEntry::create(['matric_number' => 'F/ND/24/0000003', 'programme' => 'full_time', 'level' => 'ND1']);
         // Listed in HND2 by mistake last time.
-        RollEntry::create(['matric_number' => 'F/HD/24/0000004', 'programme' => 'full_time', 'level' => 'HND2']);
+        RollEntry::create(['matric_number' => 'F/HD/24/0001004', 'programme' => 'full_time', 'level' => 'HND2', 'arm' => 'swd']);
 
         $this->actingAs($this->admin)
-            ->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0000002\nF/HD/24/0000004\nF/HD/25/0000005\n")))
+            ->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0001002\nF/HD/24/0001004\nF/HD/25/0001005\n")))
             ->assertSessionHas('import', fn (array $import) => $import['total'] === 3 && $import['added'] === 1 && $import['removed'] === 1 && $import['moved'] === 1);
 
-        $this->assertDatabaseMissing('nominal_roll', ['matric_number' => 'F/HD/19/0000001']);
-        $this->assertSame(Level::HND1, RollEntry::where('matric_number', 'F/HD/24/0000004')->firstOrFail()->level);
+        $this->assertDatabaseMissing('nominal_roll', ['matric_number' => 'F/HD/19/0001001']);
+        $this->assertSame(Level::HND1, RollEntry::where('matric_number', 'F/HD/24/0001004')->firstOrFail()->level);
         // Other classes are untouched.
         $this->assertDatabaseHas('nominal_roll', ['matric_number' => 'F/ND/24/0000003', 'level' => 'ND1']);
     }
@@ -201,7 +201,7 @@ class NominalRollTest extends TestCase
         $this->post(route('roll.store'), $this->upload($this->csv("name,phone\nAda,0803\n")))->assertSessionHasErrors('roll');
         $this->post(route('roll.store'), $this->upload(UploadedFile::fake()->createWithContent('roll.xlsx', 'not a zip')))->assertSessionHasErrors('roll');
         $this->post(route('roll.store'), $this->upload(UploadedFile::fake()->createWithContent('roll.pdf', '%PDF')))->assertSessionHasErrors('roll');
-        $this->post(route('roll.store'), ['roll' => $this->csv("F/HD/24/0000001\n")])->assertSessionHasErrors(['programme', 'level']);
+        $this->post(route('roll.store'), ['roll' => $this->csv("F/HD/24/0001001\n")])->assertSessionHasErrors('class');
 
         $this->assertSame(0, RollEntry::count());
     }
@@ -209,7 +209,7 @@ class NominalRollTest extends TestCase
     #[Test]
     public function the_template_comes_with_the_class_filled_in(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('roll.template', ['programme' => 'codfel', 'level' => 'ND2']));
+        $response = $this->actingAs($this->admin)->get(route('roll.template', ['class' => 'codfel|ND2|']));
 
         $response->assertOk()->assertDownload('nominal-roll-nd2-codfel.xlsx');
         $file = $response->baseResponse;
@@ -281,10 +281,10 @@ class NominalRollTest extends TestCase
     #[Test]
     public function extra_students_can_be_added_to_a_class_without_removing_anyone(): void
     {
-        RollEntry::create(['matric_number' => 'F/HD/24/0000001', 'programme' => 'full_time', 'level' => 'HND1']);
+        RollEntry::create(['matric_number' => 'F/HD/24/0001001', 'programme' => 'full_time', 'level' => 'HND1', 'arm' => 'swd']);
 
         $this->actingAs($this->admin)
-            ->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0000002,Late Comer\n"), ['mode' => 'add']))
+            ->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0001002,Late Comer\n"), ['mode' => 'add']))
             ->assertSessionHas('import', fn (array $import) => $import['added'] === 1 && $import['removed'] === 0 && $import['total'] === 2);
 
         $this->assertSame(2, RollEntry::where('level', 'HND1')->count());
@@ -297,8 +297,7 @@ class NominalRollTest extends TestCase
             'matric_number' => 'p/nd/24/0000007',
             'fullname' => 'ADE  Bisi',
             'email' => 'Bisi@Example.com',
-            'programme' => 'part_time',
-            'level' => 'ND1',
+            'class' => 'part_time|ND1|',
         ])->assertSessionHasNoErrors()->assertRedirect(route('roll.index', ['q' => 'P/ND/24/0000007']));
 
         $entry = RollEntry::where('matric_number', 'P/ND/24/0000007')->firstOrFail();
@@ -308,7 +307,7 @@ class NominalRollTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'roll_student_added', 'user_id' => $this->admin->id]);
 
         // A full-time number in a part-time class needs confirming.
-        $student = ['matric_number' => 'F/ND/24/0000008', 'fullname' => 'Wrong Class', 'programme' => 'part_time', 'level' => 'ND1'];
+        $student = ['matric_number' => 'F/ND/24/0000008', 'fullname' => 'Wrong Class', 'class' => 'part_time|ND1|'];
         $this->post(route('roll.students.store'), $student)->assertSessionHasErrorsIn('student', 'matric_number');
         $this->assertDatabaseMissing('nominal_roll', ['matric_number' => 'F/ND/24/0000008']);
         $this->post(route('roll.students.store'), [...$student, 'confirm' => '1'])->assertSessionHasNoErrors();
@@ -321,22 +320,22 @@ class NominalRollTest extends TestCase
     #[Test]
     public function the_roll_is_locked_while_voting_is_open(): void
     {
-        $entry = RollEntry::create(['matric_number' => 'F/HD/24/0000001', 'programme' => 'full_time', 'level' => 'HND1']);
+        $entry = RollEntry::create(['matric_number' => 'F/HD/24/0001001', 'programme' => 'full_time', 'level' => 'HND1', 'arm' => 'swd']);
         $election = Election::factory()->open()->withBallot()->create(['roll_only' => true, 'title' => 'Class Rep Election']);
         $this->actingAs($this->admin);
 
         $this->get(route('roll.index'))->assertSee('The roll is locked while voting is open')->assertSee('Class Rep Election');
 
-        $this->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0000002\n"), ['mode' => 'add']))->assertSessionHasErrors('roll');
-        $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0000003', 'fullname' => 'Not A Student', 'programme' => 'full_time', 'level' => 'HND1'])
+        $this->post(route('roll.store'), $this->upload($this->csv("F/HD/24/0001002\n"), ['mode' => 'add']))->assertSessionHasErrors('roll');
+        $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0001003', 'fullname' => 'Not A Student', 'class' => 'full_time|HND1|swd'])
             ->assertSessionHasErrors('roll');
         $this->delete(route('roll.students.destroy', $entry))->assertSessionHasErrors('roll');
 
-        $this->assertSame(['F/HD/24/0000001'], RollEntry::pluck('matric_number')->all());
+        $this->assertSame(['F/HD/24/0001001'], RollEntry::pluck('matric_number')->all());
 
         // Elections that don't use the roll don't lock it.
         $election->update(['roll_only' => false]);
-        $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0000003', 'fullname' => 'Late Comer', 'programme' => 'full_time', 'level' => 'HND1'])
+        $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0001003', 'fullname' => 'Late Comer', 'class' => 'full_time|HND1|swd'])
             ->assertSessionHasNoErrors();
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\ElectionStatus;
 use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\UserStatus;
+use App\Support\Classes\Arms;
 use Database\Factories\ElectionFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,6 +34,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $description
  * @property list<string>|null $levels
  * @property list<string>|null $programmes
+ * @property list<string>|null $arms
  * @property int|null $entry_year_from
  * @property int|null $entry_year_to
  * @property bool $roll_only
@@ -51,7 +53,7 @@ class Election extends Model
     /** Voting windows an admin can launch an election for, in hours. */
     public const DURATIONS = [1, 2, 6, 12, 24, 48, 72];
 
-    protected $fillable = ['title', 'description', 'levels', 'programmes', 'entry_year_from', 'entry_year_to', 'roll_only'];
+    protected $fillable = ['title', 'description', 'levels', 'programmes', 'arms', 'entry_year_from', 'entry_year_to', 'roll_only'];
 
     /**
      * @var array<string, mixed>
@@ -61,6 +63,7 @@ class Election extends Model
         'description' => null,
         'levels' => null,
         'programmes' => null,
+        'arms' => null,
         'entry_year_from' => null,
         'entry_year_to' => null,
         'roll_only' => true,
@@ -75,6 +78,7 @@ class Election extends Model
             'status' => ElectionStatus::class,
             'levels' => 'array',
             'programmes' => 'array',
+            'arms' => 'array',
             'entry_year_from' => 'integer',
             'entry_year_to' => 'integer',
             'roll_only' => 'boolean',
@@ -132,6 +136,16 @@ class Election extends Model
     }
 
     /**
+     * The arms (courses) the election is limited to, that still exist.
+     *
+     * @return list<string>
+     */
+    public function armList(): array
+    {
+        return array_values(array_filter($this->arms ?? [], fn (string $arm) => Arms::exists($arm)));
+    }
+
+    /**
      * Who may vote, in a short sentence: "ND1 and ND2 students who entered
      * from 2024 to 2026".
      */
@@ -139,9 +153,15 @@ class Election extends Model
     {
         $levels = array_map(fn (Level $level) => $level->label(), $this->levelList());
         $programmes = array_map(fn (Programme $programme) => $programme->label(), $this->programmeList());
-        $who = $levels === [] && $programmes === []
+        $arms = array_map(fn (string $arm) => Arms::short($arm), $this->armList());
+        $who = $levels === [] && $programmes === [] && $arms === []
             ? 'All students'
-            : trim(($programmes !== [] ? $this->joinWords($programmes).' ' : '').($levels !== [] ? $this->joinWords($levels).' ' : '')).' students';
+            : implode(' ', array_filter([
+                $programmes !== [] ? $this->joinWords($programmes) : null,
+                $levels !== [] ? $this->joinWords($levels) : null,
+                $arms !== [] ? $this->joinWords($arms) : null,
+                'students',
+            ]));
 
         $from = $this->entry_year_from;
         $to = $this->entry_year_to;
@@ -168,9 +188,10 @@ class Election extends Model
 
         $level = $user->level;
         $programme = $user->programme;
+        $arm = $user->arm;
 
         if ($this->roll_only) {
-            $entry = RollEntry::query()->where('matric_number', $user->matric_number)->first(['level', 'programme']);
+            $entry = RollEntry::query()->where('matric_number', $user->matric_number)->first(['level', 'programme', 'arm']);
 
             if ($entry === null) {
                 return 'Your matric number isn\'t on the current nominal roll, so you can\'t vote in this election. If that\'s a mistake, ask an admin to check the roll.';
@@ -178,6 +199,7 @@ class Election extends Model
 
             $level = $entry->level ?? $level;
             $programme = $entry->programme ?? $programme;
+            $arm = $entry->arm ?? $arm;
         }
 
         $programmes = $this->programmes ?? [];
@@ -189,6 +211,12 @@ class Election extends Model
         $levels = $this->levels ?? [];
 
         if ($levels !== [] && ! in_array($level->value, $levels, true)) {
+            return 'This election is for '.$this->eligibilitySummary().'.';
+        }
+
+        $arms = $this->arms ?? [];
+
+        if ($arms !== [] && ! in_array($arm, $arms, true)) {
             return 'This election is for '.$this->eligibilitySummary().'.';
         }
 
@@ -220,11 +248,13 @@ class Election extends Model
         $query = User::query()->where('users.status', UserStatus::Active);
         $level = 'users.level';
         $programme = 'users.programme';
+        $arm = 'users.arm';
 
         if ($this->roll_only) {
             $query->join('nominal_roll', 'nominal_roll.matric_number', '=', 'users.matric_number');
             $level = DB::raw('coalesce(nominal_roll.level, users.level)');
             $programme = DB::raw('coalesce(nominal_roll.programme, users.programme)');
+            $arm = DB::raw('coalesce(nominal_roll.arm, users.arm)');
         }
 
         if (($this->programmes ?? []) !== []) {
@@ -233,6 +263,10 @@ class Election extends Model
 
         if (($this->levels ?? []) !== []) {
             $query->whereIn($level, $this->levels);
+        }
+
+        if (($this->arms ?? []) !== []) {
+            $query->whereIn($arm, $this->arms);
         }
 
         if ($this->entry_year_from !== null) {

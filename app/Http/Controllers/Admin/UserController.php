@@ -12,6 +12,7 @@ use App\Models\Department;
 use App\Models\RollEntry;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\Classes\Arms;
 use App\Support\MatricNumber;
 use App\Support\TemporaryPassword;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,6 +38,7 @@ class UserController extends Controller
             'status' => ['nullable', Rule::enum(UserStatus::class)],
             'level' => ['nullable', Rule::enum(Level::class)],
             'programme' => ['nullable', Rule::enum(Programme::class)],
+            'arm' => ['nullable', Rule::in(array_keys(Arms::all()))],
         ]);
 
         $users = User::query()
@@ -52,6 +54,7 @@ class UserController extends Controller
             ->when($filters['status'] ?? null, fn (Builder $query, $status) => $query->where('status', $status))
             ->when($filters['level'] ?? null, fn (Builder $query, $level) => $query->where('level', $level))
             ->when($filters['programme'] ?? null, fn (Builder $query, $programme) => $query->where('programme', $programme))
+            ->when($filters['arm'] ?? null, fn (Builder $query, $arm) => $query->where('arm', $arm))
             ->orderBy('fullname')
             ->paginate(25)
             ->withQueryString();
@@ -120,14 +123,14 @@ class UserController extends Controller
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
         ]);
 
-        $from = $user->level->value.' '.$user->programme->value;
+        $from = $user->classLabel();
         $user->update([
             'level' => $data['level'],
             'programme' => $data['programme'],
             'department_id' => (int) $data['department_id'],
         ]);
 
-        Audit::record('user_class_changed', $user, ['from' => $from, 'to' => $user->level->value.' '.$user->programme->value, 'name' => $user->fullname]);
+        Audit::record('user_class_changed', $user, ['from' => $from, 'to' => $user->classLabel(), 'name' => $user->fullname]);
 
         return back()->with('status', 'Class saved.');
     }
