@@ -174,9 +174,11 @@ export function student() {
     if (csrf && exec.vu.iterationInScenario % 3 === 0) {
         // The panel posts with the token of the page it's on; it should be
         // the same one the home page had.
-        const current = token(http_.get(`${BASE}/saved`, { tags: { name: 'saved' } }));
+        const page = http_.get(`${BASE}/saved`, { tags: { name: 'saved' } });
+        const current = token(page);
         if (current !== csrf) {
-            console.warn(`TOKEN CHANGED during iteration ${exec.vu.iterationInScenario} of VU ${exec.vu.idInTest}`);
+            const landed = page.url.replace(BASE, '');
+            console.warn(`TOKEN CHANGED during iteration ${exec.vu.iterationInScenario} of VU ${exec.vu.idInTest}, saved page landed on ${landed}`);
         }
         const answer = http_.post(`${BASE}/assistant`, { _token: csrf, message: `Find books on ${pick(SEARCHES)}` }, {
             headers: { Accept: 'application/json' },
