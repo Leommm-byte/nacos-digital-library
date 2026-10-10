@@ -97,7 +97,14 @@ jobs:
               sleep 10
             done
           ) > db-sample.log &
-          k6 run -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
+          k6 run --log-output=file=k6.log -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
+
+      - name: Failed requests by kind and status
+        if: always()
+        run: |
+          { echo; echo '**Failed requests** (kind, status, error):'; echo '```'
+            grep -o 'FAILED [^"]*' k6.log 2>/dev/null | awk '{print $2, $3, $4}' | sort | uniq -c | sort -rn | head -n 20
+            echo '```'; } | tee -a load-test-summary.md
 
       - name: Database during the run
         if: always()

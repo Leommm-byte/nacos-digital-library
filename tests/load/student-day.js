@@ -5,8 +5,9 @@
  *   browsing the home page, library, search, a book, the reader (a page
  *   range of the PDF), saved books, elections with live results, and the
  *   assistant, with a few seconds of reading between clicks.
- * - "voters": during the peak, 300 other students vote in an election
- *   within two minutes, the rush before voting closes.
+ * - "voters": during the peak, 300 other students vote in an election,
+ *   three arriving every second (under two minutes), the rush before
+ *   voting closes.
  *
  * Needs the LoadTestSeeder data. Run against a copy of the site, never the
  * live one:
@@ -40,21 +41,26 @@ export const options = {
             ],
             gracefulRampDown: '20s',
         },
+        // Voters arrive steadily, 3 a second, during the peak. (Starting
+        // 100 at the same instant mostly measured bcrypt: the password
+        // checks filled the CPU for a few seconds.)
         voters: {
-            executor: 'shared-iterations',
+            executor: 'constant-arrival-rate',
             exec: 'voter',
-            vus: 100,
-            iterations: VOTERS,
+            rate: 3,
+            timeUnit: '1s',
+            duration: `${Math.ceil(VOTERS / 3)}s`,
+            preAllocatedVUs: 60,
+            maxVUs: 150,
             startTime: '1m30s',
-            maxDuration: '2m',
         },
     },
     thresholds: {
         http_req_failed: ['rate<0.01'],
         checks: ['rate>0.99'],
         // Passwords are checked with bcrypt, slow on purpose against
-        // guessing; 100 voters signing in at the same instant queue up.
-        'http_req_duration{name:login}': ['p(95)<5000'],
+        // guessing, so signing in costs more than a page.
+        'http_req_duration{name:login}': ['p(95)<3000'],
         'http_req_duration{name:home}': page,
         'http_req_duration{name:library}': page,
         'http_req_duration{name:search}': ['p(95)<2000'],

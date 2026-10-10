@@ -28,14 +28,13 @@ nominal roll, an open election):
   library, a search, a book, the reader (a 256 KB range of the PDF), saved
   books, the elections with live results, and the assistant, with a few
   seconds of reading between clicks;
-- during the peak, 300 other students vote within two minutes.
+- during the peak, 300 other students vote, three arriving every second.
 
 It fails if more than 1% of requests fail, a check fails, or a request
 type's 95th percentile goes over its limit (1.5 s for pages, 2 s for
-search, the assistant and voting, 300 ms for live results, 5 s for
-logging in, which checks the password with bcrypt, slow on purpose, while
-100 voters sign in at the same moment). Each failed request is logged
-with its kind and status. Afterwards
+search, the assistant and voting, 300 ms for live results, 3 s for
+logging in, which checks the password with bcrypt, slow on purpose).
+Failed requests are listed by kind and status in the run's summary. Afterwards
 the workflow checks every ballot was recorded once and the live results
 show the same count.
 
