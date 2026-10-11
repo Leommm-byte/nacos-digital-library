@@ -182,10 +182,14 @@
                 @else
                     <ul class="announcement-list">
                         @foreach ($announcements as $announcement)
-                            <li>
-                                <h3 class="announcement-title">{{ $announcement['title'] }}</h3>
-                                <p class="announcement-body">{{ $announcement['body'] }}</p>
-                                <time class="announcement-date" datetime="{{ $announcement['date'] }}">{{ \Illuminate\Support\Carbon::parse($announcement['date'])->timezone(config('app.display_timezone'))->format('j M Y') }}</time>
+                            <li class="announcement-item">
+                                <h3 class="announcement-title"><a href="{{ route('announcements.show', $announcement['id']) }}" class="stretched-link">{{ $announcement['title'] }}</a></h3>
+                                <p class="announcement-body">{{ $announcement['excerpt'] }}</p>
+                                <p class="announcement-date">
+                                    <time datetime="{{ $announcement['date'] }}">{{ \Illuminate\Support\Carbon::parse($announcement['date'])->timezone(config('app.display_timezone'))->format('j M Y') }}</time>
+                                    @if ($announcement['class']) · {{ $announcement['audience'] }} @endif
+                                    @if ($announcement['long']) · <span class="announcement-more">Read more</span> @endif
+                                </p>
                             </li>
                         @endforeach
                     </ul>

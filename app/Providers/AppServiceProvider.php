@@ -85,7 +85,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('access-admin', fn (User $user) => $user->hasRole(Role::Admin));
         Gate::define('review-uploads', fn (User $user) => $user->hasRole(Role::Governor));
-        Gate::define('manage-announcements', fn (User $user) => $user->hasRole(Role::Governor));
+        // Announcements: governors post to their own class (a graduated
+        // governor has none); admins to everyone or any class, and read all.
+        Gate::define('manage-announcements', fn (User $user) => $user->hasRole(Role::Admin)
+            || ($user->hasRole(Role::Governor) && $user->schoolClass() !== null));
+        Gate::define('announce-to-everyone', fn (User $user) => $user->hasRole(Role::Admin));
+        Gate::define('view-all-announcements', fn (User $user) => $user->hasRole(Role::Admin));
         // Admins only: governors are often candidates themselves.
         Gate::define('manage-elections', fn (User $user) => $user->hasRole(Role::Admin));
         // Who may open the reset-code page; which students they may issue

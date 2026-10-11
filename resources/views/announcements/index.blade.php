@@ -1,5 +1,7 @@
+@php($zone = config('app.display_timezone'))
+
 <x-layouts.app title="Announcements">
-    <x-page-header title="Announcements" subtitle="News and notices from NACOS YabaTech.">
+    <x-page-header title="Announcements" subtitle="News and notices from NACOS YabaTech, and from your class.">
         <x-slot:actions>
             @can('manage-announcements')
                 <x-button href="{{ route('announcements.manage') }}" variant="secondary" icon="settings">Manage</x-button>
@@ -8,17 +10,23 @@
     </x-page-header>
 
     @if ($announcements->isEmpty())
-        <x-empty-state icon="bell" title="No announcements right now" text="News from NACOS will appear here." />
+        <x-empty-state icon="bell" title="No announcements right now" text="News from NACOS and your class will appear here." />
     @else
         <ol class="announcement-feed stagger">
             @foreach ($announcements as $announcement)
                 <li>
-                    <article class="card p-5 md:p-6">
-                        <time class="announcement-date" datetime="{{ ($announcement->starts_at ?? $announcement->created_at)->toIso8601String() }}">
-                            {{ ($announcement->starts_at ?? $announcement->created_at)->timezone(config('app.display_timezone'))->format('l, j F Y') }}
-                        </time>
-                        <h2 class="mt-1 text-lg">{{ $announcement->title }}</h2>
-                        <p class="mt-2 whitespace-pre-line text-muted">{{ $announcement->body }}</p>
+                    <article class="announcement-card">
+                        <p class="announcement-meta">
+                            <time datetime="{{ $announcement->date()->toIso8601String() }}">{{ $announcement->date()->timezone($zone)->format('l, j F Y') }}</time>
+                            @unless ($announcement->isForEveryone())
+                                <x-badge variant="accent">{{ $announcement->audience() }}</x-badge>
+                            @endunless
+                        </p>
+                        <h2 class="mt-1 text-lg"><a href="{{ route('announcements.show', $announcement) }}" class="stretched-link">{{ $announcement->title }}</a></h2>
+                        <p class="mt-2 text-muted">{{ $announcement->excerpt() }}</p>
+                        @if ($announcement->isLong())
+                            <span class="announcement-more mt-3">Read more <x-icon name="arrow-right" /></span>
+                        @endif
                     </article>
                 </li>
             @endforeach

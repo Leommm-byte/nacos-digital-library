@@ -145,6 +145,39 @@ class DemoSeeder extends Seeder
             'body' => 'Share your notes and past questions from the Upload page. Reviewers check every upload before it appears.',
         ]);
 
+        // The newest: a long one, formatted, to show its own page and "Read more".
+        $orientation = Announcement::factory()->create([
+            'title' => 'NACOS Week 2026: the full programme',
+            'body' => "NACOS Week runs from **Monday 16 to Friday 20 November**. Every level can take part, and most events are free.\n\n"
+                ."## What's on\n\n"
+                ."- **Monday:** opening ceremony and tech talks in the Engineering hall, 10 am\n"
+                ."- **Tuesday:** hackathon kick-off (teams of up to four)\n"
+                ."- **Wednesday:** career fair with local software companies\n"
+                ."- **Thursday:** hackathon demos and judging\n"
+                ."- **Friday:** NACOS dinner and awards\n\n"
+                ."## How to register\n\n"
+                ."1. Form a team, or come alone and we'll find you one.\n"
+                ."2. Give your team name to your course rep by *Friday 13 November*.\n"
+                ."3. Bring your student ID to every event.\n\n"
+                .'Questions? Read the [NACOS national guidelines](https://nacos.org.ng) or ask your class governor.',
+        ]);
+        $orientation->created_by = $users['admin']->id;
+        $orientation->save();
+
+        // For one class only, from its governor.
+        $governorClass = $users['governor']->schoolClass();
+        if ($governorClass !== null) {
+            $classNotice = Announcement::factory()->create([
+                'title' => 'Class meeting on Thursday',
+                'body' => "We'll meet after the 12 pm lecture on **Thursday** to plan the project defence timetable.\n\nPlease come with your project topic and supervisor's name.",
+                'programme' => $governorClass->programme->value,
+                'level' => $governorClass->level->value,
+                'arm' => $governorClass->arm,
+            ]);
+            $classNotice->created_by = $users['governor']->id;
+            $classNotice->save();
+        }
+
         $this->seedElections($users, $students);
 
         // Students on the roll without an account yet, three per class, so
