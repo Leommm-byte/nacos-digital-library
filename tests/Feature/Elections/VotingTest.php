@@ -270,6 +270,27 @@ class VotingTest extends TestCase
     }
 
     #[Test]
+    public function open_elections_update_themselves_on_the_election_page_and_the_list(): void
+    {
+        $election = $this->election();
+        $closed = Election::factory()->closed()->withBallot(['President' => 2])->create(['title' => 'Last Year']);
+        $url = LiveResults::url($election);
+
+        $this->actingAs(User::factory()->create());
+        $this->get(route('elections.show', $election))->assertOk()
+            ->assertSee('data-live-results="'.$url.'"', false)
+            ->assertSee('data-poll="'.config('elections.poll_seconds').'"', false)
+            ->assertSee('data-poll-max="'.config('elections.poll_max_seconds').'"', false);
+
+        // The list's turnout too, but not for a closed election's final count.
+        $this->get(route('elections.index'))->assertOk()
+            ->assertSee('data-live-results="'.$url.'"', false)
+            ->assertSee('data-result-turnout-bar', false)
+            ->assertDontSee('data-live-results="'.LiveResults::url($closed).'"', false);
+        $this->get(route('elections.show', $closed))->assertOk()->assertDontSee('data-live-results', false);
+    }
+
+    #[Test]
     public function candidate_names_are_escaped(): void
     {
         $election = $this->election();

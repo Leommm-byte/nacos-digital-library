@@ -66,6 +66,17 @@
     transform: none;
 }
 
+/* A live number that just changed (live-results.js) fades in. */
+@keyframes updated {
+    from {
+        opacity: 0.25;
+    }
+}
+
+.is-updated {
+    animation: updated 700ms var(--ease-out);
+}
+
 @media (prefers-reduced-motion: reduce) {
     @view-transition {
         navigation: none;

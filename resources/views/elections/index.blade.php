@@ -47,12 +47,13 @@
                         </dl>
 
                         @if ($result)
-                            <div>
+                            {{-- Turnout updates itself while voting is open (live-results.js). --}}
+                            <div @if (! ($result['final'] ?? false)) data-live-results="{{ \App\Support\Elections\LiveResults::url($election) }}" data-poll="{{ config('elections.poll_seconds') }}" data-poll-max="{{ config('elections.poll_max_seconds') }}" data-zone="{{ $zone }}" data-ballots="{{ $result['ballots'] }}" @endif>
                                 <div class="flex items-baseline justify-between gap-3 text-sm">
-                                    <span><strong>{{ number_format($result['ballots']) }}</strong> <span class="text-muted">of {{ number_format($result['electorate']) }} voted</span></span>
-                                    <span class="font-semibold">{{ $percent($result['turnout']) }}%</span>
+                                    <span><strong data-result-ballots>{{ number_format($result['ballots']) }}</strong> <span class="text-muted">of <span data-result-electorate>{{ number_format($result['electorate']) }}</span> voted</span></span>
+                                    <span class="font-semibold"><span data-result-turnout>{{ $percent($result['turnout']) }}</span>%</span>
                                 </div>
-                                <progress class="result-bar result-bar-strong" max="100" value="{{ $result['turnout'] }}" aria-label="Turnout {{ $percent($result['turnout']) }}%">{{ $result['turnout'] }}%</progress>
+                                <progress class="result-bar result-bar-strong" max="100" value="{{ $result['turnout'] }}" data-result-turnout-bar aria-label="Turnout {{ $percent($result['turnout']) }}%">{{ $result['turnout'] }}%</progress>
                             </div>
                         @endif
 

@@ -144,8 +144,11 @@ class CandidatePhotoTest extends TestCase
         // On the ballot and in the results.
         $results = LiveResults::read($election->fresh() ?? $election);
         $this->assertNotNull($results);
-        $this->assertSame($url, $results['positions'][0]['candidates'][0]['photo']);
-        $this->get(route('elections.show', $election))->assertOk()->assertSee($url, false);
+        // The shared file holds the path alone, so the photo loads at
+        // whichever address the page was opened.
+        $path = parse_url($url, PHP_URL_PATH).'?'.parse_url($url, PHP_URL_QUERY);
+        $this->assertSame($path, $results['positions'][0]['candidates'][0]['photo']);
+        $this->get(route('elections.show', $election))->assertOk()->assertSee('src="'.$path.'"', false);
 
         $voter = User::factory()->create();
         $this->actingAs($voter)->get(route('elections.show', $election))->assertOk()->assertSee('data-ballot', false)->assertSee($url, false);
