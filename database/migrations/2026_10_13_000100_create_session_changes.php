@@ -45,7 +45,7 @@ return new class extends Migration
             $table->string('from_role', 16);
 
             $table->primary(['session_change_id', 'user_id']);
-            $table->index(['session_change_id', 'programme', 'from_level']);
+            $table->index(['session_change_id', 'programme', 'from_level'], 'session_change_users_class_index');
         });
     }
 
