@@ -12,7 +12,7 @@
 @if ($results === null)
     <p class="text-sm text-muted">Results will appear here once voting opens.</p>
 @else
-    <div class="results" @if ($live) data-live-results="{{ \App\Support\Elections\LiveResults::url($election) }}" data-poll="{{ config('elections.poll_seconds') }}" data-zone="{{ $zone }}" data-ballots="{{ $results['ballots'] }}" @endif>
+    <div class="results" @if ($live) data-live-results="{{ \App\Support\Elections\LiveResults::url($election) }}" data-poll="{{ config('elections.poll_seconds') }}" data-poll-max="{{ config('elections.poll_max_seconds') }}" data-zone="{{ $zone }}" data-ballots="{{ $results['ballots'] }}" @endif>
         <div class="results-turnout">
             <div class="flex items-end justify-between gap-4">
                 <p class="text-sm"><strong class="results-turnout-count" data-result-ballots>{{ number_format($results['ballots']) }}</strong>

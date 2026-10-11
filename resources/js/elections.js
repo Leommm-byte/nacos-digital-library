@@ -1,14 +1,8 @@
 /*
- * Election pages: countdowns, the ballot summary and live results.
- *
- * Live results are a static JSON file. Polling uses conditional requests
- * (the browser sends If-None-Match, the server answers 304 when nothing
- * changed), pauses while the tab is hidden and adds jitter so thousands of
- * open pages don't poll in step.
+ * Election pages: countdowns, the ballot summary, live results (see
+ * live-results.js) and candidate photos.
  */
-
-const numbers = new Intl.NumberFormat('en');
-const percents = new Intl.NumberFormat('en', { maximumFractionDigits: 1 });
+import { initLiveResults } from './live-results';
 
 function plural(count, word) {
     return `${count} ${word}${count === 1 ? '' : 's'}`;
@@ -79,118 +73,6 @@ function initBallot() {
 
     form.addEventListener('change', update);
     update();
-}
-
-function render(root, data) {
-    const set = (selector, value, scope = root) => {
-        const element = scope.querySelector(selector);
-        if (element) {
-            element.textContent = value;
-        }
-    };
-
-    set('[data-result-ballots]', numbers.format(data.ballots));
-    set('[data-result-electorate]', numbers.format(data.electorate));
-    set('[data-result-turnout]', percents.format(data.turnout));
-    root.querySelector('[data-result-turnout-bar]')?.setAttribute('value', String(data.turnout));
-
-    const updated = root.querySelector('[data-result-updated]');
-    if (updated) {
-        updated.setAttribute('datetime', data.updated_at);
-        updated.textContent = new Intl.DateTimeFormat('en', {
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZone: root.dataset.zone,
-        }).format(new Date(data.updated_at)).toLowerCase();
-    }
-
-    for (const position of data.positions) {
-        set(`[data-result-position-votes="${position.id}"]`, numbers.format(position.votes));
-        set(`[data-result-skipped="${position.id}"]`, numbers.format(position.skipped));
-
-        for (const candidate of position.candidates) {
-            const row = root.querySelector(`[data-result-candidate="${candidate.id}"]`);
-            if (!row) {
-                continue;
-            }
-
-            set('[data-result-votes]', numbers.format(candidate.votes), row);
-            set('[data-result-percent]', percents.format(candidate.percent), row);
-
-            const bar = row.querySelector('[data-result-bar]');
-            bar.value = candidate.percent;
-            bar.setAttribute('aria-label', `${candidate.name}: ${percents.format(candidate.percent)}%`);
-
-            const label = candidate.tied ? 'Tied' : candidate.leading ? 'Leading' : '';
-            const badge = row.querySelector('[data-result-badge]');
-            badge.hidden = label === '';
-            set('[data-result-badge-text]', label, row);
-            row.classList.toggle('is-leading', candidate.leading);
-        }
-    }
-}
-
-function initLiveResults() {
-    const root = document.querySelector('[data-live-results]');
-
-    if (!root || !window.fetch) {
-        return;
-    }
-
-    const url = root.dataset.liveResults;
-    const every = Number(root.dataset.poll || 15) * 1000;
-    let ballots = Number(root.dataset.ballots || 0);
-    let timer = null;
-    let failures = 0;
-
-    const schedule = () => {
-        clearTimeout(timer);
-        // Up to a third extra, and longer after errors.
-        const delay = every * (1 + Math.random() / 3) * Math.min(8, 2 ** failures);
-        timer = setTimeout(poll, delay);
-    };
-
-    const poll = async () => {
-        if (document.hidden) {
-            return;
-        }
-
-        try {
-            const response = await fetch(url, { cache: 'no-cache', credentials: 'omit' });
-
-            if (!response.ok) {
-                throw new Error(String(response.status));
-            }
-
-            const data = await response.json();
-            failures = 0;
-
-            if (data.final) {
-                // Closed: reload once for the final layout (winners).
-                window.location.reload();
-                return;
-            }
-
-            if (data.ballots !== ballots) {
-                ballots = data.ballots;
-                render(root, data);
-            }
-        } catch {
-            failures += 1;
-        }
-
-        schedule();
-    };
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            clearTimeout(timer);
-        } else {
-            poll();
-        }
-    });
-
-    schedule();
 }
 
 /**

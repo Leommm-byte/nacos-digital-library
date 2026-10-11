@@ -169,7 +169,7 @@ class LiveResults
                     'candidates' => $position->candidates->map(fn (ElectionCandidate $candidate) => [
                         'id' => $candidate->id,
                         'name' => $candidate->name,
-                        'photo' => $candidate->photoUrl($election),
+                        'photo' => $candidate->photoUrl($election, absolute: false),
                         'votes' => $candidate->votes_count,
                         'percent' => $total > 0 ? round($candidate->votes_count / $total * 100, 1) : 0.0,
                         // Ahead (or the winner, once closed); ties are marked.

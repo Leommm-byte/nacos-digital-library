@@ -2,6 +2,13 @@
 # Browsers always revalidate, so a poll costs a 304 until the file changes.
 Options -Indexes
 
+# Not compressed (the files are a few KB): Apache adds "-gzip" to the ETag
+# of a compressed reply and then never matches it, so every poll would
+# download the whole file instead of getting a 304.
+<IfModule mod_env.c>
+    SetEnv no-gzip 1
+</IfModule>
+
 <IfModule mod_headers.c>
     Header set Cache-Control "no-cache"
     Header set X-Content-Type-Options "nosniff"

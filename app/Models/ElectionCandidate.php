@@ -40,8 +40,10 @@ class ElectionCandidate extends Model
     /**
      * Where the candidate's photo is served, or null without one. The
      * version changes with each new photo, so browsers may keep it.
+     * Shared files (the live results) take the path alone, so the photo
+     * loads whichever address the page was opened at.
      */
-    public function photoUrl(Election|int $election): ?string
+    public function photoUrl(Election|int $election, bool $absolute = true): ?string
     {
         if ($this->photo_path === null) {
             return null;
@@ -51,7 +53,7 @@ class ElectionCandidate extends Model
             'election' => $election instanceof Election ? $election->id : $election,
             'candidate' => $this->id,
             'v' => substr(sha1($this->photo_path), 0, 10),
-        ]);
+        ], $absolute);
     }
 
     /**
