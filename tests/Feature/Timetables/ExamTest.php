@@ -54,14 +54,14 @@ class ExamTest extends TestCase
     {
         $this->exam('SWD 311', '2026-11-03', ['levels' => ['HND1'], 'arms' => ['swd'], 'course_title' => 'Web Apps', 'note' => 'Bring your ID']);
         $this->exam('NCC 311', '2026-11-03', ['levels' => ['HND1'], 'arms' => ['ncc']]);
-        $this->exam('GNS 301', '2026-11-05');
+        $this->exam('GNS 301', '2026-11-05', ['venue' => null]);
         $this->exam('COM 111', '2026-11-04', ['levels' => ['ND1']]);
         $this->exam('OLD 101', '2026-10-30');
 
         $this->get(route('exams.index'))->assertRedirect(route('login'));
 
         $this->actingAs($this->student)->get(route('exams.index'))->assertOk()
-            ->assertSeeInOrder(['HND1 SWD', 'SWD 311', 'Web Apps', 'Hall A', 'Bring your ID', 'Everyone', 'GNS 301'])
+            ->assertSeeInOrder(['HND1 SWD', 'SWD 311', 'Web Apps', 'Hall A', 'Bring your ID', 'Everyone', 'GNS 301', 'Venue to be announced'])
             ->assertSee('in 1 day')
             ->assertDontSee('NCC 311')->assertDontSee('COM 111')->assertDontSee('OLD 101')
             ->assertSee('Show past papers')

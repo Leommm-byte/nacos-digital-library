@@ -72,7 +72,7 @@
                             <x-icon-tile name="calendar-days" tone="red" />
                             <span class="min-w-0 flex-1">
                                 <span class="continue-title">Next exam: {{ $exam->course_code }}@if ($exam->course_title) · {{ $exam->course_title }}@endif</span>
-                                <span class="continue-meta">{{ $exam->date->format('l j F') }}, {{ $exam->timeRange() }}@if ($exam->venue) · {{ $exam->venue }}@endif</span>
+                                <span class="continue-meta">{{ $exam->date->format('l j F') }}, {{ $exam->timeRange() }} · {{ $exam->venue ?? 'venue to be announced' }}</span>
                             </span>
                             <x-icon name="chevron-right" class="shrink-0 text-muted" />
                         </a>

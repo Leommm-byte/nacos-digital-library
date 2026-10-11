@@ -73,7 +73,7 @@
                                                         <x-field name="starts_at" id="{{ $bag }}-start" label="Starts" type="time" :value="$slot->startInput()" :bag="$bag" :old="$failed" required />
                                                         <x-field name="ends_at" id="{{ $bag }}-end" label="Ends" type="time" :value="$slot->endInput()" :bag="$bag" :old="$failed" required />
                                                         <x-field name="course_code" id="{{ $bag }}-code" label="Course code" :value="$slot->course_code" :bag="$bag" :old="$failed" maxlength="20" required />
-                                                        <x-field name="venue" id="{{ $bag }}-venue" label="Venue" :value="$slot->venue" :bag="$bag" :old="$failed" maxlength="100" />
+                                                        <x-field name="venue" id="{{ $bag }}-venue" label="Venue (optional)" :value="$slot->venue" :bag="$bag" :old="$failed" maxlength="100" />
                                                         <div class="tt-span-2">
                                                             <x-field name="course_title" id="{{ $bag }}-title" label="Course title" :value="$slot->course_title" :bag="$bag" :old="$failed" maxlength="150" />
                                                         </div>
@@ -115,7 +115,7 @@
                         <x-field name="starts_at" id="add-start" label="Starts" type="time" bag="add" :old="$addFailed" required />
                         <x-field name="ends_at" id="add-end" label="Ends" type="time" bag="add" :old="$addFailed" required />
                         <x-field name="course_code" id="add-code" label="Course code" bag="add" :old="$addFailed" maxlength="20" placeholder="CSC 201" required />
-                        <x-field name="venue" id="add-venue" label="Venue" bag="add" :old="$addFailed" maxlength="100" placeholder="Lab 2" />
+                        <x-field name="venue" id="add-venue" label="Venue (optional)" bag="add" :old="$addFailed" maxlength="100" placeholder="Lab 2" />
                         <div class="tt-span-2">
                             <x-field name="course_title" id="add-title" label="Course title (optional)" bag="add" :old="$addFailed" maxlength="150" />
                         </div>
