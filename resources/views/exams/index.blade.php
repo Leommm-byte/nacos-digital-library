@@ -5,23 +5,40 @@
                 <x-button href="{{ route('timetable.show') }}" variant="secondary" icon="calendar-clock">Class timetable</x-button>
             </x-slot:actions>
         </x-page-header>
-        <x-empty-state icon="calendar-days" tone="green" title="The exam timetable isn't out yet"
-            text="It will appear here once it's confirmed, with your own papers first." />
+        @if ($graduated ?? false)
+            <x-empty-state icon="graduation-cap" tone="green" title="You've graduated"
+                text="Congratulations! Exam timetables are for current students. The library is still yours to read." />
+        @else
+            <x-empty-state icon="calendar-days" tone="green" title="The exam timetable isn't out yet"
+                text="It will appear here once it's confirmed, with your own papers first." />
+        @endif
     @else
-    <x-page-header title="Exam timetable" :subtitle="$past ? 'Every paper this session' : 'Papers from today on'">
+    @php
+        // An admin looks at one programme at a time; links keep it.
+        $base = $programmes ? ['programme' => $programme->value] : [];
+    @endphp
+    <x-page-header title="Exam timetable" :subtitle="$programme->label().' · '.($past ? 'every paper this session' : 'papers from today on')">
         <x-slot:actions>
             @if (Route::has('timetable.show'))
                 <x-button href="{{ route('timetable.show') }}" variant="secondary" icon="calendar-clock">Class timetable</x-button>
             @endif
             @can('manage-exams')
-                <x-button href="{{ route('exams.manage') }}" icon="pencil">Manage</x-button>
+                <x-button href="{{ route('exams.manage', ['programme' => $programme->value]) }}" icon="pencil">Manage</x-button>
             @endcan
         </x-slot:actions>
     </x-page-header>
 
+    @if ($programmes)
+        <nav class="review-tabs mb-4" aria-label="Programme">
+            @foreach ($programmes as $p)
+                <a href="{{ route('exams.index', ['programme' => $p->value, 'show' => 'all']) }}" class="review-tab" @if ($p === $programme) aria-current="page" @endif>{{ $p->label() }}</a>
+            @endforeach
+        </nav>
+    @endif
+
     @if (! $published)
         <x-alert type="warning" class="mb-6">
-            <strong>Students can't see this yet.</strong> You're seeing it as an admin. Show it to students from <a href="{{ route('exams.manage') }}" class="link">Manage</a> once it's confirmed.
+            <strong>{{ $programme->label() }} students can't see this yet.</strong> You're seeing it as an admin. Show it to them from <a href="{{ route('exams.manage', ['programme' => $programme->value]) }}" class="link">Manage</a> once it's confirmed.
         </x-alert>
     @endif
 
@@ -29,29 +46,29 @@
         <x-empty-state icon="calendar-days" tone="green" title="No exams on the timetable"
             :text="$hasPast ? 'Every paper has been written. Well done!' : 'The exam timetable will appear here once it\'s out.'">
             @if ($hasPast)
-                <x-button href="{{ route('exams.index', ['past' => 1]) }}" variant="secondary" size="sm" icon="clock">Show past papers</x-button>
+                <x-button href="{{ route('exams.index', [...$base, 'past' => 1]) }}" variant="secondary" size="sm" icon="clock">Show past papers</x-button>
             @endif
         </x-empty-state>
     @else
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <nav class="review-tabs" aria-label="Show">
                 @foreach (['mine' => 'Your papers', 'all' => 'Everyone'] as $value => $label)
-                    <a href="{{ route('exams.index', array_filter(['show' => $value, 'past' => $past ? 1 : null])) }}" class="review-tab" @if ($show === $value) aria-current="page" @endif>
+                    <a href="{{ route('exams.index', array_filter([...$base, 'show' => $value, 'past' => $past ? 1 : null])) }}" class="review-tab" @if ($show === $value) aria-current="page" @endif>
                         {{ $label }} <span class="review-tab-count">{{ number_format($counts[$value]) }}</span>
                     </a>
                 @endforeach
             </nav>
             @if ($past)
-                <a href="{{ route('exams.index', ['show' => $show]) }}" class="link text-sm">Hide past papers</a>
+                <a href="{{ route('exams.index', [...$base, 'show' => $show]) }}" class="link text-sm">Hide past papers</a>
             @elseif ($hasPast)
-                <a href="{{ route('exams.index', ['show' => $show, 'past' => 1]) }}" class="link text-sm">Show past papers</a>
+                <a href="{{ route('exams.index', [...$base, 'show' => $show, 'past' => 1]) }}" class="link text-sm">Show past papers</a>
             @endif
         </div>
 
         @if ($days->isEmpty())
             <x-empty-state icon="calendar-days" tone="green" title="None of your papers are listed"
                 text="Nothing on the timetable is for your level, programme or course. Check everyone's papers in case yours is listed differently.">
-                <x-button href="{{ route('exams.index', ['show' => 'all']) }}" variant="secondary" size="sm">Show everyone's</x-button>
+                <x-button href="{{ route('exams.index', [...$base, 'show' => 'all']) }}" variant="secondary" size="sm">Show everyone's</x-button>
             </x-empty-state>
         @else
             <div class="exam-days stagger">

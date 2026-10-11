@@ -16,23 +16,25 @@ use App\Models\User;
 use App\Support\Audit;
 use App\Support\Classes\Arms;
 use App\Support\Classes\SchoolClass;
-use App\Support\Settings;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Starting a new academic session, in one step:
+ * Starting a new academic session for one programme (full-time, part-time
+ * and CODFEL keep separate calendars), in one step:
  *
- * - every current student moves up a level, by their programme's length
- *   (config/classes.php); final years graduate (they keep the library,
- *   but can't vote or upload), and graduating course reps and governors
- *   become students;
- * - the nominal roll starts empty, for each class to be uploaded again;
- * - class and exam timetables are archived and the exam timetable is
+ * - every current student in the programme moves up a level, by its
+ *   length (config/classes.php); final years graduate (they keep the
+ *   library, but can't vote or upload), and graduating course reps and
+ *   governors become students;
+ * - the programme's nominal roll starts empty, for each class to be
+ *   uploaded again;
+ * - its class and exam timetables are archived and its exam timetable
  *   hidden;
- * - the academic session setting moves on.
+ * - its academic session moves on.
  *
- * What changed is kept, so it can be undone until a new roll is uploaded.
+ * What changed is kept, so it can be undone until a new roll is uploaded
+ * for the programme. Other programmes are untouched.
  * Updates are a few set-based queries per class, not one per student, so a
  * whole school fits in one request on shared hosting.
  */
@@ -62,7 +64,7 @@ class NewSession
     }
 
     /**
-     * What starting a new session would do, class by class.
+     * What starting a programme's new session would do, class by class.
      *
      * @return array{
      *     classes: list<array{from: string, to: string|null, count: int}>,
@@ -73,10 +75,10 @@ class NewSession
      *     exams: int,
      * }
      */
-    public static function preview(): array
+    public static function preview(Programme $programme): array
     {
         $order = array_flip(array_map(fn (SchoolClass $class) => $class->key(), SchoolClass::all()));
-        $rows = User::query()->toBase()->whereNull('graduated_at')
+        $rows = User::query()->toBase()->whereNull('graduated_at')->where('programme', $programme->value)
             ->selectRaw('programme, level, arm, count(*) as total')
             ->groupBy('programme', 'level', 'arm')
             ->get();
@@ -106,38 +108,41 @@ class NewSession
             'classes' => array_map(fn (array $class) => ['from' => $class['from'], 'to' => $class['to'], 'count' => $class['count']], $classes),
             'promoted' => array_sum(array_map(fn (array $class) => $class['to'] !== null ? $class['count'] : 0, $classes)),
             'graduated' => array_sum(array_map(fn (array $class) => $class['to'] === null ? $class['count'] : 0, $classes)),
-            'roll' => RollEntry::query()->count(),
-            'lectures' => TimetableSlot::query()->whereNull('archived_at')->count(),
-            'exams' => Exam::query()->whereNull('archived_at')->count(),
+            'roll' => RollEntry::query()->where('programme', $programme)->count(),
+            'lectures' => TimetableSlot::query()->whereNull('archived_at')->where('programme', $programme)->count(),
+            'exams' => Exam::query()->whereNull('archived_at')->where('programme', $programme)->count(),
         ];
     }
 
     /**
-     * Why a new session can't start now, or null.
+     * Why the programme's new session can't start now, or null: voting is
+     * open in an election its students can vote in.
      */
-    public static function blocker(): ?string
+    public static function blocker(Programme $programme): ?string
     {
-        $open = Election::query()->where('status', ElectionStatus::Open)->first(['id', 'title']);
+        $open = Election::query()->where('status', ElectionStatus::Open)->get(['id', 'title', 'programmes'])
+            ->first(fn (Election $election) => ($election->programmes ?? []) === [] || in_array($programme->value, $election->programmes ?? [], true));
 
         return $open !== null ? "Voting is open in {$open->title}. Close it before starting a new session." : null;
     }
 
-    public static function start(User $by, string $toSession): SessionChange
+    public static function start(User $by, Programme $programme, string $toSession): SessionChange
     {
-        if (($blocker = self::blocker()) !== null) {
+        if (($blocker = self::blocker($programme)) !== null) {
             throw new RuntimeException($blocker);
         }
 
-        return DB::transaction(function () use ($by, $toSession) {
+        return DB::transaction(function () use ($by, $programme, $toSession) {
             $at = now()->startOfSecond();
-            $preview = self::preview();
+            $preview = self::preview($programme);
 
             $change = new SessionChange([
-                'from_session' => Settings::get('academic_session'),
+                'programme' => $programme,
+                'from_session' => ProgrammeSessions::session($programme),
                 'to_session' => $toSession,
                 'started_at' => $at,
-                'exams_were_published' => ExamController::published(),
-                'roll' => json_encode(RollEntry::query()->toBase()
+                'exams_were_published' => ExamController::published($programme),
+                'roll' => json_encode(RollEntry::query()->toBase()->where('programme', $programme->value)
                     ->get(['matric_number', 'fullname', 'email', 'level', 'programme', 'arm', 'created_at', 'updated_at'])
                     ->map(fn ($row) => (array) $row)
                     ->all()),
@@ -156,23 +161,21 @@ class NewSession
             // them (moving ND1 to ND2 before ND2 is written down would carry
             // them on to HND).
             $moves = [];
-            foreach (Programme::cases() as $programme) {
-                foreach (Level::cases() as $level) {
-                    $next = self::nextLevel($programme, $level);
-                    $moves[] = [$programme, $level, $next];
+            foreach (Level::cases() as $level) {
+                $next = self::nextLevel($programme, $level);
+                $moves[] = [$level, $next];
 
-                    DB::table('session_change_users')->insertUsing(
-                        ['session_change_id', 'user_id', 'programme', 'from_level', 'to_level', 'from_role'],
-                        DB::table('users')
-                            ->selectRaw('?, id, programme, level, ?, role', [$change->id, $next?->value])
-                            ->whereNull('graduated_at')
-                            ->where('programme', $programme->value)
-                            ->where('level', $level->value),
-                    );
-                }
+                DB::table('session_change_users')->insertUsing(
+                    ['session_change_id', 'user_id', 'programme', 'from_level', 'to_level', 'from_role'],
+                    DB::table('users')
+                        ->selectRaw('?, id, programme, level, ?, role', [$change->id, $next?->value])
+                        ->whereNull('graduated_at')
+                        ->where('programme', $programme->value)
+                        ->where('level', $level->value),
+                );
             }
 
-            foreach ($moves as [$programme, $level, $next]) {
+            foreach ($moves as [$level, $next]) {
                 $moving = DB::table('session_change_users')->select('user_id')
                     ->where('session_change_id', $change->id)
                     ->where('programme', $programme->value)
@@ -187,35 +190,38 @@ class NewSession
                 ->whereIn('role', [Role::CourseRep->value, Role::Governor->value])
                 ->update(['role' => Role::Student->value]);
 
-            RollEntry::query()->delete();
-            TimetableSlot::query()->whereNull('archived_at')->update(['archived_at' => $at]);
-            Exam::query()->whereNull('archived_at')->update(['archived_at' => $at]);
-            Settings::put(['academic_session' => $toSession, 'exams_published' => 0]);
+            RollEntry::query()->where('programme', $programme)->delete();
+            TimetableSlot::query()->whereNull('archived_at')->where('programme', $programme)->update(['archived_at' => $at]);
+            Exam::query()->whereNull('archived_at')->where('programme', $programme)->update(['archived_at' => $at]);
+            ProgrammeSessions::setSession($programme, $toSession);
+            ProgrammeSessions::setExamsPublished($programme, false);
 
-            Audit::record('session_started', $change, ['from' => $change->from_session, 'to' => $toSession, ...$change->summary ?? []]);
+            Audit::record('session_started', $change, ['programme' => $programme->label(), 'from' => $change->from_session, 'to' => $toSession, ...$change->summary ?? []]);
 
             return $change;
         });
     }
 
     /**
-     * The latest new session, while it can still be undone: nobody has
-     * uploaded a roll for it yet.
+     * The programme's latest new session, while it can still be undone:
+     * nobody has uploaded a roll for the programme since.
      */
-    public static function undoable(): ?SessionChange
+    public static function undoable(Programme $programme): ?SessionChange
     {
-        $latest = SessionChange::query()->latest('id')->first();
+        $latest = SessionChange::query()->where('programme', $programme)->latest('id')->first();
 
-        return $latest !== null && $latest->undone_at === null && ! RollEntry::query()->exists() ? $latest : null;
+        return $latest !== null && $latest->undone_at === null && ! RollEntry::query()->where('programme', $programme)->exists() ? $latest : null;
     }
 
     public static function undo(SessionChange $change, User $by): void
     {
-        if (self::undoable()?->id !== $change->id) {
+        $programme = $change->programme;
+
+        if ($programme === null || self::undoable($programme)?->id !== $change->id) {
             throw new RuntimeException('This new session can no longer be undone: a roll has been uploaded since, or it isn\'t the latest.');
         }
 
-        DB::transaction(function () use ($change) {
+        DB::transaction(function () use ($change, $programme) {
             $at = $change->started_at;
             $groups = DB::table('session_change_users')->where('session_change_id', $change->id)
                 ->select('from_level', 'to_level', 'from_role')->distinct()->get();
@@ -238,19 +244,21 @@ class NewSession
 
             /** @var list<array<string, mixed>> $roll */
             $roll = json_decode((string) $change->roll, true) ?: [];
+            // (A student added to another programme's roll since keeps that.)
             foreach (array_chunk($roll, 500) as $chunk) {
-                DB::table('nominal_roll')->insert($chunk);
+                DB::table('nominal_roll')->insertOrIgnore($chunk);
             }
 
-            TimetableSlot::query()->where('archived_at', $at)->update(['archived_at' => null]);
-            Exam::query()->where('archived_at', $at)->update(['archived_at' => null]);
-            Settings::put(['academic_session' => $change->from_session, 'exams_published' => $change->exams_were_published ? 1 : 0]);
+            TimetableSlot::query()->where('programme', $programme)->where('archived_at', $at)->update(['archived_at' => null]);
+            Exam::query()->where('programme', $programme)->where('archived_at', $at)->update(['archived_at' => null]);
+            ProgrammeSessions::setSession($programme, $change->from_session);
+            ProgrammeSessions::setExamsPublished($programme, $change->exams_were_published);
 
             $change->undone_at = now();
             $change->save();
         });
 
-        Audit::record('session_undone', $change, ['from' => $change->to_session, 'back_to' => $change->from_session], $by->id);
+        Audit::record('session_undone', $change, ['programme' => $programme->label(), 'from' => $change->to_session, 'back_to' => $change->from_session], $by->id);
     }
 
     private static function label(Programme $programme, Level $level, ?string $arm): string

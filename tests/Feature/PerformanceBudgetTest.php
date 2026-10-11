@@ -151,7 +151,7 @@ class PerformanceBudgetTest extends TestCase
             $slot = new TimetableSlot(['day' => $i % 5 + 1, 'starts_at' => sprintf('%02d:00', 8 + $i % 8), 'ends_at' => sprintf('%02d:00', 9 + $i % 8), 'course_code' => 'CSC '.(100 + $i), 'venue' => 'Lab 1']);
             $slot->assignClass($class);
             $slot->save();
-            Exam::create(['date' => now()->addDays($i + 1)->toDateString(), 'starts_at' => '09:00', 'course_code' => 'MTH '.(100 + $i), 'levels' => $i % 2 ? ['ND1'] : null]);
+            Exam::create(['programme' => $this->student->programme, 'date' => now()->addDays($i + 1)->toDateString(), 'starts_at' => '09:00', 'course_code' => 'MTH '.(100 + $i), 'levels' => $i % 2 ? ['ND1'] : null]);
         }
         User::factory()->count($n)->for($this->department)->create();
 

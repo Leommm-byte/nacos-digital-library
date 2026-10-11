@@ -9,10 +9,11 @@ use DateTimeImmutable;
 use Illuminate\Support\Carbon;
 
 /**
- * Reads the exam timetable from spreadsheet rows: a heading row, then one
- * paper per row with its date, start and end (or one time cell), course
- * code, title, venue and who sits it ("ND1", "HND2 SWD", "Part-time ND2",
- * or empty for everyone). A row without a date takes the date above.
+ * Reads a programme's exam timetable from spreadsheet rows: a heading row,
+ * then one paper per row with its date, start and end (or one time cell),
+ * course code, title, venue and who sits it ("ND1", "HND2 SWD", or empty
+ * for everyone in the programme). A row without a date takes the date
+ * above; a row for another programme is skipped.
  */
 class ExamImport
 {
@@ -31,12 +32,12 @@ class ExamImport
     /**
      * @param  list<list<string>>  $lines
      * @return array{
-     *     exams: list<array{date: string, starts_at: string, ends_at: string|null, course_code: string, course_title: string|null, venue: string|null, levels: list<string>|null, programmes: list<string>|null, arms: list<string>|null, note: string|null}>,
+     *     exams: list<array{date: string, starts_at: string, ends_at: string|null, course_code: string, course_title: string|null, venue: string|null, levels: list<string>|null, arms: list<string>|null, note: string|null}>,
      *     skipped: list<array{line: int, text: string, reason: string}>,
      *     headings: bool,
      * }
      */
-    public static function parse(array $lines): array
+    public static function parse(array $lines, Programme $programme): array
     {
         $columns = null;
         $start = 0;
@@ -98,6 +99,14 @@ class ExamImport
                 continue;
             }
 
+            // The file is one programme's timetable; a row for another
+            // programme belongs in that one's.
+            if ($audience['programmes'] !== null && ! in_array($programme->value, $audience['programmes'], true)) {
+                $skipped[] = ['line' => $index + 1, 'text' => $text, 'reason' => 'For another programme, not '.$programme->label()];
+
+                continue;
+            }
+
             $exams[] = [
                 'date' => $date->toDateString(),
                 'starts_at' => $from,
@@ -105,7 +114,8 @@ class ExamImport
                 'course_code' => $code,
                 'course_title' => Columns::value($cells, $columns, 'title'),
                 'venue' => Columns::value($cells, $columns, 'venue', 100),
-                ...$audience,
+                'levels' => $audience['levels'],
+                'arms' => $audience['arms'],
                 'note' => Columns::value($cells, $columns, 'note', 200),
             ];
         }
