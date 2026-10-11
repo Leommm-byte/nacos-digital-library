@@ -137,7 +137,7 @@ class ManageElectionController extends Controller
     }
 
     /**
-     * @return array{title: string, description: string|null, levels: list<string>|null, programmes: list<string>|null, arms: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool}
+     * @return array{title: string, description: string|null, levels: list<string>|null, programmes: list<string>|null, arms: list<string>|null, entry_year_from: int|null, entry_year_to: int|null, roll_only: bool, allow_late_accounts: bool}
      */
     private function validated(Request $request): array
     {
@@ -181,6 +181,7 @@ class ManageElectionController extends Controller
             'entry_year_from' => isset($data['entry_year_from']) ? (int) $data['entry_year_from'] : null,
             'entry_year_to' => isset($data['entry_year_to']) ? (int) $data['entry_year_to'] : null,
             'roll_only' => $request->boolean('roll_only'),
+            'allow_late_accounts' => $request->boolean('allow_late_accounts'),
         ];
     }
 

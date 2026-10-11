@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\DB;
  * @property int|null $entry_year_from
  * @property int|null $entry_year_to
  * @property bool $roll_only
+ * @property bool $allow_late_accounts
  * @property ElectionStatus $status
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
@@ -53,7 +54,7 @@ class Election extends Model
     /** Voting windows an admin can launch an election for, in hours. */
     public const DURATIONS = [1, 2, 6, 12, 24, 48, 72];
 
-    protected $fillable = ['title', 'description', 'levels', 'programmes', 'arms', 'entry_year_from', 'entry_year_to', 'roll_only'];
+    protected $fillable = ['title', 'description', 'levels', 'programmes', 'arms', 'entry_year_from', 'entry_year_to', 'roll_only', 'allow_late_accounts'];
 
     /**
      * @var array<string, mixed>
@@ -67,6 +68,7 @@ class Election extends Model
         'entry_year_from' => null,
         'entry_year_to' => null,
         'roll_only' => true,
+        'allow_late_accounts' => false,
         'starts_at' => null,
         'ends_at' => null,
         'closed_at' => null,
@@ -82,6 +84,7 @@ class Election extends Model
             'entry_year_from' => 'integer',
             'entry_year_to' => 'integer',
             'roll_only' => 'boolean',
+            'allow_late_accounts' => 'boolean',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'closed_at' => 'datetime',
@@ -190,6 +193,10 @@ class Election extends Model
             return 'You\'ve graduated, so you can\'t vote in student elections.';
         }
 
+        if ($this->excludesLateAccounts() && $user->created_at->gt($this->starts_at)) {
+            return 'Your account was created after voting opened, so it can\'t vote in this election. Only accounts that existed when voting opened can vote.';
+        }
+
         $level = $user->level;
         $programme = $user->programme;
         $arm = $user->arm;
@@ -237,6 +244,18 @@ class Election extends Model
         return null;
     }
 
+    /**
+     * Whether accounts created after voting opened are left out (the
+     * default): otherwise someone could sign up with an unregistered
+     * classmate's matric number from the roll and vote as them.
+     *
+     * @phpstan-assert-if-true !null $this->starts_at
+     */
+    public function excludesLateAccounts(): bool
+    {
+        return ! $this->allow_late_accounts && $this->starts_at !== null;
+    }
+
     public function isEligible(User $user): bool
     {
         return $this->ineligibilityReason($user) === null;
@@ -250,6 +269,10 @@ class Election extends Model
     public function electorate(): Builder
     {
         $query = User::query()->where('users.status', UserStatus::Active)->whereNull('users.graduated_at');
+
+        if ($this->excludesLateAccounts()) {
+            $query->where('users.created_at', '<=', $this->starts_at);
+        }
         $level = 'users.level';
         $programme = 'users.programme';
         $arm = 'users.arm';

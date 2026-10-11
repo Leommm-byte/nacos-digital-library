@@ -89,8 +89,11 @@ function watch(url, roots) {
 
         busy = true;
         try {
-            const response = await fetch(url, { cache: 'no-cache', credentials: 'omit' });
-            if (!response.ok) {
+            // With the site's cookies: a tunnel in front of the site (ngrok
+            // in development) answers requests without its cookie with a
+            // warning page instead of the file.
+            const response = await fetch(url, { cache: 'no-cache', credentials: 'same-origin' });
+            if (!response.ok || !(response.headers.get('Content-Type') ?? '').includes('json')) {
                 throw new Error(String(response.status));
             }
 

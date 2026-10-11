@@ -283,6 +283,8 @@ class NominalRollTest extends TestCase
         $this->post(route('elections.manage.store'), ['title' => 'Class rep', 'roll_only' => '1', 'programmes' => ['part_time'], 'levels' => ['ND1']]);
         $election = Election::where('title', 'Class rep')->firstOrFail();
         $this->assertTrue($election->roll_only);
+        // Late accounts are left out unless the admin allows them.
+        $this->assertFalse($election->allow_late_accounts);
         $this->assertSame(['part_time'], $election->programmes);
         $this->assertSame('Part-time ND1 students, on the nominal roll', $election->eligibilitySummary());
     }

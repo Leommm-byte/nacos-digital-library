@@ -117,6 +117,36 @@ class VotingTest extends TestCase
     }
 
     #[Test]
+    public function accounts_created_after_voting_opened_cannot_vote_unless_the_election_allows_them(): void
+    {
+        $election = Election::factory()->open()->withBallot(['President' => 2])->create(['allow_late_accounts' => false]);
+        $position = $election->positions()->firstOrFail();
+        $candidate = $position->candidates()->firstOrFail();
+        $early = User::factory()->create(['created_at' => $election->starts_at->copy()->subDay()]);
+        $late = User::factory()->create(['created_at' => $election->starts_at->copy()->addMinute()]);
+
+        $this->assertNull($election->ineligibilityReason($early));
+        $this->assertStringContainsString('created after voting opened', (string) $election->ineligibilityReason($late));
+        $this->assertSame(1, $election->electorate()->count());
+
+        $this->actingAs($late)->get(route('elections.show', $election))->assertOk()
+            ->assertSee('created after voting opened')->assertDontSee('Cast my vote');
+        $this->post(route('elections.vote', $election), ['choices' => [$position->id => $candidate->id]]);
+        $this->assertFalse($election->hasVoted($late));
+
+        $this->actingAs($early)->post(route('elections.vote', $election), ['choices' => [$position->id => $candidate->id]]);
+        $this->assertTrue($election->hasVoted($early));
+
+        // Allowed for this election: late accounts count and can vote.
+        $election->update(['allow_late_accounts' => true]);
+        $this->assertNull($election->ineligibilityReason($late));
+        // With setUp's student, also created after voting opened.
+        $this->assertSame(3, $election->electorate()->count());
+        $this->actingAs($late)->post(route('elections.vote', $election), ['choices' => [$position->id => $candidate->id]]);
+        $this->assertTrue($election->hasVoted($late));
+    }
+
+    #[Test]
     public function a_position_can_be_skipped_but_not_the_whole_ballot(): void
     {
         $election = $this->election();

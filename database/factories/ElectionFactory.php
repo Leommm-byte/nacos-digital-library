@@ -20,8 +20,10 @@ class ElectionFactory extends Factory
             'levels' => null,
             'entry_year_from' => null,
             'entry_year_to' => null,
-            // Tests opt in to the nominal roll where they need it.
+            // Tests opt in to the nominal roll, and to leaving out accounts
+            // created after voting opened, where they need them.
             'roll_only' => false,
+            'allow_late_accounts' => true,
         ];
     }
 
