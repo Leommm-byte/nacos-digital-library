@@ -40,7 +40,7 @@
         </x-card>
     @endif
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-8">
             <x-section :title="'What starting '.$programme->label().' '.$next.' does'" :description="'Current session: '.($current ?? 'not set').'. Moves follow the programme\'s length ('.collect(config('classes.years.'.$programme->value))->map(fn ($years, $stage) => $stage.' '.$years.' years')->implode(', ').'). Other programmes are untouched.'" icon="graduation-cap" tone="green">
                 <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">

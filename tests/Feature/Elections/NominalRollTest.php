@@ -118,6 +118,15 @@ class NominalRollTest extends TestCase
     }
 
     #[Test]
+    public function class_tiles_name_each_course_in_full(): void
+    {
+        $this->actingAs($this->admin)->get(route('roll.index'))->assertOk()
+            ->assertSeeInOrder(['HND1 SWD', 'Software and Web Development', 'HND1 NCC', 'Networking and Cloud Computing'])
+            ->assertSee('aria-label="Upload HND1 SWD Full-time"', false)
+            ->assertSee('data-file-input', false);
+    }
+
+    #[Test]
     public function an_excel_class_list_is_uploaded_for_its_class(): void
     {
         $file = $this->xlsx([

@@ -130,6 +130,11 @@ const pages = [
     ['upload-pdf-chosen', '/upload', 'F/ND/24/0000004', async (page) => {
         await page.setInputFiles('#pdf', { name: 'past-questions.pdf', mimeType: 'application/pdf', buffer: samplePdf() });
     }],
+    // Long file names are shortened to fit, each with a remove button.
+    ['upload-long-names', '/upload', 'F/ND/24/0000004', async (page) => {
+        await page.setInputFiles('#pdf', { name: 'Introduction_to_Computer_Science_Past_Questions_and_Answers_2019_2020_Second_Semester_FINAL.pdf', mimeType: 'application/pdf', buffer: samplePdf() });
+        await page.setInputFiles('#cover', samplePhoto('WhatsApp_Image_2026-10-10_at_14.33.21_front_cover_of_the_book.png'));
+    }],
     ['upload-pdf-done', '/upload', 'F/ND/24/0000004', async (page) => {
         await page.setInputFiles('#pdf', { name: 'past-questions.pdf', mimeType: 'application/pdf', buffer: samplePdf() });
         await fillDetails(page, 'Operating Systems Past Questions');

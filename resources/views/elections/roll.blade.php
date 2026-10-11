@@ -38,7 +38,7 @@
         </x-alert>
     @endif
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-8">
             <ul class="grid grid-cols-3 gap-3">
                 <li class="stat-tile"><strong>{{ number_format($total) }}</strong><small>On the roll</small></li>
@@ -56,8 +56,8 @@
                                 @foreach ($programmeClasses as $c)
                                     @php($class = $classes[$c->key()] ?? null)
                                     <li @class(['roll-class', 'is-empty' => ! $class])>
-                                        <div class="min-w-0 flex-1">
-                                            <p class="font-semibold">{{ $c->shortLabel() }}</p>
+                                        <div class="min-w-0">
+                                            <p class="font-semibold">{{ $c->shortLabel() }}@if ($c->arm) <span class="font-normal text-muted">· {{ \App\Support\Classes\Arms::name($c->arm) }}</span>@endif</p>
                                             <p class="text-xs text-muted">
                                                 @if ($class)
                                                     {{ number_format($class['total']) }} {{ \Illuminate\Support\Str::plural('student', $class['total']) }} · {{ \Illuminate\Support\Carbon::parse($class['updated'])->timezone($zone)->format('j M') }}
@@ -66,8 +66,10 @@
                                                 @endif
                                             </p>
                                         </div>
-                                        <a href="{{ route('roll.template', ['class' => $c->key()]) }}" class="icon-btn" aria-label="Template for {{ $c->label() }}" title="Template"><x-icon name="file-text" /></a>
-                                        <a href="{{ route('roll.index', ['class' => $c->key()]) }}#import" class="icon-btn" aria-label="Upload {{ $c->label() }}" title="Upload"><x-icon name="upload" /></a>
+                                        <div class="roll-class-actions">
+                                            <a href="{{ route('roll.template', ['class' => $c->key()]) }}" class="btn btn-ghost btn-sm" aria-label="Template for {{ $c->label() }}"><x-icon name="file-text" /> Template</a>
+                                            <a href="{{ route('roll.index', ['class' => $c->key()]) }}#import" class="btn btn-ghost btn-sm" aria-label="Upload {{ $c->label() }}"><x-icon name="upload" /> Upload</a>
+                                        </div>
                                     </li>
                                 @endforeach
                             </ul>
@@ -129,13 +131,8 @@
                     <fieldset class="space-y-4" @disabled($lockedBy)>
                     <x-select name="class" label="Class" :options="$classOptions" :value="$selected?->key()" />
 
-                    <div>
-                        <label for="roll" class="field-label">Class list</label>
-                        <input id="roll" name="roll" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required class="field-input field-file"
-                            @error('roll') aria-invalid="true" aria-describedby="roll-error" @enderror>
-                        @error('roll')
-                            <p id="roll-error" class="field-error">{{ $message }}</p>
-                        @enderror
+                    <x-file-input name="roll" label="Class list" icon="sheet" button="Choose the list" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required
+                        hint="Excel (.xlsx) or CSV, up to 5 MB.">
                         @if ($mismatches !== [])
                             <ul class="mt-2 space-y-0.5 text-xs text-muted">
                                 @foreach ($mismatches as $matric)
@@ -147,8 +144,7 @@
                                 <span>Import anyway: I've checked, this is the right list for the class.</span>
                             </label>
                         @endif
-                        <p class="mt-1.5 text-sm text-muted">Excel (.xlsx) or CSV, up to 5 MB.</p>
-                    </div>
+                    </x-file-input>
 
                     <fieldset class="space-y-2">
                         <legend class="field-label">This file is</legend>

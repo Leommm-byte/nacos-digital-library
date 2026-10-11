@@ -195,13 +195,15 @@ function initLiveResults() {
 
 /**
  * Candidate form: shows the chosen photo straight away, cropped like the
- * saved one, and greys the current one out when "Remove photo" is ticked.
+ * saved one, with a button to take the choice back, and greys the current
+ * one out when "Remove photo" is ticked.
  */
 function initPhotoPickers() {
     for (const picker of document.querySelectorAll('[data-photo-picker]')) {
         const input = picker.querySelector('[data-photo-input]');
         const preview = picker.querySelector('[data-photo-preview]');
         const remove = picker.querySelector('[data-photo-remove]');
+        const clear = picker.querySelector('[data-photo-clear]');
         const original = preview.innerHTML;
         let url = null;
 
@@ -211,6 +213,9 @@ function initPhotoPickers() {
                 url = null;
             }
             const file = input.files[0];
+            if (clear) {
+                clear.hidden = !file;
+            }
             if (!file) {
                 preview.innerHTML = original;
                 return;
@@ -227,6 +232,12 @@ function initPhotoPickers() {
                 remove.checked = false;
                 preview.classList.remove('is-removed');
             }
+        });
+
+        clear?.addEventListener('click', () => {
+            input.value = '';
+            input.dispatchEvent(new Event('change'));
+            input.focus();
         });
 
         remove?.addEventListener('change', () => {

@@ -34,7 +34,7 @@
         <x-alert type="info" class="mb-6">This is your own account. Another admin has to change its role, status or password.</x-alert>
     @endif
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div class="min-w-0 space-y-6">
             <x-card>
                 <dl class="profile-summary mt-0 sm:grid-cols-2">

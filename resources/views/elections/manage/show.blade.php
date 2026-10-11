@@ -26,7 +26,7 @@
         <x-alert type="error" class="mb-6">{{ $message }}</x-alert>
     @enderror
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-6">
             @if ($draft)
                 <x-section title="Ballot" description="Positions appear on the ballot in this order. Voters choose one candidate per position." icon="list-checks" tone="green">

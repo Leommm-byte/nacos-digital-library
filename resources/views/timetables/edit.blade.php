@@ -35,7 +35,7 @@
         </x-alert>
     @endif
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-6">
             @if ($count === 0)
                 <x-empty-state icon="calendar-days" tone="green" title="No lectures yet"
@@ -136,13 +136,8 @@
                     data-confirm="Replace the whole timetable for {{ $class->label() }} with this file?">
                     @csrf
                     <input type="hidden" name="class" value="{{ $class->key() }}">
-                    <div>
-                        <label for="timetable-file" class="field-label">Timetable file</label>
-                        <input id="timetable-file" name="timetable" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required class="field-input field-file"
-                            @error('timetable', 'import') aria-invalid="true" aria-describedby="timetable-error" @enderror>
-                        @error('timetable', 'import')
-                            <p id="timetable-error" class="field-error">{{ $message }}</p>
-                        @enderror
+                    <x-file-input name="timetable" id="timetable-file" label="Timetable file" bag="import" icon="sheet" button="Choose the file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required
+                        hint="Excel (.xlsx) or CSV. It replaces this class's whole timetable.">
                         @if (session('skipped'))
                             <ul class="mt-2 space-y-0.5 text-xs text-muted">
                                 @foreach (session('skipped') as $row)
@@ -150,8 +145,7 @@
                                 @endforeach
                             </ul>
                         @endif
-                        <p class="mt-1.5 text-sm text-muted">Excel (.xlsx) or CSV. It replaces this class's whole timetable.</p>
-                    </div>
+                    </x-file-input>
                     <x-button variant="secondary" icon="upload" class="w-full">Upload</x-button>
                 </form>
                 <p class="border-t border-border pt-4 text-sm text-muted">

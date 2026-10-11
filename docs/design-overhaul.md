@@ -48,7 +48,9 @@ and the plan that fixes it. Every later PR is held to the "Standard" section.
 ## Standard for every PR from now on
 
 - Built from the shared components (`x-page-header`, `x-section`,
-  `x-empty-state`, `x-card`, `x-button`, `x-field`…); no one-off spacing.
+  `x-empty-state`, `x-card`, `x-button`, `x-field`, `x-file-input`…); no
+  one-off spacing. File fields use `x-file-input`, never a bare
+  `<input type="file">`, so long names fit on phones.
 - Checked in the real running app at 390px and 1280px, light and dark,
   with screenshots attached to the PR.
 - Every screen has designed empty, loading and error states.

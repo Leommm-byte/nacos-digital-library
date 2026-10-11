@@ -21,6 +21,7 @@
                         @if ($fieldErrors->has('photo')) aria-invalid="true" aria-describedby="{{ $prefix }}-photo-error" @endif data-photo-input>
                     <x-icon name="camera" /> {{ $photo ? 'Change photo' : 'Choose photo' }}
                 </label>
+                <button type="button" class="btn btn-ghost btn-sm" data-photo-clear hidden><x-icon name="x" /> Don't use this photo</button>
                 @if ($photo)
                     <label class="inline-flex items-center gap-2 text-sm">
                         <input type="checkbox" name="remove_photo" value="1" class="size-4 accent-[var(--primary)]" data-photo-remove> Remove photo

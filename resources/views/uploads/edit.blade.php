@@ -57,22 +57,8 @@
                     @endif
                 </p>
             </div>
-            <div>
-                <label for="pdf" class="field-label">New PDF</label>
-                <input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf" class="field-input field-file"
-                    @error('pdf') aria-invalid="true" aria-describedby="pdf-error" @enderror>
-                @error('pdf')
-                    <p id="pdf-error" class="field-error">{{ $message }}</p>
-                @enderror
-            </div>
-            <div>
-                <label for="cover" class="field-label">New cover</label>
-                <input id="cover" name="cover" type="file" accept="image/jpeg,image/png,image/webp" class="field-input field-file"
-                    @error('cover') aria-invalid="true" aria-describedby="cover-error" @enderror>
-                @error('cover')
-                    <p id="cover-error" class="field-error">{{ $message }}</p>
-                @enderror
-            </div>
+            <x-file-input name="pdf" label="New PDF" icon="file-text" button="Choose a PDF" accept="application/pdf,.pdf" />
+            <x-file-input name="cover" label="New cover" icon="camera" button="Choose a cover" accept="image/jpeg,image/png,image/webp" />
         </x-card>
 
         <div class="flex flex-wrap items-center gap-3">

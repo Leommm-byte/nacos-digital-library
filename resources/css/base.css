@@ -6,6 +6,12 @@
         scroll-padding-top: calc(var(--header-h) + 1rem);
     }
 
+    /* Fieldsets otherwise grow to fit their widest content, so one long
+       file name could push a whole form wider than a phone. */
+    fieldset {
+        min-width: 0;
+    }
+
     body {
         min-height: 100dvh;
         background: var(--bg);
