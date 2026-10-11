@@ -51,6 +51,8 @@ class AuditActions
         'exams_imported' => 'Uploaded the exam timetable',
         'exams_published' => 'Showed the exam timetable to students',
         'exams_hidden' => 'Hid the exam timetable from students',
+        'session_started' => 'Started a new session',
+        'session_undone' => 'Undid a new session',
         'user_role_changed' => 'Changed a role',
         'user_suspended' => 'Suspended an account',
         'user_reactivated' => 'Reactivated an account',
@@ -82,7 +84,7 @@ class AuditActions
             str_starts_with($action, 'election_'), str_starts_with($action, 'roll_') => 'violet',
             str_starts_with($action, 'user_'), str_starts_with($action, 'settings_'), str_starts_with($action, 'department_'),
             str_starts_with($action, 'accounts_'), str_starts_with($action, 'audit_'), str_starts_with($action, 'announcement_'),
-            str_starts_with($action, 'timetable_'), str_starts_with($action, 'exam') => 'yellow',
+            str_starts_with($action, 'timetable_'), str_starts_with($action, 'exam'), str_starts_with($action, 'session_') => 'yellow',
             default => 'green',
         };
     }

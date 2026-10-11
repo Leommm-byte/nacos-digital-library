@@ -32,6 +32,7 @@ class ProfileController extends Controller
             'levels' => collect(Level::cases())->mapWithKeys(fn (Level $level) => [$level->value => $level->label()])->all(),
             'programmes' => collect(Programme::cases())->mapWithKeys(fn (Programme $programme) => [$programme->value => $programme->label()])->all(),
             'classLocked' => $user->hasRole(Role::CourseRep),
+            'graduated' => $user->isGraduated(),
             'previousLoginAt' => is_array($previous) && isset($previous['at']) ? Carbon::parse($previous['at']) : null,
             'previousLoginIp' => is_array($previous) ? ($previous['ip'] ?? null) : null,
         ]);

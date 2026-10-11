@@ -117,6 +117,8 @@ const pages = [
     ['admin-reports', '/admin/reports', 'F/HD/24/3211001'],
     ['admin-audit', '/admin/audit', 'F/HD/24/3211001'],
     ['admin-settings', '/admin/settings', 'F/HD/24/3211001'],
+    ['admin-session', '/admin/session', 'F/HD/24/3211001'],
+    ['admin-graduates', '/admin/users?status=graduated', 'F/HD/24/3211001'],
     ['admin-timetables', '/timetable/edit?class=full_time%7CND1%7C', 'F/HD/24/3211001'],
     ['exams-manage', '/exams/manage', 'F/HD/24/3211001'],
     ['election-setup', 'LINK /elections/manage .upload-row:has-text("Draft")', 'F/HD/24/3211001'],

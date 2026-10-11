@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property Level $level
  * @property Programme $programme
  * @property string|null $arm
+ * @property Carbon|null $graduated_at
  * @property Role $role
  * @property UserStatus $status
  * @property bool $must_change_password
@@ -92,6 +93,7 @@ class User extends Authenticatable implements MustVerifyEmail
         // strict mode would otherwise throw.
         'display_name' => null,
         'arm' => null,
+        'graduated_at' => null,
         'email_verified_at' => null,
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
@@ -114,6 +116,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_last_step' => 'integer',
             'last_login_at' => 'datetime',
+            'graduated_at' => 'datetime',
         ];
     }
 
@@ -133,18 +136,27 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * The student's class: programme, level and arm. Null when the school
-     * doesn't run that combination (an old account, say).
+     * The student's class: programme, level and arm. Null for graduates,
+     * and when the school doesn't run that combination (an old account).
      */
     public function schoolClass(): ?SchoolClass
     {
-        return SchoolClass::make($this->programme, $this->level, $this->arm);
+        return $this->isGraduated() ? null : SchoolClass::make($this->programme, $this->level, $this->arm);
+    }
+
+    /**
+     * Graduates keep their account to read the library, but can't vote or
+     * upload, and have no class (timetable, exams).
+     */
+    public function isGraduated(): bool
+    {
+        return $this->graduated_at !== null;
     }
 
     /** "HND1 SWD Full-time", or level and programme when not a class. */
     public function classLabel(): string
     {
-        return $this->schoolClass()?->label() ?? implode(' ', array_filter([$this->level->label(), Arms::short($this->arm), $this->programme->label()]));
+        return SchoolClass::make($this->programme, $this->level, $this->arm)?->label() ?? implode(' ', array_filter([$this->level->label(), Arms::short($this->arm), $this->programme->label()]));
     }
 
     public function firstName(): string

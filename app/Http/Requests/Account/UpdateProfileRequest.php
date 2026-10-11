@@ -43,7 +43,16 @@ class UpdateProfileRequest extends FormRequest
             function (Validator $validator): void {
                 $user = $this->user();
 
-                if (! $user instanceof User || ! $user->hasRole(Role::CourseRep)) {
+                if (! $user instanceof User) {
+                    return;
+                }
+
+                // A graduate's class is fixed.
+                if ($user->isGraduated() && ($this->input('level') !== $user->level->value || $this->input('programme') !== $user->programme->value)) {
+                    $validator->errors()->add('level', 'You\'ve graduated, so your class can\'t change. Ask an admin if it\'s wrong.');
+                }
+
+                if (! $user->hasRole(Role::CourseRep)) {
                     return;
                 }
 

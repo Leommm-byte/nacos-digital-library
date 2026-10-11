@@ -19,7 +19,12 @@
         </form>
     @endif
 
-    @if (! $class)
+    @if (! $class && auth()->user()?->isGraduated())
+        <x-empty-state icon="calendar-days" tone="green" title="You've graduated"
+            text="Congratulations! Class and exam timetables are for current students. The library is still yours to read." >
+            <x-button href="{{ route('library.index') }}" variant="secondary" size="sm" icon="library-big">Go to the library</x-button>
+        </x-empty-state>
+    @elseif (! $class)
         <x-empty-state icon="calendar-days" tone="yellow" title="We can't tell your class"
             text="Your level and programme don't match a class the school runs, so there's no timetable to show. Check them on your profile, or ask an admin." >
             <x-button href="{{ route('profile.edit') }}" variant="secondary" size="sm" icon="user">Your profile</x-button>

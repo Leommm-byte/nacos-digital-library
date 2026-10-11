@@ -35,7 +35,7 @@ class UserController extends Controller
         $search = trim($request->string('q')->toString());
         $filters = $request->validate([
             'role' => ['nullable', Rule::enum(Role::class)],
-            'status' => ['nullable', Rule::enum(UserStatus::class)],
+            'status' => ['nullable', Rule::in([...array_column(UserStatus::cases(), 'value'), 'graduated'])],
             'level' => ['nullable', Rule::enum(Level::class)],
             'programme' => ['nullable', Rule::enum(Programme::class)],
             'arm' => ['nullable', Rule::in(array_keys(Arms::all()))],
@@ -51,7 +51,9 @@ class UserController extends Controller
                 });
             })
             ->when($filters['role'] ?? null, fn (Builder $query, $role) => $query->where('role', $role))
-            ->when($filters['status'] ?? null, fn (Builder $query, $status) => $query->where('status', $status))
+            ->when($filters['status'] ?? null, fn (Builder $query, $status) => $status === 'graduated'
+                ? $query->whereNotNull('graduated_at')
+                : $query->where('status', $status))
             ->when($filters['level'] ?? null, fn (Builder $query, $level) => $query->where('level', $level))
             ->when($filters['programme'] ?? null, fn (Builder $query, $programme) => $query->where('programme', $programme))
             ->when($filters['arm'] ?? null, fn (Builder $query, $arm) => $query->where('arm', $arm))
@@ -123,12 +125,15 @@ class UserController extends Controller
             'department_id' => ['required', 'integer', Rule::exists('departments', 'id')],
         ]);
 
-        $from = $user->classLabel();
+        $from = $user->classLabel().($user->isGraduated() ? ' (graduated)' : '');
         $user->update([
             'level' => $data['level'],
             'programme' => $data['programme'],
             'department_id' => (int) $data['department_id'],
         ]);
+        // Saving a class makes a graduate a current student again (graduated
+        // by mistake, or back for HND on the same account).
+        $user->forceFill(['graduated_at' => null])->save();
 
         Audit::record('user_class_changed', $user, ['from' => $from, 'to' => $user->classLabel(), 'name' => $user->fullname]);
 
