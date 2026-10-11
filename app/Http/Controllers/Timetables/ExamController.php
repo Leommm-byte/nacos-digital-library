@@ -9,6 +9,7 @@ use App\Models\Exam;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\Classes\Arms;
+use App\Support\Settings;
 use App\Support\Spreadsheets\SpreadsheetRows;
 use App\Support\Timetables\ExamImport;
 use App\Support\Timetables\TimetableTemplate;
@@ -16,25 +17,39 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * The exam timetable: kept by admins, seen by everyone signed in. Students
- * see their own papers first (by level, programme and course), and can show
- * everyone's.
+ * The exam timetable: kept by admins, seen by everyone signed in once it's
+ * published (admins can prepare it unseen). Students see their own papers
+ * first (by level, programme and course), and can show everyone's.
  */
 class ExamController extends Controller
 {
     /** The exam timetable has room for a whole session's papers. */
     public const MAX = 500;
 
+    /**
+     * Whether students can see the exam timetable.
+     */
+    public static function published(): bool
+    {
+        return Settings::get('exams_published') === '1';
+    }
+
     public function index(Request $request): View
     {
         /** @var User $user */
         $user = $request->user();
+
+        if (! self::published() && ! Gate::allows('manage-exams')) {
+            return view('exams.index', ['hidden' => true]);
+        }
+
         $today = now()->timezone((string) config('app.display_timezone'))->startOfDay();
         $past = $request->boolean('past');
 
@@ -50,6 +65,8 @@ class ExamController extends Controller
         };
 
         return view('exams.index', [
+            'hidden' => false,
+            'published' => self::published(),
             'days' => ($show === 'all' ? $exams : $mine)->groupBy(fn (Exam $exam) => $exam->date->toDateString()),
             'show' => $show,
             'past' => $past,
@@ -65,6 +82,7 @@ class ExamController extends Controller
         $exams = Exam::current()->get();
 
         return view('exams.manage', [
+            'published' => self::published(),
             'days' => $exams->groupBy(fn (Exam $exam) => $exam->date->toDateString()),
             'count' => $exams->count(),
         ]);
@@ -104,6 +122,21 @@ class ExamController extends Controller
         Audit::record('exam_removed', $exam, ['course' => $exam->course_code, 'date' => $exam->date->toDateString()]);
 
         return redirect()->route('exams.manage')->with('status', "{$exam->course_code} removed from the exam timetable.");
+    }
+
+    /**
+     * Shows the exam timetable to students, or hides it again while it's
+     * being prepared.
+     */
+    public function publish(Request $request): RedirectResponse
+    {
+        $published = $request->boolean('published');
+        Settings::put(['exams_published' => $published ? 1 : 0]);
+        Audit::record($published ? 'exams_published' : 'exams_hidden');
+
+        return redirect()->route('exams.manage')->with('status', $published
+            ? 'The exam timetable is now visible to students.'
+            : 'The exam timetable is hidden from students.');
     }
 
     /**

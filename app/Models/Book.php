@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BookStatus;
 use App\Enums\Level;
+use App\Enums\Role;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -102,6 +103,20 @@ class Book extends Model
     protected function approved(Builder $query): void
     {
         $query->where('status', BookStatus::Approved);
+    }
+
+    /**
+     * Books a reviewer looks after: a governor reviews their own level's
+     * books, an admin every book.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function reviewableBy(Builder $query, User $user): void
+    {
+        if (! $user->hasRole(Role::Admin)) {
+            $query->where('level', $user->level);
+        }
     }
 
     /**

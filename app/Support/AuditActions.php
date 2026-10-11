@@ -49,6 +49,8 @@ class AuditActions
         'exam_updated' => 'Changed an exam',
         'exam_removed' => 'Removed an exam',
         'exams_imported' => 'Uploaded the exam timetable',
+        'exams_published' => 'Showed the exam timetable to students',
+        'exams_hidden' => 'Hid the exam timetable from students',
         'user_role_changed' => 'Changed a role',
         'user_suspended' => 'Suspended an account',
         'user_reactivated' => 'Reactivated an account',

@@ -23,7 +23,8 @@ and the item is ticked off here.
 | Courses (arms) | HND computing is split into arms read from the matric number's 4th digit of 7: `…/321`**`1`**`…` Software and Web Development (SWD), `…/321`**`2`**`…` Networking and Cloud Computing (NCC). ND has no arms yet. Built so arms can be added later (AI and cybersecurity are rumoured) and ND could get them too. Each arm is its own class with its own nominal roll and governor. |
 | Programme lengths | Full-time ND and HND: 2 years. Part-time ND and HND: 3 years. CODFEL: ND only, 2 years (could change). |
 | Graduates | Keep read-only library access; can't vote or upload. |
-| Governors | Each is tied to exactly one class (level, programme and arm). |
+| Governors | Each is tied to exactly one class (level, programme and arm). They review uploads for their own level only; admins review every level. |
+| Exam timetable | Hidden from students until an admin shows it (Exam timetable → Show to students), so a draft or last session's isn't mistaken for the real one. |
 | Repository | Work happens in the fork `Leommm-byte/nacos-digital-library`. When everything is done, one PR goes from the fork back to `Tech-Reni/nacos-digital-library`. |
 
 ## Open items for the owner

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\BookStatus;
 use App\Enums\ElectionStatus;
+use App\Http\Controllers\Timetables\ExamController;
 use App\Models\Book;
 use App\Models\Election;
 use App\Models\Exam;
@@ -83,7 +84,7 @@ class HomeController extends Controller
             'elections' => $this->ballotsWaiting($user),
             'timetable' => $this->timetable($user),
             'waiting' => Gate::allows('review-uploads')
-                ? Book::where('status', BookStatus::Pending)->where('uploader_id', '!=', $user->id)->count()
+                ? Book::reviewableBy($user)->where('status', BookStatus::Pending)->where('uploader_id', '!=', $user->id)->count()
                 : null,
         ]);
     }
@@ -102,7 +103,9 @@ class HomeController extends Controller
 
         return [
             'week' => $slots->isNotEmpty() ? Week::build($slots) : null,
-            'exam' => Exam::current()->whereDate('date', '>=', $today)->limit(200)->get()->first(fn (Exam $exam) => $exam->isFor($user)),
+            'exam' => ExamController::published()
+                ? Exam::current()->whereDate('date', '>=', $today)->limit(200)->get()->first(fn (Exam $exam) => $exam->isFor($user))
+                : null,
         ];
     }
 

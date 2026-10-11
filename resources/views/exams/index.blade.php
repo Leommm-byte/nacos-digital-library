@@ -1,4 +1,13 @@
 <x-layouts.app title="Exam timetable">
+    @if ($hidden)
+        <x-page-header title="Exam timetable">
+            <x-slot:actions>
+                <x-button href="{{ route('timetable.show') }}" variant="secondary" icon="calendar-clock">Class timetable</x-button>
+            </x-slot:actions>
+        </x-page-header>
+        <x-empty-state icon="calendar-days" tone="green" title="The exam timetable isn't out yet"
+            text="It will appear here once it's confirmed, with your own papers first." />
+    @else
     <x-page-header title="Exam timetable" :subtitle="$past ? 'Every paper this session' : 'Papers from today on'">
         <x-slot:actions>
             @if (Route::has('timetable.show'))
@@ -9,6 +18,12 @@
             @endcan
         </x-slot:actions>
     </x-page-header>
+
+    @if (! $published)
+        <x-alert type="warning" class="mb-6">
+            <strong>Students can't see this yet.</strong> You're seeing it as an admin. Show it to students from <a href="{{ route('exams.manage') }}" class="link">Manage</a> once it's confirmed.
+        </x-alert>
+    @endif
 
     @if ($counts['all'] === 0)
         <x-empty-state icon="calendar-days" tone="green" title="No exams on the timetable"
@@ -81,5 +96,6 @@
                 @endforeach
             </div>
         @endif
+    @endif
     @endif
 </x-layouts.app>

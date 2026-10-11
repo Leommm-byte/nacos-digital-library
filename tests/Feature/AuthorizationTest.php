@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\BookStatus;
+use App\Enums\Level;
 use App\Enums\Role;
 use App\Models\Book;
 use App\Models\User;
@@ -52,13 +53,16 @@ class AuthorizationTest extends TestCase
     public function unapproved_books_are_visible_only_to_their_uploader_and_reviewers(): void
     {
         $uploader = $this->user(Role::Student);
-        $pending = Book::factory()->uploadedBy($uploader)->create();
+        $pending = Book::factory()->uploadedBy($uploader)->create(['level' => Level::ND1]);
         $approved = Book::factory()->approved()->create();
+        $governor = fn (Level $level) => User::factory()->role(Role::Governor)->create(['level' => $level]);
 
         $this->assertTrue($uploader->can('view', $pending));
         $this->assertFalse($this->user(Role::Student)->can('view', $pending));
         $this->assertFalse($this->user(Role::CourseRep)->can('view', $pending));
-        $this->assertTrue($this->user(Role::Governor)->can('view', $pending));
+        $this->assertTrue($governor(Level::ND1)->can('view', $pending));
+        $this->assertFalse($governor(Level::HND1)->can('view', $pending));
+        $this->assertTrue($this->user(Role::Admin)->can('view', $pending));
         $this->assertTrue($this->user(Role::Student)->can('view', $approved));
     }
 
@@ -80,12 +84,26 @@ class AuthorizationTest extends TestCase
     #[Test]
     public function nobody_reviews_their_own_upload(): void
     {
-        $governor = $this->user(Role::Governor);
-        $own = Book::factory()->uploadedBy($governor)->create();
-        $other = Book::factory()->create();
+        $governor = User::factory()->role(Role::Governor)->create(['level' => Level::ND2]);
+        $own = Book::factory()->uploadedBy($governor)->create(['level' => Level::ND2]);
+        $other = Book::factory()->create(['level' => Level::ND2]);
 
         $this->assertFalse($governor->can('review', $own));
         $this->assertTrue($governor->can('review', $other));
         $this->assertFalse($this->user(Role::Student)->can('review', $other));
+    }
+
+    #[Test]
+    public function governors_review_their_own_level_and_admins_every_level(): void
+    {
+        $governor = User::factory()->role(Role::Governor)->create(['level' => Level::ND2]);
+        $nd2 = Book::factory()->create(['level' => Level::ND2]);
+        $hnd1 = Book::factory()->create(['level' => Level::HND1]);
+
+        $this->assertTrue($governor->can('review', $nd2));
+        $this->assertFalse($governor->can('review', $hnd1));
+        $this->assertTrue($this->user(Role::Admin)->can('review', $hnd1));
+        $this->assertSame([$nd2->id], Book::reviewableBy($governor)->pluck('id')->all());
+        $this->assertCount(2, Book::reviewableBy($this->user(Role::Admin))->get());
     }
 }

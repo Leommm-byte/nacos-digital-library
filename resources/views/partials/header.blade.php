@@ -3,7 +3,7 @@
     // uploads waiting for review for reviewers.
     $unread = $user && Route::has('notifications.index') ? $user->unreadNotifications()->count() : 0;
     $waiting = $user && Route::has('review.index') && Gate::allows('review-uploads')
-        ? \App\Models\Book::where('status', \App\Enums\BookStatus::Pending)->count()
+        ? \App\Models\Book::reviewableBy($user)->where('status', \App\Enums\BookStatus::Pending)->count()
         : null;
 @endphp
 

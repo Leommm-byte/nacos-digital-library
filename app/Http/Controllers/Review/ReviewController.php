@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Review;
 use App\Enums\BookStatus;
 use App\Enums\Level;
 use App\Enums\ReviewAction;
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
 use App\Models\Department;
@@ -19,8 +20,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * The review queue for governors and admins: uploads waiting for review
- * (and, with filters, every upload), each with a preview and a decision.
+ * The review queue: uploads waiting for review (and, with filters, every
+ * upload), each with a preview and a decision. Governors see and review
+ * their own level's uploads; admins every level's.
  */
 class ReviewController extends Controller
 {
@@ -34,7 +36,10 @@ class ReviewController extends Controller
 
     public function index(Request $request): View
     {
-        $level = Level::tryFrom($request->string('level')->toString());
+        /** @var User $user */
+        $user = $request->user();
+        $allLevels = $user->hasRole(Role::Admin);
+        $level = $allLevels ? Level::tryFrom($request->string('level')->toString()) : null;
 
         $filters = [
             'status' => array_key_exists($request->string('status')->toString(), self::STATUSES) ? $request->string('status')->toString() : 'pending',
@@ -44,6 +49,7 @@ class ReviewController extends Controller
         ];
 
         $books = Book::query()
+            ->reviewableBy($user)
             ->with(['department:id,name', 'uploader:id,fullname,matric_number', 'currentFile:id,book_id,source,size_bytes'])
             ->when($filters['status'] !== 'all', fn (Builder $q) => $q->where('status', $filters['status']))
             ->when($filters['level'] !== '', fn (Builder $q) => $q->where('level', $filters['level']))
@@ -60,8 +66,10 @@ class ReviewController extends Controller
         return view('review.index', [
             'books' => $books,
             'filters' => $filters,
-            'counts' => Book::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')->all(),
-            'levels' => collect(Level::cases())->mapWithKeys(fn (Level $level) => [$level->value => $level->label()])->all(),
+            'counts' => Book::query()->reviewableBy($user)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status')->all(),
+            // Governors only have their own level, so no level filter.
+            'levels' => $allLevels ? collect(Level::cases())->mapWithKeys(fn (Level $level) => [$level->value => $level->label()])->all() : [],
+            'ownLevel' => $allLevels ? null : $user->level,
             'departments' => Department::orderBy('name')->pluck('name', 'id')->all(),
         ]);
     }
@@ -127,7 +135,8 @@ class ReviewController extends Controller
      */
     private function nextPending(User $reviewer, Book $current): ?Book
     {
-        return Book::where('status', BookStatus::Pending)
+        return Book::reviewableBy($reviewer)
+            ->where('status', BookStatus::Pending)
             ->whereKeyNot($current->id)
             ->where(fn (Builder $q) => $q->whereNull('uploader_id')->orWhere('uploader_id', '!=', $reviewer->id))
             ->oldest()

@@ -150,8 +150,10 @@ class DashboardTest extends TestCase
     #[Test]
     public function reviewers_see_how_many_uploads_are_waiting(): void
     {
-        $governor = User::factory()->for($this->department)->role(Role::Governor)->create();
-        Book::factory()->count(2)->for($this->department)->uploadedBy($this->student)->create();
+        $governor = User::factory()->for($this->department)->role(Role::Governor)->create(['level' => Level::ND1]);
+        Book::factory()->count(2)->for($this->department)->uploadedBy($this->student)->create(['level' => Level::ND1]);
+        // Another level's upload is another governor's to review.
+        Book::factory()->for($this->department)->uploadedBy($this->student)->create(['level' => Level::HND2]);
 
         $this->actingAs($governor)->get('/')->assertSee('2 uploads waiting')->assertSee(route('review.index'));
         $this->actingAs($this->student)->get('/')->assertDontSee('uploads waiting');

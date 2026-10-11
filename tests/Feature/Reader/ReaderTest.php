@@ -94,9 +94,9 @@ class ReaderTest extends TestCase
     public function uploaders_and_reviewers_can_read_a_book_waiting_for_review_without_counting_it(): void
     {
         $uploader = User::factory()->for($this->department)->create();
-        $governor = User::factory()->for($this->department)->role(Role::Governor)->create();
         $book = Book::factory()->for($this->department)->uploadedBy($uploader)
             ->status(BookStatus::Pending)->withPdf()->create();
+        $governor = User::factory()->for($this->department)->role(Role::Governor)->create(['level' => $book->level]);
 
         $this->actingAs($uploader)->get(route('books.read', $book))->assertOk()->assertSee('Pending review');
         $this->actingAs($governor)->get(route('books.read', $book))->assertOk();
