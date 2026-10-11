@@ -79,7 +79,7 @@ class HomeController extends Controller
                 'approved' => (int) ($uploads->approved ?? 0),
                 'unread' => $user->unreadNotifications()->count(),
             ],
-            'announcements' => Announcements::latest(3),
+            'announcements' => Announcements::latest($user, 3),
             'activity' => ActivityFeed::forUser($user),
             'elections' => $this->ballotsWaiting($user),
             'timetable' => $this->timetable($user),

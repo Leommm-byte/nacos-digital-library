@@ -1,12 +1,12 @@
 <x-layouts.app title="Manage announcements">
-    <x-page-header title="Manage announcements" subtitle="Students see up to three live announcements on their home page." :back="route('announcements.index')" back-label="Announcements">
+    <x-page-header title="Manage announcements" :subtitle="$class ? 'Announcements for '.$class->label().'. Your class and admins see them.' : 'For everyone or for one class. Students see their latest three on their home page.'" :back="route('announcements.index')" back-label="Announcements">
         <x-slot:actions>
             <x-button href="{{ route('announcements.create') }}" icon="bell">New announcement</x-button>
         </x-slot:actions>
     </x-page-header>
 
     @if ($announcements->isEmpty())
-        <x-empty-state icon="bell" title="No announcements yet" text="Post news, deadlines or events for students.">
+        <x-empty-state icon="bell" title="No announcements yet" :text="$class ? 'Post news, deadlines or reminders for your class.' : 'Post news, deadlines or events for students.'">
             <x-button href="{{ route('announcements.create') }}" icon="bell">New announcement</x-button>
         </x-empty-state>
     @else
@@ -23,11 +23,12 @@
                     $zone = config('app.display_timezone');
                 @endphp
                 <li>
-                    <a href="{{ route('announcements.edit', $announcement) }}" class="upload-row">
+                    <a href="{{ route('announcements.show', $announcement) }}" class="upload-row">
                         <x-icon-tile name="bell" :tone="$state === 'Live' ? 'green' : 'neutral'" size="sm" />
                         <span class="min-w-0 flex-1">
                             <span class="upload-row-title">{{ $announcement->title }}</span>
                             <span class="upload-row-meta">
+                                {{ $announcement->audience() }} ·
                                 {{ $announcement->starts_at ? 'From '.$announcement->starts_at->timezone($zone)->format('j M Y') : 'From posting' }}
                                 · {{ $announcement->ends_at ? 'until '.$announcement->ends_at->timezone($zone)->format('j M Y') : 'no end date' }}
                                 @if ($announcement->author) · by {{ $announcement->author->fullname }} @endif

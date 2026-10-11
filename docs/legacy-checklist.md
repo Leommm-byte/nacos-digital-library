@@ -107,6 +107,7 @@ Keep:
 - [x] Recommended books: same department and level first, then same level, skipping books already opened.
 - [x] Recent activity (the user's own last 5 actions, in plain words; only the latest login; failed logins on the account included as a security signal).
 - [x] Up to 3 live announcements, newest first, with an empty state and an announcements page; governors and admins post, schedule, edit and delete them.
+- [x] Announcements have their own page with formatting (Markdown) and previews with "Read more"; governors post to their own class only, admins to everyone or any class (PR 14.6 H).
 - [x] Header: logo, search, notifications, account menu (Profile, Your uploads, Review uploads and Announcements for reviewers, Manage elections for admins, Settings, Admin panel for admins, Log out); Elections in the main navigation.
 
 Fix:

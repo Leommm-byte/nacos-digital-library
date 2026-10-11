@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/announcements/{announcement}', [AnnouncementController::class, 'update'])->name('announcements.update');
         Route::delete('/announcements/{announcement}', [AnnouncementController::class, 'destroy'])->name('announcements.destroy');
     });
+    Route::get('/announcements/{announcement}', [AnnouncementController::class, 'show'])->whereNumber('announcement')->name('announcements.show');
 
     Route::post('/elections/{election}/ballot', [ElectionController::class, 'vote'])
         ->whereNumber('election')

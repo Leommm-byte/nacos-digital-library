@@ -2660,6 +2660,197 @@
         }
     }
 
+    /* The whole card opens the announcement (a stretched title link). */
+    .announcement-card,
+    .announcement-item {
+        position: relative;
+    }
+
+    .announcement-card {
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        box-shadow: var(--shadow-card);
+        transition: border-color var(--duration-fast) ease;
+
+        @variant md {
+            padding: 1.5rem;
+        }
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+        }
+
+        &:has(.stretched-link:focus-visible) {
+            outline: 2px solid var(--ring);
+            outline-offset: 2px;
+        }
+
+        & .stretched-link:focus-visible {
+            outline: none;
+        }
+    }
+
+    .announcement-item:hover .announcement-title {
+        color: var(--link);
+    }
+
+    .announcement-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--muted);
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    .announcement-more {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--link);
+        font-size: 0.875rem;
+        font-weight: 600;
+
+        & .icon {
+            width: 1rem;
+            height: 1rem;
+        }
+    }
+
+    .announcement-date .announcement-more {
+        font-size: inherit;
+    }
+
+    .announcement-page {
+        max-width: 44rem;
+    }
+
+    /* Formatted text written by people (announcements). */
+    .prose {
+        overflow-wrap: anywhere;
+        font-size: 1.0625rem;
+        line-height: 1.7;
+
+        & > * + * {
+            margin-top: 1em;
+        }
+
+        & h1,
+        & h2,
+        & h3,
+        & h4 {
+            margin-top: 1.6em;
+            font-family: var(--font-sans);
+            font-size: 1.1875rem;
+            font-weight: 700;
+            letter-spacing: 0;
+            word-spacing: normal;
+        }
+
+        & ul,
+        & ol {
+            padding-left: 1.4em;
+        }
+
+        & ul {
+            list-style: disc;
+        }
+
+        & ol {
+            list-style: decimal;
+        }
+
+        & li + li {
+            margin-top: 0.35em;
+        }
+
+        & li::marker {
+            color: var(--muted);
+        }
+
+        & a {
+            color: var(--link);
+            text-decoration: underline;
+            text-underline-offset: 0.2em;
+        }
+
+        & blockquote {
+            padding-left: 1em;
+            border-left: 3px solid var(--border);
+            color: var(--muted);
+        }
+
+        & code {
+            padding: 0.1em 0.35em;
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            font-size: 0.9em;
+        }
+
+        & pre {
+            overflow-x: auto;
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-md);
+            background: var(--surface-2);
+
+            & code {
+                padding: 0;
+                background: none;
+            }
+        }
+
+        & hr {
+            border-color: var(--border);
+        }
+    }
+
+    /* The announcement editor's formatting buttons, joined to the text box. */
+    .editor-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.125rem;
+        padding: 0.25rem;
+        border: 1px solid var(--border);
+        border-bottom: 0;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        background: var(--surface-2);
+
+        &:not([hidden]) + .editor-textarea {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+    }
+
+    .editor-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0 0.625rem;
+        border-radius: var(--radius-sm);
+        color: var(--fg);
+        font-size: 0.875rem;
+        font-weight: 600;
+
+        &:hover {
+            background: var(--surface);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--ring);
+            outline-offset: -2px;
+        }
+    }
+
+    .editor-textarea {
+        font-size: 0.9375rem;
+        line-height: 1.6;
+    }
+
     .profile-summary {
         display: grid;
         gap: 0.75rem;

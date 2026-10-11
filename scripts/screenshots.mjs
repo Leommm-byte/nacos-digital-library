@@ -72,6 +72,9 @@ const pages = [
     ['announcements', '/announcements', 'F/ND/24/0000004'],
     ['announcements-manage', '/announcements/manage', 'F/HD/24/3212002'],
     ['announcement-new', '/announcements/create', 'F/HD/24/3212002'],
+    ['announcement-new-admin', '/announcements/create', 'F/HD/24/3211001'],
+    ['announcement', 'LINK /announcements .announcement-card a:has-text("NACOS Week")', 'F/ND/24/0000004'],
+    ['announcements-governor', '/announcements', 'F/HD/24/3212002'],
     ['review-book', 'LINK /review .upload-row', 'F/HD/24/3212002', async (page) => {
         // The page previews are drawn by PDF.js.
         await page.locator('.review-preview canvas').first().waitFor({ timeout: 20000 });
