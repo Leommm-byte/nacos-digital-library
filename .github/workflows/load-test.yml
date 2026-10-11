@@ -4,7 +4,8 @@ name: Load test
 # Apache image as local development, with production-like settings, MySQL 8,
 # database sessions and cache (as on DreamHost), and Apache limited to 20
 # PHP workers to behave like shared hosting. k6 then plays up to 150
-# signed-in students plus a 300-voter election rush (tests/load).
+# signed-in students, a 300-voter election rush and 500 people watching
+# the live results through it (tests/load).
 #
 # The test machine is not DreamHost: read the numbers as "does anything
 # fall over or grow out of hand", not as exact live timings.
@@ -15,6 +16,12 @@ on:
       vus:
         description: Students browsing at the peak
         default: '150'
+      voters:
+        description: Students voting in the rush (3 a second)
+        default: '300'
+      watchers:
+        description: People watching the live results through the rush
+        default: '500'
   push:
     branches: ['claude/**']
     paths:
@@ -97,7 +104,8 @@ jobs:
               sleep 10
             done
           ) > db-sample.log &
-          k6 run --log-output=file=k6.log -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} tests/load/student-day.js
+          k6 run --log-output=file=k6.log -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} \
+            -e VOTERS=${{ inputs.voters || '300' }} -e WATCHERS=${{ inputs.watchers || '500' }} tests/load/student-day.js
 
       - name: Failed requests by kind and status
         if: always()
