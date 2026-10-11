@@ -1,6 +1,6 @@
 @php
     $roles = ['' => 'Any role'] + collect(\App\Enums\Role::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all();
-    $statuses = ['' => 'Any status', 'active' => 'Active', 'suspended' => 'Suspended'];
+    $statuses = ['' => 'Any status', 'active' => 'Active', 'suspended' => 'Suspended', 'graduated' => 'Graduates'];
     $levels = ['' => 'Any level'] + collect(\App\Enums\Level::cases())->mapWithKeys(fn ($l) => [$l->value => $l->label()])->all();
     $arms = ['' => 'Any course'] + collect(\App\Support\Classes\Arms::all())->map(fn ($a) => $a['stage'].' '.$a['short'])->all();
     $programmes = ['' => 'Any programme'] + collect(\App\Enums\Programme::cases())->mapWithKeys(fn ($p) => [$p->value => $p->label()])->all();
@@ -54,6 +54,8 @@
                             <td>
                                 @if ($user->isSuspended())
                                     <x-badge variant="danger">Suspended</x-badge>
+                                @elseif ($user->isGraduated())
+                                    <x-badge variant="accent">Graduate</x-badge>
                                 @else
                                     <span class="text-sm text-muted">Active</span>
                                 @endif

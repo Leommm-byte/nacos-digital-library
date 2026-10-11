@@ -14,6 +14,9 @@
             @if ($user->isSuspended())
                 <x-badge variant="danger">Suspended</x-badge>
             @endif
+            @if ($user->isGraduated())
+                <x-badge variant="accent">Graduate</x-badge>
+            @endif
         </x-slot:actions>
     </x-page-header>
 
@@ -88,6 +91,9 @@
                         <x-select name="department_id" label="Department" :options="$departments" :value="$user->department_id" />
                         @if ($user->arm)
                             <p class="text-xs text-muted">Course: {{ \App\Support\Classes\Arms::name($user->arm) }} ({{ \App\Support\Classes\Arms::short($user->arm) }}), from the matric number.</p>
+                        @endif
+                        @if ($user->isGraduated())
+                            <p class="text-xs text-muted">Graduated {{ $user->graduated_at?->timezone(config('app.display_timezone'))->format('j M Y') }}. Saving a class makes them a current student again.</p>
                         @endif
                         <x-button size="sm" variant="secondary" class="w-full">Save class</x-button>
                     </form>

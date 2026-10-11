@@ -42,6 +42,12 @@ class UploadLimits
      */
     public static function blockReason(User $user): ?string
     {
+        // Graduates can read the library but not add to it (admins keep
+        // their powers).
+        if ($user->isGraduated() && ! $user->hasRole(Role::Admin)) {
+            return 'You\'ve graduated, so you can no longer upload. You can still read everything in the library.';
+        }
+
         if (self::exempt($user)) {
             return null;
         }

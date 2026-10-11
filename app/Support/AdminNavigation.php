@@ -26,6 +26,7 @@ class AdminNavigation
             ['exams.manage', 'Exam timetable', 'calendar-days', 'exams.manage'],
             ['admin.reports', 'Reports', 'chart-column', 'admin.reports'],
             ['admin.audit', 'Audit log', 'scroll-text', 'admin.audit'],
+            ['admin.session', 'New session', 'graduation-cap', 'admin.session*'],
             ['admin.settings', 'Settings', 'settings', 'admin.settings*'],
         ];
 

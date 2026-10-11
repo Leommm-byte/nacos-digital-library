@@ -177,6 +177,10 @@ class DemoSeeder extends Seeder
         Settings::put(['academic_session' => '2026/2027', 'exams_published' => 1]);
 
         $this->seedTimetables($users['admin']);
+
+        // Last session's ND2 graduate: reads the library, can't vote or upload.
+        $graduate = User::factory()->for($cs)->create(['fullname' => 'Kunle Graduate', 'level' => Level::ND2, 'programme' => Programme::FullTime]);
+        $graduate->forceFill(['graduated_at' => now()->subMonths(3)])->save();
     }
 
     /**

@@ -76,6 +76,10 @@ class Exam extends Model
      */
     public function isFor(User $user): bool
     {
+        if ($user->isGraduated()) {
+            return false;
+        }
+
         $levels = $this->levels ?? [];
         $programmes = $this->programmes ?? [];
         $arms = $this->arms ?? [];

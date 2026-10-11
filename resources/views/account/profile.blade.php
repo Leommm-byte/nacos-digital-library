@@ -14,6 +14,9 @@
 
             <div class="mt-4 flex flex-wrap gap-2">
                 <x-badge variant="primary">{{ $user->role->label() }}</x-badge>
+                @if ($user->isGraduated())
+                    <x-badge variant="accent">Graduate</x-badge>
+                @endif
                 <x-badge data-preview-text="level">{{ $user->level->label() }}</x-badge>
                 @if ($user->arm)
                     <x-badge>{{ \App\Support\Classes\Arms::short($user->arm) }}</x-badge>
@@ -67,9 +70,17 @@
                 <x-select name="department_id" label="Department" :options="$departments" :value="$user->department_id" data-preview="department_id" :disabled="$classLocked" required />
 
                 <div class="grid gap-4 sm:grid-cols-2">
-                    <x-select name="level" label="Level" :options="$levels" :value="$user->level->value" data-preview="level" :disabled="$classLocked" required />
-                    <x-select name="programme" label="Programme" :options="$programmes" :value="$user->programme->value" data-preview="programme" required />
+                    <x-select name="level" label="Level" :options="$levels" :value="$user->level->value" data-preview="level" :disabled="$classLocked || $graduated" required />
+                    <x-select name="programme" label="Programme" :options="$programmes" :value="$user->programme->value" data-preview="programme" :disabled="$graduated" required />
                 </div>
+
+                @if ($graduated)
+                    @unless ($classLocked)
+                        <input type="hidden" name="level" value="{{ $user->level->value }}">
+                    @endunless
+                    <input type="hidden" name="programme" value="{{ $user->programme->value }}">
+                    <p class="text-sm text-muted">You graduated from {{ $user->classLabel() }}. Your class can't change now; if that's a mistake, ask an admin.</p>
+                @endif
 
                 @if ($classLocked)
                     {{-- Disabled fields aren't submitted; send the current values. --}}

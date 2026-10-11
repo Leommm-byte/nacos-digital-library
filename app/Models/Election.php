@@ -186,6 +186,10 @@ class Election extends Model
             return 'Your account isn\'t active.';
         }
 
+        if ($user->isGraduated()) {
+            return 'You\'ve graduated, so you can\'t vote in student elections.';
+        }
+
         $level = $user->level;
         $programme = $user->programme;
         $arm = $user->arm;
@@ -245,7 +249,7 @@ class Election extends Model
      */
     public function electorate(): Builder
     {
-        $query = User::query()->where('users.status', UserStatus::Active);
+        $query = User::query()->where('users.status', UserStatus::Active)->whereNull('users.graduated_at');
         $level = 'users.level';
         $programme = 'users.programme';
         $arm = 'users.arm';

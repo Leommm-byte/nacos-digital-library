@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookController as AdminBookController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Announcements\AnnouncementController;
@@ -152,6 +153,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/reports', ReportController::class)->name('reports');
         Route::get('/audit', [AuditLogController::class, 'index'])->name('audit');
         Route::get('/audit/export', [AuditLogController::class, 'export'])->name('audit.export');
+
+        Route::get('/session', [SessionController::class, 'show'])->name('session');
+        Route::post('/session', [SessionController::class, 'store'])->middleware('throttle:5,1')->name('session.start');
+        Route::post('/session/{change}/undo', [SessionController::class, 'undo'])->middleware('throttle:5,1')->name('session.undo');
 
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
