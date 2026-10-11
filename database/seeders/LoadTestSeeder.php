@@ -145,7 +145,8 @@ class LoadTestSeeder extends Seeder
             'description' => 'Election used by the load test.',
             'status' => ElectionStatus::Open,
             'roll_only' => true,
-            'starts_at' => $now->copy()->subMinute(),
+            // Not before the voters' accounts, which must exist when voting opens.
+            'starts_at' => $now->copy(),
             'ends_at' => $now->copy()->addHours(6),
         ]);
 

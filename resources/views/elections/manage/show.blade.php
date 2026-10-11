@@ -151,6 +151,11 @@
                 </div>
                 <p class="text-sm">{{ $election->eligibilitySummary() }}.</p>
                 <p class="text-sm text-muted">{{ number_format($electorate) }} {{ \Illuminate\Support\Str::plural('account', $electorate) }} can vote{{ $draft ? ' right now' : '' }}.@if ($draft) <a href="{{ route('elections.manage.edit', $election) }}" class="link">Change</a>@endif</p>
+                @if ($election->excludesLateAccounts())
+                    <p class="text-sm text-muted">Only accounts created before voting opened ({{ $election->starts_at->timezone(config('app.display_timezone'))->format('D j M, g:i a') }}).</p>
+                @elseif (! $election->allow_late_accounts)
+                    <p class="text-sm text-muted">Only accounts that exist when voting opens. Students who haven't signed up should do so before you launch.</p>
+                @endif
                 @if ($election->roll_only)
                     <p class="text-sm text-muted">{{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the <a href="{{ route('roll.index') }}" class="link">nominal roll</a>; only those with an account can vote.</p>
                 @endif

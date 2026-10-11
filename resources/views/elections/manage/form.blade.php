@@ -5,6 +5,7 @@
     $arms = old('arms', $election->arms ?? []);
     $yearOptions = ['' => 'Any year'] + $years;
     $rollOnly = $errors->any() ? (bool) old('roll_only') : $election->roll_only;
+    $lateAccounts = $errors->any() ? (bool) old('allow_late_accounts') : $election->allow_late_accounts;
 @endphp
 
 <x-layouts.admin :title="$editing ? 'Edit election' : 'New election'">
@@ -46,6 +47,16 @@
                     <span class="block text-sm text-muted">
                         Graduates and made-up matric numbers can't vote. {{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the roll now.
                         <a href="{{ route('roll.index') }}" class="link">{{ $rollCount ? 'See the roll' : 'Import the roll' }}</a>
+                    </span>
+                </span>
+            </label>
+
+            <label class="roll-toggle">
+                <input type="checkbox" name="allow_late_accounts" value="1" class="mt-1 size-4 shrink-0 accent-[var(--primary)]" @checked($lateAccounts)>
+                <span>
+                    <strong>Accounts created during voting can vote too</strong>
+                    <span class="block text-sm text-muted">
+                        Off by default: only accounts that exist when voting opens can vote, so nobody can sign up with an unregistered classmate's matric number and vote as them. Ask students to sign up before you launch, or create their accounts from the roll on <a href="{{ route('admin.accounts.index') }}" class="link">Create accounts</a>.
                     </span>
                 </span>
             </label>
