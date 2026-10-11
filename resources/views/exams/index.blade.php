@@ -79,16 +79,13 @@
                                     @if ($exam->course_title)
                                         <span class="text-sm">{{ $exam->course_title }}</span>
                                     @endif
-                                    @if ($exam->venue || $exam->note)
-                                        <span class="tt-meta">
-                                            @if ($exam->venue)
-                                                <span><x-icon name="map-pin" /> {{ $exam->venue }}</span>
-                                            @endif
-                                            @if ($exam->note)
-                                                <span><x-icon name="info" /> {{ $exam->note }}</span>
-                                            @endif
-                                        </span>
-                                    @endif
+                                    <span class="tt-meta">
+                                        {{-- Venues are often only known on the day. --}}
+                                        <span><x-icon name="map-pin" /> {{ $exam->venue ?? 'Venue to be announced' }}</span>
+                                        @if ($exam->note)
+                                            <span><x-icon name="info" /> {{ $exam->note }}</span>
+                                        @endif
+                                    </span>
                                 </li>
                             @endforeach
                         </ul>
