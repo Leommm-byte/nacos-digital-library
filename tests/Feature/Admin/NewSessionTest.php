@@ -204,7 +204,8 @@ class NewSessionTest extends TestCase
         $this->start();
         $second = SessionChange::latest('id')->firstOrFail();
         RollEntry::create(['matric_number' => 'F/ND/26/0000009', 'programme' => 'full_time', 'level' => 'ND1']);
-        $this->get(route('admin.session'))->assertDontSee('has started');
+        // (The start's success message still shows; the undo card doesn't.)
+        $this->get(route('admin.session'))->assertDontSee('Possible until the first new roll is uploaded');
         $this->post(route('admin.session.undo', $second))->assertSessionHasErrors('undo');
         $this->assertSame(Level::ND2, User::findOrFail($nd1->id)->level);
     }
