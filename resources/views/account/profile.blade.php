@@ -1,7 +1,7 @@
 <x-layouts.app title="Profile">
     <x-page-header title="Your profile" subtitle="Keep your class details up to date so you see the right books and elections." />
 
-    <div class="grid items-start gap-6 lg:grid-cols-[22rem_1fr]">
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
         {{-- Live preview: resources/js/preview.js updates it as the form changes. --}}
         <x-card class="profile-card animate-enter lg:sticky lg:top-[calc(var(--header-h)+1.5rem)]">
             <div class="flex items-center gap-4">

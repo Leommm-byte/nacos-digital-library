@@ -11,7 +11,7 @@
         <x-alert type="error" class="mb-6">{{ $message }}</x-alert>
     @enderror
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+    <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-8">
             <div class="flex gap-5">
                 <div class="w-24 shrink-0 sm:w-32"><x-book-cover :book="$book" eager class="w-full shadow-pop" /></div>

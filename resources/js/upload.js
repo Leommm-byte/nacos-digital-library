@@ -13,6 +13,7 @@
  *
  * Without this script the form posts normally and the server does without.
  */
+import { formatSize } from './files';
 import { toast } from './toast';
 
 const ORIGINAL_PHOTO_MAX = 25 * 1024 * 1024;
@@ -55,10 +56,6 @@ export function initUpload() {
 
     /* Choosing files ------------------------------------------------- */
 
-    function formatSize(bytes) {
-        return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-    }
-
     function setPdf(file) {
         pdfFile = file ?? null;
         ui.pdfList.replaceChildren();
@@ -83,7 +80,17 @@ export function initUpload() {
         const size = document.createElement('span');
         size.className = 'text-muted';
         size.textContent = formatSize(pdfFile.size);
-        row.append(name, size);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'icon-btn';
+        remove.setAttribute('aria-label', `Remove ${pdfFile.name}`);
+        remove.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+        remove.addEventListener('click', () => {
+            ui.pdf.value = '';
+            setPdf(null);
+            ui.pdf.focus();
+        });
+        row.append(name, size, remove);
         ui.pdfList.append(row);
 
         if (problem) {
