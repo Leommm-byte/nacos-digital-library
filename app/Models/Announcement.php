@@ -189,7 +189,7 @@ class Announcement extends Model
      */
     public function isLong(int $length = 220): bool
     {
-        return mb_strlen($this->plainText()) > $length || substr_count(trim($this->body), "\n\n") > 0;
+        return mb_strlen($this->plainText()) > $length;
     }
 
     private function plainText(): string

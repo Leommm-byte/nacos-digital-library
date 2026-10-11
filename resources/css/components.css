@@ -2693,7 +2693,7 @@
     }
 
     .announcement-item:hover .announcement-title {
-        color: var(--primary);
+        color: var(--link);
     }
 
     .announcement-meta {
@@ -2710,7 +2710,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
-        color: var(--primary);
+        color: var(--link);
         font-size: 0.875rem;
         font-weight: 600;
 
@@ -2772,7 +2772,7 @@
         }
 
         & a {
-            color: var(--primary);
+            color: var(--link);
             text-decoration: underline;
             text-underline-offset: 0.2em;
         }
