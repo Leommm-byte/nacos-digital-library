@@ -11,7 +11,7 @@ use App\Models\Book;
 use App\Models\Election;
 use App\Models\RollEntry;
 use App\Models\User;
-use App\Support\Settings;
+use App\Support\Sessions\ProgrammeSessions;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -31,7 +31,7 @@ class DashboardController extends Controller
                 'rollWithoutAccount' => RollEntry::query()->whereNotIn('matric_number', fn ($query) => $query->select('matric_number')->from('users'))->count(),
                 'openElections' => Election::query()->where('status', ElectionStatus::Open)->count(),
             ],
-            'session' => Settings::get('academic_session'),
+            'session' => ProgrammeSessions::summary(),
             'recentActions' => AuditLog::query()->with('user:id,fullname,matric_number')->latest('id')->limit(8)->get(),
             'recentUploads' => Book::query()->with('uploader:id,fullname')->latest('id')->limit(5)->get(),
         ]);

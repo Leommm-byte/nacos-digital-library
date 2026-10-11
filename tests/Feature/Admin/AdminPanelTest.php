@@ -173,7 +173,7 @@ class AdminPanelTest extends TestCase
     {
         $this->actingAs($this->admin)->put(route('admin.settings.update'), [
             'site_name' => 'NACOS Yaba',
-            'academic_session' => '2026/2027',
+            'sessions' => ['full_time' => '2026/2027', 'part_time' => '2025/2026', 'codfel' => ''],
             'pdf_max_mb' => 20,
             'uploads_per_day' => 3,
             'uploads_pending' => 9,
@@ -182,10 +182,10 @@ class AdminPanelTest extends TestCase
         $this->assertSame(20 * 1024, config('uploads.pdf_max_kb'));
         $this->assertSame(3, config('uploads.per_day'));
         $this->assertSame('NACOS Yaba', config('app.name'));
-        $this->get(route('admin.dashboard'))->assertSee('Academic session 2026/2027');
+        $this->get(route('admin.dashboard'))->assertSee('Sessions: Full-time 2026/2027 · Part-time 2025/2026');
 
-        $this->put(route('admin.settings.update'), ['site_name' => 'x', 'academic_session' => '26/27', 'pdf_max_mb' => 500, 'uploads_per_day' => 1, 'uploads_pending' => 1])
-            ->assertSessionHasErrors(['academic_session', 'pdf_max_mb']);
+        $this->put(route('admin.settings.update'), ['site_name' => 'x', 'sessions' => ['full_time' => '26/27'], 'pdf_max_mb' => 500, 'uploads_per_day' => 1, 'uploads_pending' => 1])
+            ->assertSessionHasErrors(['sessions.full_time', 'pdf_max_mb']);
     }
 
     #[Test]

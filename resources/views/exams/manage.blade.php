@@ -5,15 +5,25 @@
 @endphp
 
 <x-layouts.admin title="Exam timetable">
-    <x-page-header title="Exam timetable" :subtitle="$count.' '.\Illuminate\Support\Str::plural('paper', $count).' · '.($published ? 'visible to students' : 'hidden from students')">
+    <x-page-header title="Exam timetable" subtitle="Each programme writes exams at its own time, so each has its own timetable.">
         <x-slot:actions>
-            <x-button href="{{ route('exams.index', ['show' => 'all']) }}" variant="secondary" icon="eye">See it as students do</x-button>
+            <x-button href="{{ route('exams.index', ['programme' => $programme->value, 'show' => 'all']) }}" variant="secondary" icon="eye">See it as students do</x-button>
         </x-slot:actions>
     </x-page-header>
 
+    <nav class="review-tabs mb-6" aria-label="Programme">
+        @foreach ($tabs as $tab)
+            <a href="{{ route('exams.manage', ['programme' => $tab['programme']->value]) }}" class="review-tab" @if ($tab['programme'] === $programme) aria-current="page" @endif>
+                {{ $tab['programme']->label() }}
+                <span class="review-tab-count">{{ number_format($tab['count']) }}</span>
+                <x-icon :name="$tab['published'] ? 'eye' : 'eye-off'" :label="$tab['published'] ? 'Visible to students' : 'Hidden from students'" class="size-4" />
+            </a>
+        @endforeach
+    </nav>
+
     @if ($import)
         <x-alert type="success" class="mb-6">
-            <p><strong>{{ $import['count'] }} {{ \Illuminate\Support\Str::plural('paper', $import['count']) }} uploaded.</strong> They replace the exam timetable that was here.</p>
+            <p><strong>{{ $import['count'] }} {{ \Illuminate\Support\Str::plural('paper', $import['count']) }} uploaded.</strong> They replace the {{ $programme->label() }} exam timetable that was here.</p>
             @if ($import['skippedCount'] > 0)
                 <details class="mt-2">
                     <summary class="cursor-pointer font-semibold">{{ $import['skippedCount'] }} {{ \Illuminate\Support\Str::plural('row', $import['skippedCount']) }} skipped</summary>
@@ -31,14 +41,15 @@
         <div class="flex min-w-0 items-center gap-3">
             <x-icon-tile :name="$published ? 'eye' : 'eye-off'" :tone="$published ? 'green' : 'yellow'" size="sm" />
             <div class="min-w-0">
-                <h2 class="text-base">{{ $published ? 'Visible to students' : 'Hidden from students' }}</h2>
-                <p class="text-sm text-muted">{{ $published ? 'Students see their papers here and on their home page.' : 'Prepare it here; students see "not out yet" until you show it.' }}</p>
+                <h2 class="text-base">{{ $programme->label() }}: {{ $count }} {{ \Illuminate\Support\Str::plural('paper', $count) }}, {{ $published ? 'visible to students' : 'hidden from students' }}</h2>
+                <p class="text-sm text-muted">{{ $published ? $programme->label().' students see their papers here and on their home page.' : 'Prepare it here; '.$programme->label().' students see "not out yet" until you show it.' }}</p>
             </div>
         </div>
         <form method="POST" action="{{ route('exams.publish') }}"
-            data-confirm="{{ $published ? 'Hide the exam timetable from students?' : 'Show the exam timetable to every student now?' }}">
+            data-confirm="{{ $published ? 'Hide the '.$programme->label().' exam timetable from students?' : 'Show the '.$programme->label().' exam timetable to its students now?' }}">
             @csrf
             @method('PUT')
+            <input type="hidden" name="programme" value="{{ $programme->value }}">
             <input type="hidden" name="published" value="{{ $published ? 0 : 1 }}">
             <x-button :variant="$published ? 'secondary' : 'primary'" :icon="$published ? 'eye-off' : 'eye'">
                 {{ $published ? 'Hide from students' : 'Show to students' }}
@@ -109,10 +120,11 @@
             <x-card class="space-y-4" id="add">
                 <div class="flex items-center gap-3">
                     <x-icon-tile name="plus" tone="green" size="sm" />
-                    <h2 class="text-base">Add a paper</h2>
+                    <h2 class="text-base">Add a {{ $programme->label() }} paper</h2>
                 </div>
                 <form method="POST" action="{{ route('exams.store') }}" class="space-y-3" novalidate>
                     @csrf
+                    <input type="hidden" name="programme" value="{{ $programme->value }}">
                     <div class="tt-form-grid">
                         <div class="tt-span-2">
                             <x-field name="date" id="add-date" label="Date" type="date" bag="add" :old="$addFailed" required />
@@ -139,8 +151,9 @@
                     <h2 class="text-base">Upload the timetable</h2>
                 </div>
                 <form method="POST" action="{{ route('exams.import') }}" enctype="multipart/form-data" class="space-y-3" novalidate
-                    data-confirm="Replace the whole exam timetable with this file?">
+                    data-confirm="Replace the whole {{ $programme->label() }} exam timetable with this file?">
                     @csrf
+                    <input type="hidden" name="programme" value="{{ $programme->value }}">
                     <div>
                         <label for="exams-file" class="field-label">Exam timetable file</label>
                         <input id="exams-file" name="exams" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required class="field-input field-file"
@@ -155,7 +168,7 @@
                                 @endforeach
                             </ul>
                         @endif
-                        <p class="mt-1.5 text-sm text-muted">Excel (.xlsx) or CSV. It replaces the whole exam timetable.</p>
+                        <p class="mt-1.5 text-sm text-muted">Excel (.xlsx) or CSV. It replaces the whole {{ $programme->label() }} exam timetable; rows for another programme are skipped.</p>
                     </div>
                     <x-button variant="secondary" icon="upload" class="w-full">Upload</x-button>
                 </form>

@@ -8,7 +8,7 @@ use App\Enums\Role;
 use App\Http\Controllers\Timetables\ExamController;
 use App\Models\Exam;
 use App\Models\User;
-use App\Support\Settings;
+use App\Support\Sessions\ProgrammeSessions;
 use App\Support\Spreadsheets\SpreadsheetRows;
 use App\Support\Timetables\ExamImport;
 use Database\Factories\UserFactory;
@@ -37,8 +37,8 @@ class ExamTest extends TestCase
             'programme' => Programme::FullTime,
             'matric_number' => UserFactory::matricFor(Level::HND1, Programme::FullTime, 'swd'),
         ]);
-        $this->admin = User::factory()->role(Role::Admin)->create();
-        Settings::put(['exams_published' => 1]);
+        $this->admin = User::factory()->role(Role::Admin)->create(['level' => Level::HND1, 'programme' => Programme::FullTime]);
+        ProgrammeSessions::setExamsPublished(Programme::FullTime, true);
     }
 
     /**
@@ -46,7 +46,7 @@ class ExamTest extends TestCase
      */
     private function exam(string $code, string $date, array $attributes = []): Exam
     {
-        return Exam::create(['date' => $date, 'starts_at' => '09:00', 'ends_at' => '12:00', 'course_code' => $code, 'venue' => 'Hall A', ...$attributes]);
+        return Exam::create(['programme' => Programme::FullTime, 'date' => $date, 'starts_at' => '09:00', 'ends_at' => '12:00', 'course_code' => $code, 'venue' => 'Hall A', ...$attributes]);
     }
 
     #[Test]
@@ -88,15 +88,15 @@ class ExamTest extends TestCase
 
         $this->actingAs($governor);
         $this->get(route('exams.manage'))->assertForbidden();
-        $this->post(route('exams.store'), ['date' => '2026-11-06', 'starts_at' => '09:00', 'course_code' => 'X 1'])->assertForbidden();
+        $this->post(route('exams.store'), ['programme' => 'full_time', 'date' => '2026-11-06', 'starts_at' => '09:00', 'course_code' => 'X 1'])->assertForbidden();
         $this->delete(route('exams.destroy', $exam))->assertForbidden();
         $this->get(route('exams.template'))->assertForbidden();
 
         $this->actingAs($this->admin);
-        $this->get(route('exams.manage'))->assertOk()->assertSee('GNS 301')->assertSee('Add a paper');
+        $this->get(route('exams.manage'))->assertOk()->assertSee('GNS 301')->assertSee('Add a Full-time paper');
 
         $this->post(route('exams.store'), [
-            'date' => '2026-11-06', 'starts_at' => '09:00', 'ends_at' => '11:00', 'course_code' => 'ncc 312',
+            'programme' => 'full_time', 'date' => '2026-11-06', 'starts_at' => '09:00', 'ends_at' => '11:00', 'course_code' => 'ncc 312',
             'levels' => ['HND1'], 'arms' => ['ncc'],
         ])->assertSessionHasNoErrors();
         $added = Exam::where('course_code', 'NCC 312')->firstOrFail();
@@ -111,7 +111,7 @@ class ExamTest extends TestCase
         $this->assertNull($added->levels);
         $this->assertSame('Everyone', $added->audience());
 
-        $this->delete(route('exams.destroy', $exam))->assertRedirect(route('exams.manage'));
+        $this->delete(route('exams.destroy', $exam))->assertRedirect(route('exams.manage', ['programme' => 'full_time']));
         $this->assertModelMissing($exam);
     }
 
@@ -127,20 +127,26 @@ class ExamTest extends TestCase
             '46335,9:00,11:00,SWD 311,Web Apps,Lab 2,"Full-time HND1 SWD",',
             'not a date,9:00,10:00,BAD 101,,,,',
             '6/11/2026,9:00,10:00,BAD 102,,,Year 9,',
+            '7/11/2026,9:00,10:00,PT 101,,,Part-time ND2,',
         ]);
+        $partTime = Exam::create(['programme' => Programme::PartTime, 'date' => '2026-11-20', 'starts_at' => '17:00', 'course_code' => 'KEEP 101']);
 
-        $this->actingAs($this->admin)->post(route('exams.import'), ['exams' => UploadedFile::fake()->createWithContent('exams.csv', $csv)])
+        $this->actingAs($this->admin)->post(route('exams.import'), ['programme' => 'full_time', 'exams' => UploadedFile::fake()->createWithContent('exams.csv', $csv)])
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('import', fn (array $import) => $import['count'] === 4 && $import['skippedCount'] === 2);
+            ->assertSessionHas('import', fn (array $import) => $import['count'] === 4 && $import['skippedCount'] === 3
+                && in_array('For another programme, not Full-time', array_column($import['skipped'], 'reason'), true));
 
-        $exams = Exam::current()->get();
+        // Part-time's timetable is untouched.
+        $this->assertModelExists($partTime);
+        $exams = Exam::current(Programme::FullTime)->get();
         $this->assertSame(['CSC 201', 'NCC 311', 'GNS 301', 'SWD 311'], $exams->pluck('course_code')->all());
         $this->assertSame(['2026-11-03', '2026-11-03', '2026-11-05', '2026-11-09'], $exams->map(fn (Exam $exam) => $exam->date->toDateString())->all());
         $this->assertSame('14:00', $exams[1]->startInput());
         $this->assertSame(['ncc'], $exams[1]->arms);
         $this->assertNull($exams[2]->levels);
         $this->assertNull($exams[2]->ends_at);
-        $this->assertSame(['full_time'], $exams[3]->programmes);
+        $this->assertSame(Programme::FullTime, $exams[3]->programme);
+        $this->assertSame(['swd'], $exams[3]->arms);
         $this->assertDatabaseHas('audit_logs', ['action' => 'exams_imported']);
     }
 
@@ -152,7 +158,7 @@ class ExamTest extends TestCase
         $response->assertOk()->assertDownload('exam-timetable.xlsx');
         $file = $response->baseResponse;
         $this->assertInstanceOf(BinaryFileResponse::class, $file);
-        $parsed = ExamImport::parse(SpreadsheetRows::xlsx($file->getFile()->getPathname()));
+        $parsed = ExamImport::parse(SpreadsheetRows::xlsx($file->getFile()->getPathname()), Programme::FullTime);
 
         $this->assertTrue($parsed['headings']);
         $this->assertSame([], $parsed['exams']);
@@ -187,7 +193,7 @@ class ExamTest extends TestCase
     #[Test]
     public function the_timetable_stays_hidden_until_an_admin_shows_it(): void
     {
-        Settings::put(['exams_published' => 0]);
+        ProgrammeSessions::setExamsPublished(Programme::FullTime, false);
         $this->exam('SWD 311', '2026-11-04', ['levels' => ['HND1'], 'arms' => ['swd']]);
 
         $this->actingAs($this->student)->get(route('exams.index'))->assertOk()
@@ -196,17 +202,41 @@ class ExamTest extends TestCase
         $this->get(route('home'))->assertDontSee('Next exam');
 
         // Admins still see it, with a reminder, and can show it.
-        $this->actingAs($this->admin)->get(route('exams.index', ['show' => 'all']))->assertOk()
-            ->assertSee('SWD 311')->assertSee('Students can\'t see this yet', false);
-        $this->get(route('exams.manage'))->assertSee('Hidden from students')->assertSee('Show to students');
-        $this->put(route('exams.publish'), ['published' => '1'])->assertRedirect(route('exams.manage'));
-        $this->assertTrue(ExamController::published());
+        $this->actingAs($this->admin)->get(route('exams.index', ['programme' => 'full_time', 'show' => 'all']))->assertOk()
+            ->assertSee('SWD 311')->assertSee('Full-time students can\'t see this yet', false);
+        $this->get(route('exams.manage'))->assertSee('hidden from students')->assertSee('Show to students');
+        $this->put(route('exams.publish'), ['programme' => 'full_time', 'published' => '1'])->assertRedirect(route('exams.manage', ['programme' => 'full_time']));
+        $this->assertTrue(ExamController::published(Programme::FullTime));
+        $this->assertFalse(ExamController::published(Programme::PartTime));
         $this->assertDatabaseHas('audit_logs', ['action' => 'exams_published']);
 
         $this->actingAs($this->student)->get(route('exams.index'))->assertSee('SWD 311');
 
         // Only admins switch it.
-        $this->put(route('exams.publish'), ['published' => '0'])->assertForbidden();
-        $this->assertTrue(ExamController::published());
+        $this->put(route('exams.publish'), ['programme' => 'full_time', 'published' => '0'])->assertForbidden();
+        $this->assertTrue(ExamController::published(Programme::FullTime));
+    }
+
+    #[Test]
+    public function each_programme_has_its_own_exam_timetable(): void
+    {
+        $this->exam('FT 101', '2026-11-04');
+        Exam::create(['programme' => Programme::PartTime, 'date' => '2026-11-05', 'starts_at' => '17:00', 'course_code' => 'PT 101']);
+        $partTimer = User::factory()->create(['level' => Level::ND2, 'programme' => Programme::PartTime]);
+
+        // Full-time is out; part-time is still being prepared.
+        $this->actingAs($this->student)->get(route('exams.index', ['show' => 'all', 'programme' => 'part_time']))
+            ->assertSee('FT 101')->assertDontSee('PT 101');
+        $this->actingAs($partTimer)->get(route('exams.index'))->assertSee('The exam timetable isn\'t out yet')->assertDontSee('FT 101');
+
+        ProgrammeSessions::setExamsPublished(Programme::PartTime, true);
+        $this->get(route('exams.index', ['show' => 'all']))->assertSee('PT 101')->assertDontSee('FT 101');
+
+        // Admins switch between them.
+        $this->actingAs($this->admin)->get(route('exams.manage', ['programme' => 'part_time']))
+            ->assertSee('PT 101')->assertDontSee('FT 101')->assertSee('Add a Part-time paper');
+        $this->post(route('exams.store'), ['programme' => 'part_time', 'date' => '2026-11-06', 'starts_at' => '17:00', 'course_code' => 'PT 102'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame(Programme::PartTime, Exam::where('course_code', 'PT 102')->firstOrFail()->programme);
     }
 }

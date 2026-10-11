@@ -174,7 +174,16 @@ class DemoSeeder extends Seeder
         }
         RollEntry::query()->insert($waiting);
 
-        Settings::put(['academic_session' => '2026/2027', 'exams_published' => 1]);
+        // Each programme keeps its own calendar: part-time is a session
+        // behind, and only full-time's exam timetable is out.
+        Settings::put([
+            'academic_session_full_time' => '2026/2027',
+            'academic_session_part_time' => '2025/2026',
+            'academic_session_codfel' => '2026/2027',
+            'exams_published_full_time' => 1,
+            'exams_published_part_time' => 0,
+            'exams_published_codfel' => 0,
+        ]);
 
         $this->seedTimetables($users['admin']);
 
@@ -237,6 +246,7 @@ class DemoSeeder extends Seeder
 
         foreach ($papers as [$offset, $start, $end, $code, $title, $venue, $levels, $arms]) {
             Exam::create([
+                'programme' => Programme::FullTime,
                 'date' => $monday->copy()->addDays($offset)->toDateString(),
                 'starts_at' => $start,
                 'ends_at' => $end,
@@ -246,6 +256,19 @@ class DemoSeeder extends Seeder
                 'levels' => $levels,
                 'arms' => $arms,
                 'note' => $code === 'COM 112' ? 'Practical: bring your student ID.' : null,
+            ]);
+        }
+
+        // Part-time writes later; its timetable is being prepared (hidden).
+        foreach ([[21, 'COM 211', 'Data Structures', ['ND2']], [22, 'NCC 312', 'Cloud Infrastructure', ['HND1']]] as [$offset, $code, $title, $levels]) {
+            Exam::create([
+                'programme' => Programme::PartTime,
+                'date' => $monday->copy()->addDays($offset)->toDateString(),
+                'starts_at' => '17:00',
+                'ends_at' => '19:00',
+                'course_code' => $code,
+                'course_title' => $title,
+                'levels' => $levels,
             ]);
         }
     }

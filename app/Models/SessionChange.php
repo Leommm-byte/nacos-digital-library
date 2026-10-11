@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\Programme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * One start of a new academic session, with what it changed so it can be
- * undone (App\Support\Sessions\NewSession).
+ * One start of a new academic session for one programme, with what it
+ * changed so it can be undone (App\Support\Sessions\NewSession).
  *
  * @property int $id
+ * @property Programme|null $programme
  * @property string|null $from_session
  * @property string $to_session
  * @property int|null $started_by
@@ -23,7 +25,7 @@ use Illuminate\Support\Carbon;
  */
 class SessionChange extends Model
 {
-    protected $fillable = ['from_session', 'to_session', 'started_at', 'exams_were_published', 'roll', 'summary'];
+    protected $fillable = ['programme', 'from_session', 'to_session', 'started_at', 'exams_were_published', 'roll', 'summary'];
 
     /**
      * @var array<string, mixed>
@@ -38,6 +40,7 @@ class SessionChange extends Model
     protected function casts(): array
     {
         return [
+            'programme' => Programme::class,
             'started_at' => 'datetime',
             'undone_at' => 'datetime',
             'exams_were_published' => 'boolean',

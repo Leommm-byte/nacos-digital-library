@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\Programme;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Support\Assistant\Tutor;
 use App\Support\Audit;
+use App\Support\Sessions\ProgrammeSessions;
 use App\Support\Settings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,12 +25,12 @@ class SettingController extends Controller
         return view('admin.settings', [
             'settings' => [
                 'site_name' => Settings::get('site_name', (string) config('app.name')),
-                'academic_session' => Settings::get('academic_session'),
                 'pdf_max_mb' => Settings::get('pdf_max_mb', (string) intdiv((int) config('uploads.pdf_max_kb'), 1024)),
                 'uploads_per_day' => Settings::get('uploads_per_day', (string) config('uploads.per_day')),
                 'uploads_pending' => Settings::get('uploads_pending', (string) config('uploads.pending')),
                 'assistant_daily_limit' => Settings::get('assistant_daily_limit', (string) config('assistant.daily_limit')),
             ],
+            'sessions' => collect(Programme::cases())->mapWithKeys(fn (Programme $programme) => [$programme->value => ProgrammeSessions::session($programme)])->all(),
             'aiKey' => Tutor::available(),
             'departments' => Department::query()->withCount('users')->orderBy('name')->get(),
         ]);
@@ -38,19 +40,19 @@ class SettingController extends Controller
     {
         $data = $request->validate([
             'site_name' => ['required', 'string', 'max:60'],
-            'academic_session' => ['nullable', 'regex:/^20[0-9]{2}\/20[0-9]{2}$/'],
+            'sessions' => ['array'],
+            'sessions.*' => ['nullable', 'regex:/^20[0-9]{2}\/20[0-9]{2}$/'],
             'pdf_max_mb' => ['required', 'integer', 'min:1', 'max:50'],
             'uploads_per_day' => ['required', 'integer', 'min:1', 'max:200'],
             'uploads_pending' => ['required', 'integer', 'min:1', 'max:500'],
             'assistant_daily_limit' => ['nullable', 'integer', 'min:0', 'max:200'],
         ], [
-            'academic_session.regex' => 'Write the session like 2026/2027.',
+            'sessions.*.regex' => 'Write the session like 2026/2027.',
             'pdf_max_mb.max' => 'Keep PDFs to 50 MB or less; shared hosting limits uploads.',
         ]);
 
         $values = [
             'site_name' => trim((string) $data['site_name']),
-            'academic_session' => isset($data['academic_session']) ? (string) $data['academic_session'] : null,
             'pdf_max_mb' => (int) $data['pdf_max_mb'],
             'uploads_per_day' => (int) $data['uploads_per_day'],
             'uploads_pending' => (int) $data['uploads_pending'],
@@ -58,6 +60,14 @@ class SettingController extends Controller
 
         if (isset($data['assistant_daily_limit'])) {
             $values['assistant_daily_limit'] = (int) $data['assistant_daily_limit'];
+        }
+
+        // Each programme's session (normally moved on by New session).
+        foreach (Programme::cases() as $programme) {
+            if (isset($data['sessions']) && array_key_exists($programme->value, $data['sessions'])) {
+                $session = $data['sessions'][$programme->value];
+                $values['academic_session_'.$programme->value] = is_string($session) && $session !== '' ? $session : null;
+            }
         }
 
         Settings::put($values);

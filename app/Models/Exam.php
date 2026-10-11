@@ -12,11 +12,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * One paper on the exam timetable. Who sits it is limited like an
- * election's voters: by levels, programmes and courses (arms), where none
- * means everyone.
+ * One paper on a programme's exam timetable (full-time, part-time and
+ * CODFEL write exams at different times). Within the programme, who sits
+ * it can be limited by levels and courses (arms); none means everyone in
+ * the programme.
  *
  * @property int $id
+ * @property Programme $programme
  * @property Carbon $date
  * @property string $starts_at
  * @property string|null $ends_at
@@ -24,7 +26,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $course_title
  * @property string|null $venue
  * @property list<string>|null $levels
- * @property list<string>|null $programmes
  * @property list<string>|null $arms
  * @property string|null $note
  * @property Carbon|null $archived_at
@@ -33,7 +34,7 @@ use Illuminate\Support\Carbon;
  */
 class Exam extends Model
 {
-    protected $fillable = ['date', 'starts_at', 'ends_at', 'course_code', 'course_title', 'venue', 'levels', 'programmes', 'arms', 'note'];
+    protected $fillable = ['programme', 'date', 'starts_at', 'ends_at', 'course_code', 'course_title', 'venue', 'levels', 'arms', 'note'];
 
     /**
      * @var array<string, mixed>
@@ -43,7 +44,6 @@ class Exam extends Model
         'course_title' => null,
         'venue' => null,
         'levels' => null,
-        'programmes' => null,
         'arms' => null,
         'note' => null,
         'archived_at' => null,
@@ -54,21 +54,24 @@ class Exam extends Model
         return [
             'date' => 'date',
             'levels' => 'array',
-            'programmes' => 'array',
+            'programme' => Programme::class,
             'arms' => 'array',
             'archived_at' => 'datetime',
         ];
     }
 
     /**
-     * The current exam timetable, in order.
+     * A programme's current exam timetable, in order (every programme's
+     * without one).
      *
      * @param  Builder<self>  $query
      */
     #[Scope]
-    protected function current(Builder $query): void
+    protected function current(Builder $query, ?Programme $programme = null): void
     {
-        $query->whereNull('archived_at')->orderBy('date')->orderBy('starts_at')->orderBy('course_code');
+        $query->whereNull('archived_at')
+            ->when($programme !== null, fn (Builder $query) => $query->where('programme', $programme))
+            ->orderBy('date')->orderBy('starts_at')->orderBy('course_code');
     }
 
     /**
@@ -81,21 +84,20 @@ class Exam extends Model
         }
 
         $levels = $this->levels ?? [];
-        $programmes = $this->programmes ?? [];
         $arms = $this->arms ?? [];
 
-        return ($levels === [] || in_array($user->level->value, $levels, true))
-            && ($programmes === [] || in_array($user->programme->value, $programmes, true))
+        return $user->programme === $this->programme
+            && ($levels === [] || in_array($user->level->value, $levels, true))
             && ($arms === [] || in_array($user->arm, $arms, true));
     }
 
     /**
-     * Who sits it, in a few words: "HND1 SWD", "Part-time ND2", "Everyone".
+     * Who sits it within the programme, in a few words: "HND1 SWD",
+     * "ND1 ND2", "Everyone".
      */
     public function audience(): string
     {
         $words = [
-            ...array_map(fn (string $p) => Programme::tryFrom($p)?->label() ?? $p, $this->programmes ?? []),
             ...array_map(fn (string $l) => Level::tryFrom($l)?->label() ?? $l, $this->levels ?? []),
             ...array_map(fn (string $a) => Arms::short($a), $this->arms ?? []),
         ];

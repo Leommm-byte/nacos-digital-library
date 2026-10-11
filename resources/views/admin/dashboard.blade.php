@@ -1,7 +1,7 @@
 @php($zone = config('app.display_timezone'))
 
 <x-layouts.admin title="Dashboard">
-    <x-page-header title="Admin" :subtitle="$session ? 'Academic session '.$session : 'Run NACOS YabaTech: accounts, the library, elections and settings.'" />
+    <x-page-header title="Admin" :subtitle="$session ? 'Sessions: '.$session : 'Run NACOS YabaTech: accounts, the library, elections and settings.'" />
 
     <nav aria-label="At a glance">
         <ul class="stagger grid grid-cols-2 gap-3 xl:grid-cols-4">

@@ -14,9 +14,17 @@
                 <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-4" novalidate>
                     @csrf
                     @method('PUT')
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <x-field name="site_name" label="Site name" required maxlength="60" :value="$settings['site_name']" />
-                        <x-field name="academic_session" label="Academic session" placeholder="2026/2027" :value="$settings['academic_session']" hint="Shown on the admin dashboard." />
+                    <x-field name="site_name" label="Site name" required maxlength="60" :value="$settings['site_name']" />
+                    <div>
+                        <div class="grid gap-4 sm:grid-cols-3">
+                            @foreach (\App\Enums\Programme::cases() as $programme)
+                                <x-field name="sessions[{{ $programme->value }}]" id="session-{{ $programme->value }}" :label="$programme->label().' session'" placeholder="2026/2027" :value="$sessions[$programme->value]" />
+                            @endforeach
+                        </div>
+                        @foreach ($errors->get('sessions.*') as $messages)
+                            <p class="field-error">{{ $messages[0] }}</p>
+                        @endforeach
+                        <p class="mt-1.5 text-sm text-muted">Each programme keeps its own calendar. New session moves these on; set them here to start.</p>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-3">
                         <x-field name="pdf_max_mb" label="Largest PDF (MB)" type="number" min="1" max="50" required :value="$settings['pdf_max_mb']" />

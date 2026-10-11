@@ -103,8 +103,8 @@ class HomeController extends Controller
 
         return [
             'week' => $slots->isNotEmpty() ? Week::build($slots) : null,
-            'exam' => ExamController::published()
-                ? Exam::current()->whereDate('date', '>=', $today)->limit(200)->get()->first(fn (Exam $exam) => $exam->isFor($user))
+            'exam' => ExamController::published($user->programme)
+                ? Exam::current($user->programme)->whereDate('date', '>=', $today)->limit(200)->get()->first(fn (Exam $exam) => $exam->isFor($user))
                 : null,
         ];
     }

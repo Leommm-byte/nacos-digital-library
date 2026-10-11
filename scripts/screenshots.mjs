@@ -118,6 +118,8 @@ const pages = [
     ['admin-audit', '/admin/audit', 'F/HD/24/3211001'],
     ['admin-settings', '/admin/settings', 'F/HD/24/3211001'],
     ['admin-session', '/admin/session', 'F/HD/24/3211001'],
+    ['admin-session-part-time', '/admin/session?programme=part_time', 'F/HD/24/3211001'],
+    ['exams-manage-part-time', '/exams/manage?programme=part_time', 'F/HD/24/3211001'],
     ['admin-graduates', '/admin/users?status=graduated', 'F/HD/24/3211001'],
     ['admin-timetables', '/timetable/edit?class=full_time%7CND1%7C', 'F/HD/24/3211001'],
     ['exams-manage', '/exams/manage', 'F/HD/24/3211001'],
