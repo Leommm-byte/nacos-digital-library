@@ -28,10 +28,13 @@ and the item is ticked off here.
 | Governors | Each is tied to exactly one class (level, programme and arm). They review uploads for their own level only; admins review every level. |
 | Exam timetable | Hidden from students until an admin shows it (Exam timetable → Show to students), so a draft or last session's isn't mistaken for the real one. |
 | Programme calendars | Full-time, part-time and CODFEL keep separate calendars: each has its own academic session, its own exam timetable (shown or hidden on its own) and starts its new session on its own. |
+| Operations | Deployed by a GitHub Action after CI passes on main (releases switched by a link, the last 3 kept, one-click rollback); nightly database dumps and hourly copies of new uploads to Backblaze B2 (any S3-compatible storage works), 7 daily, 4 weekly and 6 monthly dumps kept; errors, failed backups and low disk space emailed to the admin (throttled), not a third-party service; UptimeRobot watches `/up`, `/up/scheduler` and `/up/backups`. Decided with the owner. |
 | Repository | Work happens in the fork `Leommm-byte/nacos-digital-library`. When everything is done, one PR goes from the fork back to `Tech-Reni/nacos-digital-library`. |
 
 ## Open items for the owner
 
+- Go live: follow [`deployment.md`](deployment.md) in order (server, GitHub
+  secrets, Backblaze, UptimeRobot), then its launch checklist.
 - Answer the questions at the end of [`legacy-checklist.md`](legacy-checklist.md)
   (one account per device, departments, invented matric numbers).
 - Rotate the legacy database password (`nacos_db`). It was committed to git.
@@ -70,7 +73,7 @@ Every legacy behaviour, bug to avoid and open question is tracked in
 - [x] **14.6 I. Executives and results.** "Know your executives" (public, linked from Elections): admins add each executive with position, an optional line (class or contact) and a photo, order them, or fill the list from a closed election's winners (ties are left for the admin, photos come along). Election results show each position in its own card, like the ballot.
 - [x] **14.6 J. Invitations and home.** Admin → Create accounts has "Create accounts and email invitations": students with an email on the roll get a one-time link (7 days) to choose their password and are signed in; the rest get slips. The scheduler sends them within the hourly limit (`MAIL_INVITATIONS_PER_HOUR`, default 80), sign-ups and re-sends first. Admin → Create accounts → Invitations lists the unused ones (waiting, sent, expired) with one-click re-send, a corrected address, or every expired one at once; "Forgot password" sends an unused invitation again, and signing in any other way uses it up. Sign-up with a matric number whose roll row has an email sends the link to that address instead of signing in. A "Your executives" card on the home page (students and guests) shows the first photos and links to the page.
 - [x] **14.6 K. Install pop-up.** On a phone, from the second visit, a pop-up invites installing the app: on Android "Install app" opens the browser's prompt; on iPhone and iPad it shows the three Safari steps. The page behind is dimmed (no blur: `backdrop-filter` stutters on cheap phones). It shows once: "Not now", "Got it", the close button, Escape or a tap outside hide it for 30 days, and never again once installed. Only on the home pages, never over a ballot or a book; the smaller card stays as the reminder. Outside production `/?install=ios` or `?install=prompt` shows it at once.
-- [ ] **15. Go live.** Deployment to DreamHost, backups, monitoring, launch checklist.
+- [x] **15. Go live.** The Deploy workflow (after CI on main, or by hand, with rollback) and `scripts/deploy/release.sh` on the server; `backup:run` (database nightly, uploads hourly, off-site to B2 with retention) and `ops:disk`; error, backup and disk alerts by email; `/up/scheduler` and `/up/backups` for UptimeRobot and a *Site health* section on the admin dashboard; `users:make-admin` for the first admin; HTTPS and no-www redirects. The one-time setup, restore drill and launch checklist are in [`deployment.md`](deployment.md): the owner's steps (panel, secrets, accounts) come next.
 
 ## Why the legacy app was slow (avoid repeating these)
 

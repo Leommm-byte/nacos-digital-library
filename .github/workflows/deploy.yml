@@ -1,0 +1,115 @@
+name: Deploy
+
+# Publishes main to DreamHost (docs/deployment.md):
+# - after CI passes on main, when the repository variable DEPLOY_ENABLED is
+#   "true" (so nothing deploys before the server is set up);
+# - or by hand: Actions → Deploy → Run workflow, optionally "rollback" to
+#   switch back to the previous release.
+#
+# Needs these repository secrets: DEPLOY_SSH_KEY (a private key whose public
+# half is in the server's ~/.ssh/authorized_keys), DEPLOY_HOST,
+# DEPLOY_USER, DEPLOY_KNOWN_HOSTS (output of `ssh-keyscan <host>`); and the
+# variable APP_URL (https://nacosyabatech.com) for the check afterwards.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      rollback:
+        description: Switch back to the previous release instead of deploying
+        type: boolean
+        default: false
+
+# One deploy at a time; a newer one waits rather than cancelling a half-done one.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to DreamHost
+    runs-on: ubuntu-latest
+    environment: production
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+      )
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: SSH key
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER_NAME: ${{ secrets.DEPLOY_USER }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host server\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy\n  IdentitiesOnly yes\n' "$HOST" "$USER_NAME" > ~/.ssh/config
+
+      - name: Roll back
+        if: inputs.rollback
+        run: ssh server 'sh ~/nacos/release.sh rollback'
+
+      - uses: shivammathur/setup-php@v2
+        if: ${{ !inputs.rollback }}
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, intl, gd, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        if: ${{ !inputs.rollback }}
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Build
+        if: ${{ !inputs.rollback }}
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+          npm ci --no-audit --no-fund
+          npm run build
+          git rev-parse --short HEAD > REVISION
+
+      - name: Package
+        if: ${{ !inputs.rollback }}
+        id: package
+        run: |
+          name="$(date -u +%Y%m%d-%H%M%S)-$(cat REVISION)"
+          tar -czf "/tmp/$name.tar.gz" \
+            --exclude=./.git --exclude=./.github --exclude=./node_modules --exclude=./tests \
+            --exclude=./legacy --exclude=./docs --exclude=./storage --exclude=./docker \
+            --exclude=./public/live --exclude='./.env*' .
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          du -h "/tmp/$name.tar.gz"
+
+      - name: Upload and go live
+        if: ${{ !inputs.rollback }}
+        run: |
+          ssh server 'mkdir -p ~/nacos/incoming'
+          scp scripts/deploy/release.sh server:nacos/release.sh
+          scp "/tmp/${{ steps.package.outputs.name }}.tar.gz" server:nacos/incoming/
+          ssh server "sh ~/nacos/release.sh ${{ steps.package.outputs.name }}"
+
+      - name: Check the site answers
+        if: vars.APP_URL != ''
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS --max-time 15 "${{ vars.APP_URL }}/up" > /dev/null; then
+              echo "The site is up."; exit 0
+            fi
+            sleep 10
+          done
+          echo "The site did not answer on /up after the deploy. Roll back from Actions → Deploy → Run workflow → rollback." >&2
+          exit 1
