@@ -9,12 +9,15 @@ owner can do those. Everything else is automated.
 
 ## Server facts
 
+Fill these in once your account exists (step 0). The rest of this guide calls
+them `USER` and `SERVER`.
+
 | | |
 |---|---|
-| Plan | Web Hosting Growth (shared) |
+| Plan | DreamHost Shared Unlimited (email included), in NACOS's own account |
 | Site | `nacosyabatech.com` |
-| SSH | `new_nacos_admin@iad1-shared-d12-02.dreamhost.com` (port 22) |
-| Home | `/home/new_nacos_admin` |
+| SSH | `USER@SERVER` (port 22): both are shown in the panel next to the user |
+| Home | `/home/USER` |
 | PHP | 8.3 (`/usr/local/php83/bin/php`) |
 
 ## How it fits together
@@ -35,18 +38,51 @@ the link. Rolling back switches the link back.
 
 ## You will need
 
-- The DreamHost panel and SSH password for `new_nacos_admin`.
+- A NACOS email address that the executives control (not a personal one).
+- A card for DreamHost.
 - Admin rights on the GitHub repository (Settings).
 - A Backblaze account (free; backups cost about $0.006 per GB a month).
 - An UptimeRobot account (free).
 - An email address for alerts, for example your own Gmail.
+
+## 0. Your own DreamHost account and the domain
+
+1. **Sign up.** On dreamhost.com, choose *Shared Hosting → Unlimited*. Sign
+   up with the NACOS email address. When asked for a domain, choose *I
+   already own a domain* and enter `nacosyabatech.com`. Paying for 1 or 3
+   years is much cheaper per month; check the renewal price before paying.
+2. **A second login.** Give a second trusted executive the panel password
+   (or add them under *Account → Users/Managers*, if offered), so one person
+   leaving can't lock NACOS out. Turn on two-factor sign-in for the panel.
+3. **The domain.** Find out where `nacosyabatech.com` is registered:
+   - **In the other person's DreamHost account:** ask them to contact
+     DreamHost support to move the domain registration to your account (a
+     free move between DreamHost accounts).
+   - **At another registrar:** leave it there and set its nameservers to
+     `ns1.dreamhost.com`, `ns2.dreamhost.com` and `ns3.dreamhost.com`.
+
+   Changing the nameservers moves the website **and** any email at
+   `@nacosyabatech.com` to your account, and can take up to 24 hours. The old
+   site stops answering then, so do it when you're ready to finish the
+   setup the same day or the next.
+4. **An SSH user.** Under *Websites → SFTP/SSH Users* (search "users" in
+   the panel), add a user, for example `nacos_admin`, with **SSH (shell)**
+   access and a strong password. Note the user name (`USER`) and the server
+   name shown next to it (`SERVER`, like `iad1-shared-b7-12.dreamhost.com`).
+5. **The website.** Under *Websites → Add Website*, add
+   `nacosyabatech.com` as a fully hosted site run by that user. Then carry on
+   with step 1.
+6. **Check SSH works.** On your computer (Terminal on a Mac, PowerShell on
+   Windows): `ssh USER@SERVER`, type the password, then `exit`.
 
 ## 1. One-time server setup
 
 1. **PHP and HTTPS.** In the panel, go to *Websites → Manage Websites →
    nacosyabatech.com*:
    - Set **PHP** to 8.3.
-   - Turn on the free **Let's Encrypt certificate** (HTTPS).
+   - Turn on the free **Let's Encrypt certificate** (HTTPS). It can only be
+     issued once the domain points at your account (step 0.3); if it fails,
+     try again a few hours later.
    - Set the **web directory** to `nacosyabatech.com/public`.
 
    Only `public/` may ever be served. The first deploy moves the folder the
@@ -127,7 +163,7 @@ the link. Rolling back switches the link back.
    ```
    Scanned books are sent as one file per page (up to 60 pages plus a
    cover). PHP's default of 20 files per request would silently drop pages.
-6. **Cron.** Under *More → Cron Jobs*, add a job for `new_nacos_admin` with
+6. **Cron.** Under *Cron Jobs* (search "cron" in the panel), add a job for `USER` with
    a *Custom* schedule of every minute and this command:
    ```
    cd ~/nacosyabatech.com && /usr/local/php83/bin/php artisan schedule:run >> /dev/null 2>&1
@@ -144,19 +180,26 @@ the link. Rolling back switches the link back.
    ```bash
    ssh-keygen -t ed25519 -f nacos-deploy -N "" -C "github-deploy"
    ```
-   Then copy the public half onto the server:
+   It works the same in Terminal (Mac) and PowerShell (Windows). Then put
+   the public half on the server. On a Mac:
    ```bash
-   ssh-copy-id -i nacos-deploy.pub new_nacos_admin@iad1-shared-d12-02.dreamhost.com
+   ssh-copy-id -i nacos-deploy.pub USER@SERVER
    ```
+   On Windows (PowerShell):
+   ```powershell
+   type nacos-deploy.pub | ssh USER@SERVER "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+   ```
+   Check it: `ssh -i nacos-deploy USER@SERVER` should log in without asking
+   for the password.
 2. **Secrets.** In the repository, go to *Settings → Secrets and variables →
    Actions → New repository secret* and add:
 
    | Secret | Value |
    |---|---|
    | `DEPLOY_SSH_KEY` | the whole contents of the private file `nacos-deploy` |
-   | `DEPLOY_HOST` | `iad1-shared-d12-02.dreamhost.com` |
-   | `DEPLOY_USER` | `new_nacos_admin` |
-   | `DEPLOY_KNOWN_HOSTS` | the output of `ssh-keyscan iad1-shared-d12-02.dreamhost.com` |
+   | `DEPLOY_HOST` | `SERVER` |
+   | `DEPLOY_USER` | `USER` |
+   | `DEPLOY_KNOWN_HOSTS` | the output of `ssh-keyscan SERVER` (all lines) |
 
    Then delete `nacos-deploy` from your computer, or keep it only in your
    password manager.
