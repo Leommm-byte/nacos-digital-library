@@ -119,6 +119,8 @@
     /* Small, cheap shadows: no large blurs on mobile GPUs. */
     --shadow-card: 0 1px 2px rgb(16 24 20 / 0.04), 0 4px 14px -6px rgb(16 24 20 / 0.1);
     --shadow-pop: 0 12px 32px -8px rgb(16 24 20 / 0.22);
+    /* Dims the page behind a pop-up. */
+    --scrim: rgb(8 14 11 / 0.55);
 
     --header-h: 4rem;
     --tabbar-h: 4rem;
@@ -190,5 +192,6 @@
 
         --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
         --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.5);
+        --scrim: rgb(0 0 0 / 0.7);
     }
 }

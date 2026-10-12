@@ -119,4 +119,17 @@ class OfflineTest extends TestCase
             $this->assertFileExists(public_path(ltrim($icon['src'], '/')));
         }
     }
+
+    #[Test]
+    public function the_home_pages_carry_the_install_pop_up_whose_preview_is_off_in_production(): void
+    {
+        $this->get('/')->assertSee('data-install-dialog', false)->assertSee('Add to Home Screen')->assertSee('data-install-preview', false);
+        $this->actingAs(User::factory()->create())->get('/')->assertSee('data-install-dialog', false);
+
+        // Not on other pages (never over a ballot or a book).
+        $this->get(route('library.index'))->assertDontSee('data-install-dialog', false);
+
+        $this->app['env'] = 'production';
+        $this->get('/')->assertSee('data-install-dialog', false)->assertDontSee('data-install-preview', false);
+    }
 }

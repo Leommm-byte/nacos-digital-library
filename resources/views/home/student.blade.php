@@ -20,6 +20,7 @@
     </section>
 
     @include('partials.install-banner')
+    @include('partials.install-dialog')
 
     {{-- At a glance; each tile leads to its page. --}}
     <nav aria-label="Your numbers" class="mt-6">

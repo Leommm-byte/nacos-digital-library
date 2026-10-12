@@ -4606,6 +4606,142 @@
         margin-left: auto;
     }
 
+    /* "Install the app" pop-up (resources/js/install.js). The page behind
+       is dimmed, not blurred: backdrop-filter stutters on cheap phones. */
+    .install-dialog {
+        width: min(100% - 2rem, 30rem);
+        max-height: calc(100dvh - 2rem);
+        margin: auto auto 1rem;
+        padding: 1.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        color: var(--fg);
+        box-shadow: var(--shadow-pop);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+
+        /* It takes focus itself on opening (install.js). */
+        &:focus {
+            outline: none;
+        }
+
+        &[open] {
+            animation: install-rise var(--duration-slow) var(--ease-out) both;
+        }
+
+        &::backdrop {
+            /* Older browsers don't pass variables to ::backdrop. */
+            background: var(--scrim, rgb(8 14 11 / 0.55));
+            animation: install-dim var(--duration-slow) ease both;
+        }
+
+        @media (min-width: 40rem) {
+            margin-block: auto;
+        }
+    }
+
+    @keyframes install-rise {
+        from {
+            opacity: 0;
+            transform: translateY(1.5rem);
+        }
+    }
+
+    @keyframes install-dim {
+        from {
+            opacity: 0;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .install-dialog[open],
+        .install-dialog::backdrop {
+            animation: none;
+        }
+    }
+
+    .install-dialog-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .install-dialog-icon {
+        flex-shrink: 0;
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: var(--radius-md);
+        box-shadow: 0 0 0 1px var(--border);
+    }
+
+    .install-dialog-close {
+        display: inline-grid;
+        flex-shrink: 0;
+        place-items: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        margin: -0.5rem -0.5rem 0 0;
+        border-radius: 999px;
+        color: var(--muted);
+
+        &:hover {
+            background: var(--surface-2);
+            color: var(--fg);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--ring);
+            outline-offset: 2px;
+        }
+    }
+
+    .install-steps {
+        display: grid;
+        gap: 0.5rem;
+        margin-top: 1.25rem;
+
+        &[hidden] {
+            display: none;
+        }
+
+        > li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            background: var(--surface-2);
+            font-size: 0.9375rem;
+        }
+    }
+
+    .install-step-icon {
+        flex-shrink: 0;
+        width: 2rem;
+        height: 2rem;
+        padding: 0.4375rem;
+        border-radius: var(--radius-sm, 0.5rem);
+        background: var(--primary-soft);
+        color: var(--link);
+    }
+
+    .install-dialog-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.25rem;
+
+        > .btn {
+            flex: 1 1 8rem;
+        }
+
+        > [hidden] {
+            display: none;
+        }
+    }
+
 
     /* Same look whether the card title is an h2 or an h3. */
     .book-card-title {
