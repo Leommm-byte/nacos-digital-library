@@ -5,6 +5,13 @@
 
     RewriteEngine On
 
+    # The live site is always https://nacosyabatech.com (no www). Only for
+    # that domain, so local development keeps working over plain http.
+    RewriteCond %{HTTP_HOST} ^(www\.)?nacosyabatech\.com$ [NC]
+    RewriteCond %{HTTPS} !=on [OR]
+    RewriteCond %{HTTP_HOST} ^www\. [NC]
+    RewriteRule ^ https://nacosyabatech.com%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

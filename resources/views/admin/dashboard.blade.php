@@ -70,4 +70,47 @@
             @endif
         </x-section>
     </div>
+
+    <x-section class="mt-10" title="Site health" description="The cron, backups and the version that's live. Set up in docs/deployment.md." icon="activity" tone="violet">
+        <dl class="dashboard-card health-list mt-0">
+            <div>
+                <dt>Cron</dt>
+                <dd>
+                    <x-badge :variant="$health['cronOk'] ? 'primary' : 'danger'">{{ $health['cronOk'] ? 'Running' : 'Not running' }}</x-badge>
+                    <span class="text-sm text-muted">{{ $health['cron'] ? 'Last ran '.$health['cron']->diffForHumans() : 'Has never run' }}</span>
+                </dd>
+            </div>
+            <div>
+                <dt>Database backup</dt>
+                <dd>
+                    <x-badge :variant="$health['backupOk'] && $health['offsite'] ? 'primary' : 'danger'">{{ ! $health['backupOk'] ? 'Overdue' : ($health['offsite'] ? 'Up to date' : 'Server only') }}</x-badge>
+                    <span class="text-sm text-muted">{{ $health['backup'] ? 'Last '.$health['backup']->timezone($zone)->format('j M, g:i a') : 'None yet' }}{{ $health['offsite'] ? '' : ' · no off-site storage set up' }}</span>
+                </dd>
+            </div>
+            <div>
+                <dt>Uploaded files</dt>
+                <dd>
+                    <span class="text-sm text-muted">
+                        @if (! $health['offsite'])
+                            Not copied off-site (no off-site storage set up)
+                        @elseif ($health['files'])
+                            Copied off-site {{ $health['files']->diffForHumans() }}@if ($health['filesWaiting']) · {{ number_format($health['filesWaiting']) }} waiting for the next run @endif
+                        @else
+                            Not copied yet
+                        @endif
+                    </span>
+                </dd>
+            </div>
+            @if ($health['failure'])
+                <div>
+                    <dt>Last backup error</dt>
+                    <dd class="text-sm text-danger">{{ $health['failure'] }}</dd>
+                </div>
+            @endif
+            <div>
+                <dt>Version</dt>
+                <dd class="text-sm text-muted">{{ $health['release'] === 'unknown' ? 'Not deployed by the Deploy workflow' : $health['release'] }}</dd>
+            </div>
+        </dl>
+    </x-section>
 </x-layouts.admin>

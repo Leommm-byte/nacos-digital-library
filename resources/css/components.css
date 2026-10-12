@@ -2867,6 +2867,36 @@
         }
     }
 
+    /* Admin dashboard: site health, one row per check. */
+    .health-list {
+        display: grid;
+        gap: 0.875rem;
+
+        > div {
+            display: grid;
+            gap: 0.25rem 1rem;
+
+            @media (min-width: 40rem) {
+                grid-template-columns: 10rem 1fr;
+                align-items: baseline;
+            }
+        }
+
+        & dt {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        & dd {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
     .activity-list {
         display: grid;
         gap: 0.875rem;

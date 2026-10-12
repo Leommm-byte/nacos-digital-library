@@ -40,6 +40,24 @@ return [
 
         // Book PDFs and covers. Never web-accessible: always streamed through
         // controllers that check permissions first.
+        // Off-site backups (config/operations.php): any S3-compatible
+        // storage. Backblaze B2: the endpoint is shown on the bucket's page
+        // (e.g. https://s3.us-west-004.backblazeb2.com), the region is its
+        // middle part (us-west-004), and the key is an application key
+        // limited to that bucket.
+        'backups' => [
+            'driver' => 's3',
+            'key' => env('BACKUP_S3_KEY'),
+            'secret' => env('BACKUP_S3_SECRET'),
+            'region' => env('BACKUP_S3_REGION'),
+            'bucket' => env('BACKUP_S3_BUCKET'),
+            'endpoint' => env('BACKUP_S3_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'root' => env('BACKUP_S3_ROOT', 'nacos'),
+            'throw' => true,
+            'report' => false,
+        ],
+
         'private' => [
             'driver' => 'local',
             'root' => storage_path('app/private/library'),
