@@ -8,6 +8,7 @@ use App\Http\Controllers\Timetables\ExamController;
 use App\Models\Book;
 use App\Models\Election;
 use App\Models\Exam;
+use App\Models\Executive;
 use App\Models\ReadingProgress;
 use App\Models\TimetableSlot;
 use App\Models\User;
@@ -36,12 +37,15 @@ class HomeController extends Controller
     /** Books per shelf on the dashboard: one row of four. */
     public const SHELF = 4;
 
+    /** Executives' photos on the home page card. */
+    public const EXECUTIVES = 5;
+
     public function __invoke(Request $request): View
     {
         $user = $request->user();
 
         if (! $user instanceof User) {
-            return view('home.guest');
+            return view('home.guest', ['executives' => $this->executives()]);
         }
 
         $user->loadMissing('department:id,name');
@@ -80,6 +84,7 @@ class HomeController extends Controller
                 'unread' => $user->unreadNotifications()->count(),
             ],
             'announcements' => Announcements::latest($user, 3),
+            'executives' => $this->executives(),
             'activity' => ActivityFeed::forUser($user),
             'elections' => $this->ballotsWaiting($user),
             'timetable' => $this->timetable($user),
@@ -170,6 +175,22 @@ class HomeController extends Controller
             ->all();
 
         return $open->reject(fn (Election $election) => in_array($election->id, $voted, true) || ! $election->isEligible($user))->values();
+    }
+
+    /**
+     * The first few executives for the "Your executives" card, and how
+     * many there are in all.
+     *
+     * @return array{people: Collection<int, Executive>, total: int}
+     */
+    private function executives(): array
+    {
+        $people = Executive::query()->orderBy('sort_order')->orderBy('id')->limit(self::EXECUTIVES)->get();
+
+        return [
+            'people' => $people,
+            'total' => $people->count() < self::EXECUTIVES ? $people->count() : Executive::query()->count(),
+        ];
     }
 
     private function greeting(): string

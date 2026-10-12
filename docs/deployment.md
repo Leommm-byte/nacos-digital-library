@@ -33,7 +33,10 @@
    and run `php artisan key:generate`. For password reset and verification
    emails, set the `MAIL_*` values to a DreamHost mailbox (for example
    `no-reply@nacosyabatech.com`, SMTP `smtp.dreamhost.com`, port 465,
-   `MAIL_SCHEME=smtps`).
+   `MAIL_SCHEME=smtps`). Account invitations are sent by the cron, at most
+   `MAIL_INVITATIONS_PER_HOUR` (default 80) an hour, leaving room under
+   DreamHost's limit of about 100 emails an hour for reset and
+   verification emails.
 4. **Cron:** *More → Cron Jobs*, add a job as `new_nacos_admin` with the
    *Custom* schedule set to every minute:
    ```

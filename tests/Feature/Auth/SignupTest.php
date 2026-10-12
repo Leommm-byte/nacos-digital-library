@@ -6,8 +6,11 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\Role;
 use App\Models\Department;
+use App\Models\RollEntry;
 use App\Models\User;
+use App\Notifications\AccountInvitation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -158,5 +161,54 @@ class SignupTest extends TestCase
     {
         $this->post('/signup', $this->form(['fullname' => ' A ']))
             ->assertSessionHasErrors('fullname');
+    }
+
+    #[Test]
+    public function with_an_email_on_the_class_list_the_link_goes_there_instead(): void
+    {
+        Notification::fake();
+        RollEntry::create(['matric_number' => 'F/ND/24/1234567', 'fullname' => 'OBI Ada', 'email' => 'ada.real@example.com', 'programme' => 'full_time', 'level' => 'ND1']);
+
+        // Someone types Ada's matric number with their own email and password.
+        $this->post('/signup', $this->form(['email' => 'impostor@example.com']))
+            ->assertRedirect(route('signup.sent'));
+        $this->assertGuest();
+        $this->get(route('signup.sent'))->assertOk()->assertSee('a•••@example.com')->assertDontSee('ada.real');
+
+        $user = User::where('matric_number', 'F/ND/24/1234567')->firstOrFail();
+        $this->assertSame('ada.real@example.com', $user->email);
+        $this->assertTrue($user->must_change_password);
+        $this->assertTrue($user->invitation?->isFromSignup());
+        $this->assertDatabaseHas('audit_logs', ['action' => 'user_registered', 'user_id' => $user->id]);
+
+        // The typed password doesn't work, and the matric number is taken.
+        $this->post(route('login.store'), ['matric_number' => 'F/ND/24/1234567', 'password' => 'Str0ng!pass'])->assertSessionHasErrors();
+        $this->assertGuest();
+        $this->post('/signup', $this->form())->assertSessionHasErrors('matric_number');
+
+        // The link goes to the class list's address, straight away.
+        $this->artisan('invitations:send');
+        Notification::assertSentTo($user, AccountInvitation::class, function (AccountInvitation $email) use ($user) {
+            return $email->fromSignup && str_contains((string) $email->toMail($user)->subject, 'Finish signing up');
+        });
+        Notification::assertSentTimes(AccountInvitation::class, 1);
+
+        $this->get(route('signup.sent'))->assertRedirect(route('login'));
+    }
+
+    #[Test]
+    public function without_a_usable_class_list_email_sign_up_works_as_before(): void
+    {
+        // On the roll without an email.
+        RollEntry::create(['matric_number' => 'F/ND/24/1234567', 'fullname' => 'OBI Ada', 'programme' => 'full_time', 'level' => 'ND1']);
+        $this->post('/signup', $this->form())->assertRedirect(route('home'));
+        $this->assertAuthenticated();
+
+        // The class list's email is already another account's.
+        auth()->logout();
+        User::factory()->create(['email' => 'shared@example.com']);
+        RollEntry::create(['matric_number' => 'F/ND/24/7654321', 'fullname' => 'BELLO Tunde', 'email' => 'shared@example.com', 'programme' => 'full_time', 'level' => 'ND1']);
+        $this->post('/signup', $this->form(['matric_number' => 'F/ND/24/7654321']))->assertRedirect(route('home'));
+        $this->assertAuthenticated();
     }
 }

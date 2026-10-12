@@ -8,6 +8,7 @@ use App\Http\Controllers\Account\SettingsController;
 use App\Http\Controllers\Account\TwoFactorController;
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetCodeController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -27,6 +28,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/signup', [SignupController::class, 'store'])
         ->middleware('throttle:20,10')
         ->name('signup.store');
+
+    Route::get('/signup/check-your-email', [SignupController::class, 'sent'])->name('signup.sent');
+
+    // Invitation emails (accounts made from the nominal roll).
+    Route::get('/invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+    Route::post('/invitation/{token}', [InvitationController::class, 'store'])
+        ->middleware('throttle:10,10')
+        ->name('invitation.store');
 
     Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])

@@ -41,4 +41,9 @@
             @endforeach
         </ul>
     </section>
+
+    <section class="card mt-8 p-5 md:p-6" aria-labelledby="executives-heading">
+        <h2 id="executives-heading" class="flex items-center gap-2 text-base"><x-icon name="users" class="text-muted" /> Know your executives</h2>
+        @include('home.partials.executives')
+    </section>
 </x-layouts.app>

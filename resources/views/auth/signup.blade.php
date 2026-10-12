@@ -9,7 +9,7 @@
         <x-field name="display_name" label="What should we call you? (optional)" autocomplete="nickname" maxlength="30" hint="Used in greetings. Leave it empty to use your first name." />
         <x-field name="matric_number" label="Matric number" placeholder="F/ND/24/1234567" hint="As printed on your school ID card." autocomplete="username" autocapitalize="characters" spellcheck="false" required class="uppercase placeholder:normal-case" />
 
-        <x-field name="email" label="Email (optional)" type="email" autocomplete="email" hint="Lets you reset your password yourself if you forget it. We'll send a link to confirm it." />
+        <x-field name="email" label="Email (optional)" type="email" autocomplete="email" hint="Lets you reset your password yourself if you forget it. If your class list already has your email, we'll send the link to finish signing up there." />
 
         <x-select name="department_id" label="Department" placeholder="Choose your department" required
             :options="$departments->pluck('name', 'id')->all()" />

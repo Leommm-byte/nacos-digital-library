@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -238,6 +239,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function bookmarks(): BelongsToMany
     {
         return $this->belongsToMany(Book::class, 'bookmarks')->withPivot('created_at');
+    }
+
+    /**
+     * The invitation email, for accounts made from the nominal roll.
+     *
+     * @return HasOne<AccountInvitation, $this>
+     */
+    public function invitation(): HasOne
+    {
+        return $this->hasOne(AccountInvitation::class);
     }
 
     /**
