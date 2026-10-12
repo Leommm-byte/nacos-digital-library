@@ -42,6 +42,21 @@ class ExecutiveTest extends TestCase
     }
 
     #[Test]
+    public function the_home_page_shows_the_first_few_executives(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Know your executives')->assertSee('current executives will appear here');
+
+        foreach (range(1, 7) as $i) {
+            Executive::create(['name' => "Person {$i}", 'position' => "Post {$i}", 'sort_order' => $i]);
+        }
+
+        // Guests and students both get the card and the link.
+        $this->get('/')->assertSee(route('executives.index'))->assertSee('Post 1: <span class="font-semibold text-fg">Person 1</span>, and 6 more', false)->assertSee('+2');
+        $this->actingAs(User::factory()->create())->get('/')->assertOk()
+            ->assertSee('Your executives')->assertSee('P1')->assertSee('+2')->assertSee(route('executives.index'));
+    }
+
+    #[Test]
     public function only_admins_manage_executives(): void
     {
         $executive = Executive::create(['name' => 'Ada', 'position' => 'President']);

@@ -199,6 +199,11 @@
                 @endcan
             </section>
 
+            <section class="dashboard-card" aria-labelledby="executives-heading">
+                <h2 id="executives-heading" class="flex items-center gap-2 text-base"><x-icon name="users" class="text-muted" /> Your executives</h2>
+                @include('home.partials.executives')
+            </section>
+
             <section class="dashboard-card" aria-labelledby="profile-heading">
                 <div class="flex items-center justify-between gap-3">
                     <h2 id="profile-heading" class="flex items-center gap-2 text-base"><x-icon name="user" class="text-muted" /> Your details</h2>

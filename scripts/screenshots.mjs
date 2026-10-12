@@ -15,6 +15,9 @@ const viewports = {
     desktop: { viewport: { width: 1280, height: 860 }, deviceScaleFactor: 1 },
 };
 
+// Sign-ups made by the signup-sent screen so far.
+let signups = 0;
+
 // [name, path, account] — account null means signed out.
 const pages = [
     ['guest-home', '/', null],
@@ -26,6 +29,21 @@ const pages = [
         await page.waitForLoadState('networkidle');
     }],
     ['signup', '/signup', null],
+    // End to end: signs up with a matric number whose class list has an
+    // email (a different seeded one each run), so the link goes there.
+    ['signup-sent', '/signup', null, async (page) => {
+        signups += 1;
+        await page.fill('#fullname', 'Kemi Adeyemi');
+        await page.fill('#matric_number', `D/ND/24/91000${String(signups).padStart(2, '0')}`);
+        await page.selectOption('#department_id', { index: 1 });
+        await page.selectOption('#level', 'ND1');
+        await page.selectOption('#programme', 'codfel');
+        await page.fill('#password', password);
+        await page.fill('#password_confirmation', password);
+        await Promise.all([page.waitForURL(/\/signup\/check-your-email$/, { timeout: 15000 }), page.click('form button[type=submit]')]);
+    }],
+    ['invitation', '/invitation/demo-invitation-link-for-screenshots-0123456789a', null],
+    ['invitation-expired', '/invitation/no-such-link', null],
     ['forgot-password', '/forgot-password', null],
     ['reset-with-code', '/reset-with-code', null],
     ['not-found', '/this-page-does-not-exist', null],
@@ -112,12 +130,14 @@ const pages = [
     ['admin-users', '/admin/users', 'F/HD/24/3211001'],
     ['admin-user', 'LINK /admin/users?q=Tobi .user-cell', 'F/HD/24/3211001'],
     ['admin-accounts', '/admin/accounts', 'F/HD/24/3211001'],
-    // End to end: creates the accounts of one class and lands on its slips.
+    // End to end: creates the accounts of one class, emailing invitations
+    // to those with an address, and lands on the others' slips.
     ['admin-slips', '/admin/accounts', 'F/HD/24/3211001', async (page) => {
         await page.locator('input[name="classes[]"]:not([disabled])').first().check();
-        await page.click('form[action$="/admin/accounts"] button[type=submit]');
+        await page.click('form[action$="/admin/accounts"] button[value=email]');
         await page.waitForURL(/\/admin\/accounts\/slips$/, { timeout: 30000 });
     }],
+    ['admin-invitations', '/admin/accounts/invitations', 'F/HD/24/3211001'],
     ['admin-books', '/admin/books', 'F/HD/24/3211001'],
     ['admin-reports', '/admin/reports', 'F/HD/24/3211001'],
     ['admin-audit', '/admin/audit', 'F/HD/24/3211001'],

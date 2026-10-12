@@ -290,6 +290,7 @@ New:
 - [x] Nominal roll kept per class (programme and level), uploaded as Excel or CSV from a template with the class at the top; the admin can download each class's template with the class filled in. The class in the file must match, and matric numbers that don't fit the class (programme letter, ND/HND) need confirming.
 - [x] Elections can be limited by programme too, so a class election is "programme + level".
 - [x] A new password slip for one person from their page (lost password, no email).
+- [x] Accounts can be emailed instead: an invitation with a one-time link to choose a password (7 days), re-sent from Admin → Invitations; slips for those without an email. Signing up with a matric number whose roll row has an email sends the link to that address.
 - [x] The roll can also be added to: a file of extra students for a class (nobody removed), or one student at a time; single students can be removed. Every change is in the audit log.
 - [x] The roll is locked while voting is open in an election limited to it, so nobody can be added or removed to sway the vote (decided with the owner).
 

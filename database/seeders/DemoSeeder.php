@@ -7,6 +7,7 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\ReviewAction;
 use App\Enums\Role;
+use App\Models\AccountInvitation;
 use App\Models\Announcement;
 use App\Models\Book;
 use App\Models\Department;
@@ -18,6 +19,7 @@ use App\Models\RollEntry;
 use App\Models\TimetableSlot;
 use App\Models\User;
 use App\Notifications\UploadReviewed;
+use App\Support\Accounts\Invitations;
 use App\Support\Classes\Arms;
 use App\Support\Classes\SchoolClass;
 use App\Support\Elections\BallotBox;
@@ -35,6 +37,9 @@ use Illuminate\Support\Facades\Storage;
 class DemoSeeder extends Seeder
 {
     public const PASSWORD = 'Password1!';
+
+    /** The link of the seeded "sent" invitation (/invitation/…), outside production. */
+    public const DEMO_INVITATION = 'demo-invitation-link-for-screenshots-0123456789a';
 
     public function run(): void
     {
@@ -215,7 +220,8 @@ class DemoSeeder extends Seeder
                 $waiting[] = [
                     'matric_number' => sprintf('%s/%s/24/%s', $class->programme->matricLetter(), $class->level->stage() === 'HND' ? 'HD' : 'ND', $digits),
                     'fullname' => strtoupper(fake()->lastName()).' '.fake()->firstName(),
-                    'email' => null,
+                    // The first of each class has an email: invited, not a slip.
+                    'email' => $i === 1 ? 'student'.($c * 10 + $i).'@example.com' : null,
                     'programme' => $class->programme->value,
                     'level' => $class->level->value,
                     'arm' => $class->arm,
@@ -224,7 +230,23 @@ class DemoSeeder extends Seeder
                 ];
             }
         }
+        // On the CODFEL ND1 list with an email: signing up sends the link
+        // there (the screenshots sign up as each in turn).
+        foreach (range(1, 4) as $i) {
+            $waiting[] = [
+                'matric_number' => sprintf('D/ND/24/91000%02d', $i),
+                'fullname' => 'ADEYEMI Kemi',
+                'email' => "kemi{$i}@example.com",
+                'programme' => Programme::Codfel->value,
+                'level' => Level::ND1->value,
+                'arm' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
         RollEntry::query()->insert($waiting);
+
+        $this->seedInvitations($users['admin'], $cs);
 
         // Each programme keeps its own calendar: part-time is a session
         // behind, and only full-time's exam timetable is out.
@@ -242,6 +264,32 @@ class DemoSeeder extends Seeder
         // Last session's ND2 graduate: reads the library, can't vote or upload.
         $graduate = User::factory()->for($cs)->create(['fullname' => 'Kunle Graduate', 'level' => Level::ND2, 'programme' => Programme::FullTime]);
         $graduate->forceFill(['graduated_at' => now()->subMonths(3)])->save();
+    }
+
+    /**
+     * Accounts invited by email that haven't chosen a password yet: one
+     * waiting to go out, sent, and expired. Outside production, one has a
+     * known link (DEMO_INVITATION) for the screenshots.
+     */
+    private function seedInvitations(User $admin, Department $cs): void
+    {
+        $states = [
+            ['Bisi Invited', 'bisi@example.com', fn (AccountInvitation $i) => $i->forceFill(['token_hash' => app()->isProduction() ? null : hash('sha256', self::DEMO_INVITATION), 'sent_at' => now()->subHours(3), 'expires_at' => now()->addDays(7)->subHours(3), 'sends' => 1])],
+            ['Femi Waiting', 'femi@example.com', fn (AccountInvitation $i) => $i],
+            ['Ngozi Expired', 'ngozi.typo@example.con', fn (AccountInvitation $i) => $i->forceFill(['sent_at' => now()->subDays(9), 'expires_at' => now()->subDays(2), 'sends' => 2])],
+        ];
+
+        foreach ($states as $n => [$name, $email, $state]) {
+            $user = User::factory()->for($cs)->create([
+                'fullname' => $name,
+                'matric_number' => sprintf('P/ND/24/80000%02d', $n + 1),
+                'email' => $email,
+                'level' => Level::ND1,
+                'programme' => Programme::PartTime,
+            ]);
+            $user->forceFill(['must_change_password' => true])->save();
+            $state(Invitations::queue($user, $admin))->save();
+        }
     }
 
     /**

@@ -3341,6 +3341,39 @@
         font-size: 0.875rem;
     }
 
+    /* Home: the first few executives' photos, overlapping. */
+    .executive-stack {
+        display: flex;
+        width: fit-content;
+        border-radius: 999px;
+
+        & > .candidate-avatar {
+            outline: 2px solid var(--surface);
+        }
+
+        & > .candidate-avatar + .candidate-avatar {
+            margin-left: -0.625rem;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--ring);
+            outline-offset: 4px;
+        }
+    }
+
+    .executive-stack-more {
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 0.8125rem;
+    }
+
+    /* Admin invitations: "Wrong address?" opens a small form. */
+    .invitation-fix > summary {
+        min-height: 2rem;
+        padding-block: 0.375rem;
+        cursor: pointer;
+    }
+
     .executive-edit {
         border: 1px solid var(--border);
         border-radius: var(--radius-md);

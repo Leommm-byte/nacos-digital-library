@@ -12,13 +12,14 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
 /**
- * "Forgot password": emails a reset link to the account's verified address.
+ * "Forgot password": emails a reset link to the account's verified address,
+ * or, for an account whose invitation was never used, the invitation again.
  * The answer is the same whether or not the account exists or has an email,
  * so the page can't be used to find out who is registered.
  */
 class ForgotPasswordController extends Controller
 {
-    public const SENT = 'If that account has a verified email address, a reset link is on its way. It works for 60 minutes. No email? Ask your course rep or an admin for a reset code.';
+    public const SENT = 'If that account has a verified email address, a link is on its way. It works for 60 minutes. No email? Ask your course rep or an admin for a reset code.';
 
     public function create(): View
     {
@@ -33,7 +34,17 @@ class ForgotPasswordController extends Controller
         $matric = $request->string('matric_number')->toString();
         $user = User::where('matric_number', $matric)->first();
 
-        if ($user && $user->hasVerifiedEmailAddress() && ! $user->isSuspended()) {
+        $invitation = $user?->invitation;
+
+        if ($user && $invitation !== null && $invitation->accepted_at === null && $user->email !== null && ! $user->isSuspended()) {
+            // Never chose a password: their invitation is sent again (at
+            // most every 10 minutes), with a new link.
+            $recent = $invitation->sent_at === null || $invitation->sent_at->gt(now()->subMinutes(10));
+            if (! $recent) {
+                $invitation->resend();
+            }
+            Audit::record('password_reset_requested', $user, ['sent' => ! $recent, 'invitation' => true]);
+        } elseif ($user && $user->hasVerifiedEmailAddress() && ! $user->isSuspended()) {
             // The broker also refuses a second link within 60 seconds.
             $status = Password::sendResetLink(['email' => $user->email]);
             Audit::record('password_reset_requested', $user, ['sent' => $status === Password::RESET_LINK_SENT]);

@@ -153,6 +153,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
         Route::post('/accounts', [AccountController::class, 'store'])->middleware('throttle:20,1')->name('accounts.store');
         Route::get('/accounts/slips', [AccountController::class, 'slips'])->name('accounts.slips');
+        Route::get('/accounts/invitations', [AccountController::class, 'invitations'])->name('accounts.invitations');
+        Route::post('/accounts/invitations/expired', [AccountController::class, 'resendExpired'])->middleware('throttle:10,1')->name('accounts.invitations.expired');
+        Route::post('/accounts/invitations/{invitation}', [AccountController::class, 'resend'])->middleware('throttle:60,1')->name('accounts.invitations.resend');
 
         Route::get('/books', [AdminBookController::class, 'index'])->name('books.index');
         Route::delete('/books/{book}', [AdminBookController::class, 'destroy'])->name('books.destroy');

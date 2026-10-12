@@ -1,5 +1,5 @@
 <x-layouts.app title="Know your executives" description="The current NACOS YabaTech executives: who they are and what they do.">
-    <x-page-header title="Know your executives" subtitle="The students leading NACOS YabaTech this session." :back="route('elections.index')" back-label="Elections">
+    <x-page-header title="Know your executives" subtitle="The students leading NACOS YabaTech this session.">
         @can('access-admin')
             <x-slot:actions>
                 <x-button href="{{ route('admin.executives.index') }}" variant="secondary" icon="pencil">Edit</x-button>

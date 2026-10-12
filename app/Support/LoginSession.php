@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\AccountInvitation;
 use App\Models\User;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Http\Request;
@@ -33,6 +34,11 @@ class LoginSession
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
         ])->save();
+
+        // Signed in some other way (a reset code, a new password from an
+        // admin): an unused invitation is done with.
+        AccountInvitation::query()->where('user_id', $user->id)->whereNull('accepted_at')
+            ->update(['accepted_at' => now(), 'token_hash' => null]);
 
         Audit::record('login', $user, $auditMeta);
     }

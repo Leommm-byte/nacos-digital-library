@@ -115,4 +115,16 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    | Account invitations (App\Support\Accounts\Invitations). DreamHost's
+    | shared hosting sends about 100 emails an hour, so invitations take at
+    | most `per_hour` of them, leaving room for reset and verification
+    | emails. The scheduler sends up to `per_minute` each minute.
+    */
+    'invitations' => [
+        'per_hour' => (int) env('MAIL_INVITATIONS_PER_HOUR', 80),
+        'per_minute' => (int) env('MAIL_INVITATIONS_PER_MINUTE', 10),
+        'expire_days' => 7,
+    ],
+
 ];

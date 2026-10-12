@@ -16,3 +16,6 @@ Schedule::command('queue:prune-failed --hours=168')->daily();
 
 // Elections close at their end time even if nobody opens the page.
 Schedule::command('elections:close')->everyMinute()->withoutOverlapping();
+
+// Account invitations go out a few at a time, under the host's hourly limit.
+Schedule::command('invitations:send')->everyMinute()->withoutOverlapping();
