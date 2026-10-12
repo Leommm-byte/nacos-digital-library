@@ -21,7 +21,7 @@
             <div class="table-scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways">
                 <table class="admin-table">
                     <thead>
-                        <tr><th class="w-10"><span class="sr-only">Choose</span></th><th>Class</th><th class="num">On the roll</th><th class="num">Need an account</th><th class="num">With an email</th></tr>
+                        <tr><th class="w-10"><span class="sr-only">Choose</span></th><th>Class</th><th class="num">On the roll</th><th class="num">Need an account</th></tr>
                     </thead>
                     <tbody>
                         @foreach ($classes as $class)
@@ -29,13 +29,15 @@
                             <tr>
                                 <td><input type="checkbox" name="classes[]" value="{{ $class['key'] }}" id="class-{{ $loop->index }}" class="size-4 accent-[var(--primary)]" @checked(in_array($class['key'], (array) old('classes', []), true)) @disabled($ready === 0)></td>
                                 <td><label for="class-{{ $loop->index }}" class="font-semibold">{{ $class['label'] }}</label>
+                                    @if ($ready > 0)
+                                        <span class="block text-xs text-muted">{{ number_format($class['withEmail']) }} with an email</span>
+                                    @endif
                                     @if ($class['noName'] > 0)
                                         <span class="block text-xs text-muted">{{ $class['noName'] }} without a name on the roll (skipped)</span>
                                     @endif
                                 </td>
                                 <td class="num">{{ number_format($class['total']) }}</td>
                                 <td class="num">@if ($ready > 0)<strong>{{ number_format($ready) }}</strong>@else <span class="text-muted">All done</span>@endif</td>
-                                <td class="num">@if ($ready > 0){{ number_format($class['withEmail']) }}@else <span class="text-muted">–</span>@endif</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -46,9 +48,9 @@
                 <div class="min-w-48 flex-1">
                     <x-select name="department_id" label="Department" :options="$departments" :value="old('department_id', array_key_first($departments))" />
                 </div>
-                <div class="flex flex-wrap gap-3">
-                    <x-button name="send" value="email" icon="mail" :disabled="$totalMissing === 0">Create accounts and email invitations</x-button>
-                    <x-button name="send" value="slips" variant="secondary" icon="printer" :disabled="$totalMissing === 0">Create accounts and print slips</x-button>
+                <div class="flex w-full flex-wrap gap-3">
+                    <x-button name="send" value="email" icon="mail" class="w-full sm:w-auto" :disabled="$totalMissing === 0">Create accounts and email invitations</x-button>
+                    <x-button name="send" value="slips" variant="secondary" icon="printer" class="w-full sm:w-auto" :disabled="$totalMissing === 0">Create accounts and print slips</x-button>
                 </div>
                 <ul class="w-full list-disc space-y-1 pl-5 text-sm text-muted">
                     <li><strong class="text-fg">Email invitations:</strong> students with an email on the roll get a link to choose their own password (it works for {{ config('mail.invitations.expire_days') }} days). Those without one get a slip. About {{ config('mail.invitations.per_hour') }} emails go out an hour.</li>

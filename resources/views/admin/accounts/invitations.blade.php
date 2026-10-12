@@ -5,9 +5,7 @@
 @endphp
 
 <x-layouts.admin title="Invitations">
-    <x-page-header title="Invitations" subtitle="Accounts emailed a link to choose their password who haven't used it yet. Invitations go out about {{ $perHour }} an hour, and links work for {{ config('mail.invitations.expire_days') }} days." :back="route('admin.accounts.index')" back-label="Create accounts">
-        <x-slot:meta>{{ number_format($accepted) }} {{ \Illuminate\Support\Str::plural('invitation', $accepted) }} used so far</x-slot:meta>
-    </x-page-header>
+    <x-page-header title="Invitations" :subtitle="'Accounts emailed a link to choose their password who haven\'t used it yet. Invitations go out about '.$perHour.' an hour, and links work for '.config('mail.invitations.expire_days').' days. '.number_format($accepted).' '.\Illuminate\Support\Str::plural('invitation', $accepted).' used so far.'" :back="route('admin.accounts.index')" back-label="Create accounts" />
 
     @if (session('next'))
         <form method="POST" action="{{ route('admin.accounts.store') }}" class="mb-6">
