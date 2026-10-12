@@ -20,7 +20,7 @@ class Navigation
             ['route' => 'home', 'label' => 'Home', 'icon' => 'house', 'match' => 'home'],
             ['route' => 'library.index', 'label' => 'Library', 'icon' => 'library-big', 'match' => 'library.*', 'auth' => true],
             ['route' => 'timetable.show', 'label' => 'Timetable', 'icon' => 'calendar-clock', 'match' => ['timetable.*', 'exams.*'], 'auth' => true],
-            ['route' => 'elections.index', 'label' => 'Elections', 'icon' => 'vote', 'match' => 'elections.*', 'auth' => true],
+            ['route' => 'elections.index', 'label' => 'Elections', 'icon' => 'vote', 'match' => ['elections.*', 'executives.*'], 'auth' => true],
             ['route' => 'profile.edit', 'label' => 'Profile', 'icon' => 'user', 'match' => 'profile.*', 'auth' => true],
         ];
 

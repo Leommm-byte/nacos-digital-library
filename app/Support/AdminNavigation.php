@@ -22,6 +22,7 @@ class AdminNavigation
             ['review.index', 'Review uploads', 'shield-check', 'review.*'],
             ['announcements.manage', 'Announcements', 'bell', 'announcements.*'],
             ['elections.manage', 'Elections', 'vote', 'elections.manage*'],
+            ['admin.executives.index', 'Executives', 'users', 'admin.executives.*'],
             ['timetable.edit', 'Class timetables', 'calendar-clock', 'timetable.edit'],
             ['exams.manage', 'Exam timetable', 'calendar-days', 'exams.manage'],
             ['admin.reports', 'Reports', 'chart-column', 'admin.reports'],

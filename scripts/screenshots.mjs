@@ -70,6 +70,8 @@ const pages = [
     ['review-queue', '/review', 'F/HD/24/3212002'],
     ['home-reviewer', '/', 'F/HD/24/3212002'],
     ['announcements', '/announcements', 'F/ND/24/0000004'],
+    ['executives', '/executives', null],
+    ['admin-executives', '/admin/executives', 'F/HD/24/3211001'],
     ['announcements-manage', '/announcements/manage', 'F/HD/24/3212002'],
     ['announcement-new', '/announcements/create', 'F/HD/24/3212002'],
     ['announcement-new-admin', '/announcements/create', 'F/HD/24/3211001'],
