@@ -81,8 +81,11 @@
             background: var(--tone-fg, var(--primary));
         }
 
+        /* Over: grey instead of faded, so its small text stays readable. */
         &.is-done {
-            opacity: 0.55;
+            --tone-bg: var(--surface-2);
+            --tone-fg: var(--muted);
+            color: var(--muted);
         }
 
         &.is-now {
