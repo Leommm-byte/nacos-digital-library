@@ -23,7 +23,8 @@ class AdminPanelTest extends TestCase
     {
         parent::setUp();
 
-        $this->admin = User::factory()->role(Role::Admin)->create();
+        // A fixed name, so a search by name ("kemi") can't match the admin by chance.
+        $this->admin = User::factory()->role(Role::Admin)->create(['fullname' => 'Ada Admin']);
     }
 
     #[Test]

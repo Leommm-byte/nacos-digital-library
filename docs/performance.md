@@ -22,13 +22,19 @@ uploading photos. Raise a limit only on purpose, and say why in the commit.
 
 `tests/load/student-day.js` (k6) plays a busy hour against
 `LoadTestSeeder` data (3,000 books with page text, 1,500 students on the
-nominal roll, an open election):
+nominal roll, an open election, their class timetable, a published exam
+timetable and announcements for several classes):
 
 - up to 150 signed-in students at once, each browsing the home page, the
   library, a search, a book, the reader (a 256 KB range of the PDF), saved
-  books, the elections with live results, and the assistant, with a few
-  seconds of reading between clicks;
-- during the peak, 300 other students vote, three arriving every second.
+  books, the elections with live results, their timetable and the exam
+  timetable, the announcements and one announcement, and the assistant,
+  with a few seconds of reading between clicks;
+- during the peak, 300 other students vote, three arriving every second;
+- from just before that rush until after it, 500 people keep the election
+  results open as a browser does (`live-results.js`): the page once, then
+  the results file every 5 seconds with `If-None-Match`, slowing while
+  nothing changes. The summary says how many of those checks were 304s.
 
 It fails if more than 1% of requests fail, a check fails, or a request
 type's 95th percentile goes over its limit (1.5 s for pages, 2 s for
@@ -45,11 +51,22 @@ show the same count.
 machine is not DreamHost, so read the numbers as "does anything fall over
 or grow out of hand", not as exact live timings.
 
-Latest run (October 2026, test machine): 11,212 requests from up to 210
-students at once, none failed, every check passed. 95th percentiles: pages
-27–52 ms, search 83 ms, the assistant 66 ms, a ballot 59 ms, a PDF page
-range 31 ms, live results 1 ms (a static file), logging in 202 ms. All
-300 ballots were recorded once and the live results showed 300.
+Latest run (11 October 2026, test machine): 27,147 requests (94 a
+second) from up to 710 people at once: 150 browsing students, the voters
+and 500 results watchers. None failed and every check passed. 95th
+percentiles: pages 33–154 ms (announcements list 154 ms, home 137 ms,
+library 152 ms, timetable 75 ms, exams 89 ms), search 215 ms, the
+assistant 139 ms, a ballot 149 ms, a PDF page range 81 ms, the results
+page 33 ms, a live results check 2 ms (a static file; 16,897 checks),
+logging in 414 ms. All 301 ballots were recorded once and the live results
+showed 301. While votes poured in, most results checks found new numbers
+(only 21% were 304s), which is expected: the file changes several times a
+second during a rush. Watchers stopped by the end of the test show up as
+cancelled requests (status 0, "context") in the failed list; they are not
+counted as failures.
+
+Previous run (before live-results watchers): 11,212 requests from up to 210
+students at once; pages 27–52 ms at the 95th percentile.
 
 Things the test found and that are fixed: ballots for the same candidates
 deadlocked under a rush (candidates are now locked in id order, with
@@ -64,7 +81,7 @@ To run it on your machine against the Docker stack:
 
 ```
 docker compose exec app php artisan db:seed --class=LoadTestSeeder
-k6 run -e BASE=http://localhost:8080 tests/load/student-day.js
+k6 run -e BASE=http://localhost:8080 -e WATCHERS=500 tests/load/student-day.js
 ```
 
 Never run it against the live site: it creates load on purpose, and

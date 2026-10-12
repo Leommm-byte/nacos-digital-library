@@ -11,8 +11,10 @@ use App\Enums\TextStatus;
 use App\Models\Department;
 use App\Models\Election;
 use App\Support\Elections\LiveResults;
+use App\Support\Sessions\ProgrammeSessions;
 use Database\Seeders\Support\DemoPdf;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -25,7 +27,9 @@ use Illuminate\Support\Str;
  * - 3,000 approved books with searchable page text, all sharing one PDF;
  * - 1,500 students, F/ND/25/0000001 to F/ND/25/0001500, password
  *   "Password1!", all on the nominal roll;
- * - an open election for them, three positions with three candidates.
+ * - an open election for them, three positions with three candidates;
+ * - their class's timetable and a published exam timetable;
+ * - 20 announcements, for everyone and for several classes.
  *
  * Inserted in bulk; run on an empty or demo database only:
  *   php artisan db:seed --class=LoadTestSeeder
@@ -159,7 +163,89 @@ class LoadTestSeeder extends Seeder
 
         LiveResults::publish($election);
 
+        $this->seedTimetables($now);
+        $this->seedAnnouncements($now);
+
         $this->command->info('Load test data: '.self::BOOKS.' books, '.self::STUDENTS.' students, election #'.$election->id.'.');
+    }
+
+    /**
+     * The students' class (ND1 Full-time) has a full week of lectures and a
+     * published exam timetable, so the timetable and exams pages do real
+     * work.
+     */
+    private function seedTimetables(Carbon $now): void
+    {
+        $slots = [];
+        foreach (range(1, 5) as $day) {
+            foreach ([['08:00', '10:00'], ['10:00', '12:00'], ['13:00', '15:00']] as $i => [$start, $end]) {
+                $slots[] = [
+                    'programme' => Programme::FullTime->value,
+                    'level' => Level::ND1->value,
+                    'arm' => null,
+                    'day' => $day,
+                    'starts_at' => $start,
+                    'ends_at' => $end,
+                    'course_code' => sprintf('COM %d%02d', 1, $day * 3 + $i),
+                    'course_title' => Str::title($this->words(3)),
+                    'lecturer' => fake()->name(),
+                    'venue' => 'LT '.random_int(1, 6),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+        DB::table('timetable_slots')->insert($slots);
+
+        $exams = [];
+        foreach (range(0, 11) as $i) {
+            $exams[] = [
+                'programme' => Programme::FullTime->value,
+                'date' => $now->copy()->addDays(7 + $i)->toDateString(),
+                'starts_at' => $i % 2 ? '13:00' : '09:00',
+                'ends_at' => $i % 2 ? '16:00' : '12:00',
+                'course_code' => sprintf('COM %d%02d', 1, $i + 1),
+                'course_title' => Str::title($this->words(3)),
+                'venue' => 'Hall '.chr(65 + $i % 4),
+                'levels' => $i % 3 ? json_encode([Level::ND1->value]) : null,
+                'arms' => null,
+                'note' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+        DB::table('exams')->insert($exams);
+        ProgrammeSessions::setExamsPublished(Programme::FullTime, true);
+    }
+
+    /**
+     * Announcements for everyone, for the students' class and for other
+     * classes (which they mustn't see), some long enough for "Read more".
+     */
+    private function seedAnnouncements(Carbon $now): void
+    {
+        $classes = [
+            [null, null, null],
+            [Programme::FullTime->value, Level::ND1->value, null],
+            [Programme::FullTime->value, Level::ND2->value, null],
+            [Programme::FullTime->value, Level::HND1->value, 'swd'],
+        ];
+
+        $rows = [];
+        foreach (range(0, 19) as $i) {
+            [$programme, $level, $arm] = $classes[$i % count($classes)];
+            $rows[] = [
+                'title' => Str::title($this->words(5)),
+                'body' => '**'.ucfirst($this->words(8))."**\n\n".ucfirst($this->words(60)).".\n\n- ".$this->words(6)."\n- ".$this->words(6)."\n\n".ucfirst($this->words(40)).'.',
+                'programme' => $programme,
+                'level' => $level,
+                'arm' => $arm,
+                'is_published' => true,
+                'created_at' => $now->copy()->subHours($i),
+                'updated_at' => $now,
+            ];
+        }
+        DB::table('announcements')->insert($rows);
     }
 
     private function words(int $count): string
