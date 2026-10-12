@@ -21,6 +21,9 @@ let signups = 0;
 // [name, path, account] — account null means signed out.
 const pages = [
     ['guest-home', '/', null],
+    // The install pop-up, shown at once outside production with ?install=.
+    ['install-dialog', '/?install=ios', null, async () => 'viewport'],
+    ['install-dialog-android', '/?install=prompt', null, async () => 'viewport'],
     ['login', '/login', null],
     ['login-error', '/login', null, async (page) => {
         await page.fill('#matric_number', 'F/ND/24/0000004');

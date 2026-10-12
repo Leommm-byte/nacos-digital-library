@@ -21,6 +21,7 @@
     </section>
 
     @include('partials.install-banner')
+    @include('partials.install-dialog')
 
     <section class="mt-12 md:mt-16" aria-labelledby="features">
         <h2 id="features" class="sr-only">What you get</h2>
