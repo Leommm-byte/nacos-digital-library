@@ -133,7 +133,7 @@
                     </form>
                 </x-section>
             @else
-                <section aria-labelledby="results-heading" class="card p-5 sm:p-6">
+                <section aria-labelledby="results-heading">
                     <div class="mb-4 flex items-center gap-3">
                         <x-icon-tile :name="$final ? 'trophy' : 'chart-column'" :tone="$final ? 'yellow' : 'blue'" size="sm" />
                         <h2 id="results-heading" class="text-lg">{{ $final ? 'Final results' : 'Live standings' }}</h2>

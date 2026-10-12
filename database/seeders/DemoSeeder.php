@@ -12,6 +12,7 @@ use App\Models\Book;
 use App\Models\Department;
 use App\Models\Election;
 use App\Models\Exam;
+use App\Models\Executive;
 use App\Models\ReadingProgress;
 use App\Models\RollEntry;
 use App\Models\TimetableSlot;
@@ -179,6 +180,24 @@ class DemoSeeder extends Seeder
         }
 
         $this->seedElections($users, $students);
+
+        // The current executives, most with a photo.
+        $council = [
+            ['Ifeoluwa Bankole', 'President', 'HND2 SWD · Full-time'],
+            ['Chinedu Okafor', 'Vice President', 'HND2 NCC · Full-time'],
+            ['Aisha Bello', 'General Secretary', 'HND1 SWD · Full-time'],
+            ['Tunde Adeyemi', 'Financial Secretary', 'ND2 · Full-time'],
+            ['Grace Effiong', 'Director of Welfare', 'HND1 NCC · Part-time'],
+            ['Samuel Ojo', 'Director of Sports', 'ND2 · Part-time'],
+        ];
+        foreach ($council as $order => [$name, $position, $details]) {
+            $executive = Executive::create(['name' => $name, 'position' => $position, 'details' => $details, 'sort_order' => $order]);
+            if ($order !== 3) {
+                $path = "executive-photos/{$executive->id}-demo.jpg";
+                Storage::disk('private')->put($path, $this->portrait($order + 7));
+                $executive->forceFill(['photo_path' => $path])->save();
+            }
+        }
 
         // Students on the roll without an account yet, three per class, so
         // "Create accounts" has someone to create.

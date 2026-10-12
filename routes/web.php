@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookController as AdminBookController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ExecutiveController as AdminExecutiveController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\SettingController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Elections\CandidatePhotoController;
 use App\Http\Controllers\Elections\ElectionController;
 use App\Http\Controllers\Elections\ManageElectionController;
 use App\Http\Controllers\Elections\NominalRollController;
+use App\Http\Controllers\Executives\ExecutiveController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Library\BookCoverController;
 use App\Http\Controllers\Library\BookmarkController;
@@ -48,6 +50,10 @@ Route::get('/elections/{election}', [ElectionController::class, 'show'])->whereN
 Route::get('/elections/{election}/candidates/{candidate}/photo', CandidatePhotoController::class)
     ->whereNumber(['election', 'candidate'])
     ->name('elections.candidates.photo');
+
+// Know your executives: public, like the results.
+Route::get('/executives', [ExecutiveController::class, 'index'])->name('executives.index');
+Route::get('/executives/{executive}/photo', [ExecutiveController::class, 'photo'])->whereNumber('executive')->name('executives.photo');
 
 Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
@@ -158,6 +164,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/session', [SessionController::class, 'show'])->name('session');
         Route::post('/session', [SessionController::class, 'store'])->middleware('throttle:5,1')->name('session.start');
         Route::post('/session/{change}/undo', [SessionController::class, 'undo'])->middleware('throttle:5,1')->name('session.undo');
+
+        Route::get('/executives', [AdminExecutiveController::class, 'index'])->name('executives.index');
+        Route::post('/executives', [AdminExecutiveController::class, 'store'])->name('executives.store');
+        Route::put('/executives/{executive}', [AdminExecutiveController::class, 'update'])->name('executives.update');
+        Route::delete('/executives/{executive}', [AdminExecutiveController::class, 'destroy'])->name('executives.destroy');
+        Route::put('/executives/{executive}/move', [AdminExecutiveController::class, 'move'])->name('executives.move');
+        Route::post('/executives/from-election/{election}', [AdminExecutiveController::class, 'fromElection'])->name('executives.from-election');
 
         Route::get('/settings', [SettingController::class, 'edit'])->name('settings');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');

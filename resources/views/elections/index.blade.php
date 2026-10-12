@@ -6,6 +6,7 @@
 <x-layouts.app title="Elections" description="NACOS YabaTech elections: vote, and follow the results live.">
     <x-page-header title="Elections" subtitle="Vote for your NACOS leaders. Results are public and update while voting is open.">
         <x-slot:actions>
+            <x-button href="{{ route('executives.index') }}" variant="secondary" icon="users">Know your executives</x-button>
             @can('manage-elections')
                 <x-button href="{{ route('elections.manage') }}" variant="secondary" icon="settings">Manage elections</x-button>
             @endcan
