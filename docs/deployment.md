@@ -14,7 +14,7 @@ them `USER` and `SERVER`.
 
 | | |
 |---|---|
-| Plan | DreamHost Shared Unlimited (email included), in NACOS's own account |
+| Plan | DreamHost Web Hosting Launch (25 GB storage; email free for the first 3 months, then paid), in NACOS's own account |
 | Site | `nacosyabatech.com` |
 | SSH | `USER@SERVER` (port 22): both are shown in the panel next to the user |
 | Home | `/home/USER` |
@@ -47,10 +47,12 @@ the link. Rolling back switches the link back.
 
 ## 0. Your own DreamHost account and the domain
 
-1. **Sign up.** On dreamhost.com, choose *Shared Hosting → Unlimited*. Sign
-   up with the NACOS email address. When asked for a domain, choose *I
-   already own a domain* and enter `nacosyabatech.com`. Paying for 1 or 3
-   years is much cheaper per month; check the renewal price before paying.
+1. **Sign up.** On dreamhost.com, choose **Web Hosting Launch** (not
+   DreamPress, which is for WordPress, nor a VPS, which this site doesn't
+   need). Sign up with the NACOS email address. When asked for a domain,
+   choose *I already own a domain* and enter `nacosyabatech.com`; skip the
+   free domain offer. The first year is the cheapest; compare the 1- and
+   3-year terms and the renewal price before paying.
 2. **A second login.** Give a second trusted executive the panel password
    (or add them under *Account → Users/Managers*, if offered), so one person
    leaving can't lock NACOS out. Turn on two-factor sign-in for the panel.
@@ -94,6 +96,9 @@ the link. Rolling back switches the link back.
    reuse the legacy `nacos_db` password: it was committed to git.
 3. **Mailbox.** Under *Mail → Manage Email*, create `no-reply@nacosyabatech.com`
    with a strong password. It sends password resets, invitations and alerts.
+   On Web Hosting Launch, email is free for the first 3 months only: add
+   the paid email option in the panel before then, or the site stops
+   sending emails.
 4. **Settings file.** Log in over SSH and create `~/nacos/shared/.env`:
    ```bash
    mkdir -p ~/nacos/shared && cd ~/nacos/shared
@@ -133,7 +138,7 @@ the link. Rolling back switches the link back.
    MAIL_INVITATIONS_PER_HOUR=80
 
    ALERT_EMAIL=you@example.com
-   DISK_WARN_GB=40
+   DISK_WARN_GB=20
 
    # Filled in at step 3 (backups).
    BACKUP_DISK=
