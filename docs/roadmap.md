@@ -9,7 +9,7 @@ and the item is ticked off here.
 | Topic | Decision |
 |---|---|
 | Stack | Laravel 12, PHP 8.3, MySQL 8. No framework-free rewrite. |
-| Hosting | DreamHost shared, in NACOS's own account (Shared Unlimited, so email is included) rather than one shared with another person, so no one outside NACOS can read student data, the settings or votes; PHP 8.3, SSH enabled. No Redis or long-running processes; database-backed session, cache and queue. |
+| Hosting | DreamHost shared, in NACOS's own account (Web Hosting Launch: 25 GB, cron, SSH; email paid after the first 3 months) rather than one shared with another person, so no one outside NACOS can read student data, the settings or votes; PHP 8.3, SSH enabled. No Redis or long-running processes; database-backed session, cache and queue. |
 | Cron | Confirmed: DreamHost's custom cron schedule allows every minute. The cron runs `schedule:run` every minute as the site's SSH user, which also drains the job queue. |
 | Launch state | Not launched yet. No live data to migrate; the legacy app does not need patching. |
 | Password reset | Both: email reset links (collect email at signup or next login) and one-time codes issued by an admin or course rep as a fallback. |

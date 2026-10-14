@@ -39,6 +39,6 @@ return [
     'scheduler_max_silence_minutes' => 5,
 
     // A daily email when the files and database together pass this size.
-    'disk_warn_gb' => (float) env('DISK_WARN_GB', 40),
+    'disk_warn_gb' => (float) env('DISK_WARN_GB', 20),
 
 ];
