@@ -57,23 +57,39 @@ the link. Rolling back switches the link back.
    (or add them under *Account → Users/Managers*, if offered), so one person
    leaving can't lock NACOS out. Turn on two-factor sign-in for the panel.
 3. **The domain.** Find out where `nacosyabatech.com` is registered:
-   - **In the other person's DreamHost account:** ask them to contact
-     DreamHost support to move the domain registration to your account (a
-     free move between DreamHost accounts).
+   - **In another DreamHost account:** the hosting and the registration move
+     separately. DreamHost's *Account-to-Account Site Move* only works for
+     WordPress sites, and the *Transfer Domains* page is for domains coming
+     from other companies, so use neither.
+     - **Hosting (you can do it yourselves):** in the old account, screenshot
+       the domain's DNS records and back up any `@nacosyabatech.com`
+       mailboxes still in use. Then open *Manage Websites → nacosyabatech.com*
+       and use **Permanently Delete Domain**. This removes the website, its
+       DNS and its mailboxes, but not the registration. Then add the website
+       in your account (step 5). The old site is offline in between.
+     - **Registration (needs two support tickets):** each account owner
+       submits a ticket from their own panel (*Support → Contact Support*,
+       not the chat) with the account numbers from *Billing & Account → Manage
+       Account*: "I request and approve the domain name transfer of
+       nacosyabatech.com — from account number [old], to account number [new].
+       I acknowledge that this transfer is of the domain name and DNS-only
+       hosting." The old account must not have an unpaid balance, and the
+       domain must not be about to expire.
    - **At another registrar:** leave it there and set its nameservers to
      `ns1.dreamhost.com`, `ns2.dreamhost.com` and `ns3.dreamhost.com`.
-
-   Changing the nameservers moves the website **and** any email at
-   `@nacosyabatech.com` to your account, and can take up to 24 hours. The old
-   site stops answering then, so do it when you're ready to finish the
-   setup the same day or the next.
-4. **An SSH user.** Under *Websites → SFTP/SSH Users* (search "users" in
-   the panel), add a user, for example `nacos_admin`, with **SSH (shell)**
-   access and a strong password. Note the user name (`USER`) and the server
-   name shown next to it (`SERVER`, like `iad1-shared-b7-12.dreamhost.com`).
-5. **The website.** Under *Websites → Add Website*, add
-   `nacosyabatech.com` as a fully hosted site run by that user. Then carry on
-   with step 1.
+     This moves the website **and** any email at `@nacosyabatech.com` to
+     your account, and can take up to 24 hours.
+4. **An SSH user.** Under *Websites → SFTP Users & Files → Add User*, create
+   a user with **Secure Shell Access (SSH)** on and a generated password
+   (shell type `/bin/bash`). Usernames are shared by all DreamHost
+   customers, so a plain one like `nacos_admin` is usually taken; the live
+   site uses `nacosyct_admin`. The **Server** dropdown shows your server,
+   for example `AMS1-SHARED-03`: `SERVER` is that in lower case plus
+   `.dreamhost.com` (`ams1-shared-03.dreamhost.com`). New users take 5–10
+   minutes to start working.
+5. **The website.** Under *Websites → Add Website*, choose **Manual Setup**,
+   pick that user, and under *Advanced Settings* set the **Directory** to
+   `nacosyabatech.com/public` and **PHP** to 8.3. Then carry on with step 1.
 6. **Check SSH works.** On your computer (Terminal on a Mac, PowerShell on
    Windows): `ssh USER@SERVER`, type the password, then `exit`.
 
@@ -91,11 +107,15 @@ the link. Rolling back switches the link back.
    panel created to `nacosyabatech.com.before-deploy-<date>`; nothing is
    deleted.
 2. **Database.** Under *MySQL Databases*, create a new database (for example
-   `nacos_live`) and a new user with a long random password. Note the
-   hostname the panel shows (for example `mysql.nacosyabatech.com`). Don't
-   reuse the legacy `nacos_db` password: it was committed to git.
-3. **Mailbox.** Under *Mail → Manage Email*, create `no-reply@nacosyabatech.com`
-   with a strong password. It sends password resets, invitations and alerts.
+   `nacos_live`) and a new database user (for example `nacosyct_db`) with a
+   long random password. This is a different user from the SSH one: it goes
+   in `DB_USERNAME`. Note the hostname the panel shows (for example
+   `mysql.nacosyabatech.com`). Don't reuse the legacy `nacos_db` password:
+   it was committed to git.
+3. **Mailbox.** Under *Mail → Manage Email → Create Email*, create
+   `no-reply@nacosyabatech.com` as **Fully Hosted Email** (forward-only
+   addresses have no login, so the site couldn't send) with a strong
+   password. It sends password resets, invitations and alerts.
    On Web Hosting Launch, email is free for the first 3 months only: add
    the paid email option in the panel before then, or the site stops
    sending emails.
@@ -120,7 +140,7 @@ the link. Rolling back switches the link back.
    DB_PORT=3306
    DB_DATABASE=nacos_live
    DB_USERNAME=…
-   DB_PASSWORD=…
+   DB_PASSWORD="…"
 
    SESSION_DRIVER=database
    SESSION_SECURE_COOKIE=true
@@ -132,7 +152,7 @@ the link. Rolling back switches the link back.
    MAIL_HOST=smtp.dreamhost.com
    MAIL_PORT=465
    MAIL_USERNAME=no-reply@nacosyabatech.com
-   MAIL_PASSWORD=…
+   MAIL_PASSWORD="…"
    MAIL_FROM_ADDRESS=no-reply@nacosyabatech.com
    MAIL_FROM_NAME="${APP_NAME}"
    MAIL_INVITATIONS_PER_HOUR=80
@@ -151,7 +171,9 @@ the link. Rolling back switches the link back.
    # Optional: AI text for scanned uploads and AI answers in the assistant.
    ANTHROPIC_API_KEY=
    ```
-   Then create the app key and keep the file private:
+   Keep the double quotes around the passwords, in case they contain
+   characters like `#`. Save in nano with **Ctrl+O**, **Enter**, then exit
+   with **Ctrl+X**. Then create the app key and keep the file private:
    ```bash
    echo "APP_KEY=base64:$(head -c 32 /dev/urandom | base64)" >> .env
    sed -i '/^APP_KEY=$/d' .env
@@ -159,7 +181,10 @@ the link. Rolling back switches the link back.
    ```
    Keep a copy of `.env` in your password manager. Without `APP_KEY`, people
    can't sign in after a restore.
-5. **PHP limits for uploads.** Create `~/.php/8.3/phprc`:
+5. **PHP limits for uploads.** Open `~/.php/8.3/phprc` (`mkdir -p
+   ~/.php/8.3 && nano ~/.php/8.3/phprc`). DreamHost may already have put a
+   section at the top (it turns on opcache): leave it, and add these lines
+   below it:
    ```
    upload_max_filesize = 64M
    post_max_size = 64M
@@ -168,11 +193,19 @@ the link. Rolling back switches the link back.
    ```
    Scanned books are sent as one file per page (up to 60 pages plus a
    cover). PHP's default of 20 files per request would silently drop pages.
-6. **Cron.** Under *Cron Jobs* (search "cron" in the panel), add a job for `USER` with
-   a *Custom* schedule of every minute and this command:
+6. **Cron.** The panel's *Cron Jobs* page can't run a job every minute (its
+   shortest choice is every 10 minutes, and selecting all 60 minutes is
+   refused), so add it over SSH instead. Log in as `USER` and run
+   `crontab -e` (choose nano if it asks), then add this line at the bottom
+   and save:
    ```
-   cd ~/nacosyabatech.com && /usr/local/php83/bin/php artisan schedule:run >> /dev/null 2>&1
+   * * * * * cd ~/nacosyabatech.com && /usr/local/php83/bin/php artisan schedule:run >> /dev/null 2>&1
    ```
+   `crontab -l` should show it exactly once. Don't also add it in the panel,
+   and if you ever change cron jobs there for this user, check `crontab -l`
+   afterwards: saving in the panel can rewrite the list. (No locking is
+   needed: the site already stops each task from running twice at once.)
+
    It drives everything that happens in the background:
    - the email queue and invitations;
    - closing elections on time;
@@ -213,9 +246,12 @@ the link. Rolling back switches the link back.
    - `DEPLOY_ENABLED`: `true`
 
    Until `DEPLOY_ENABLED` is `true`, merges don't deploy.
-4. **First deploy.** Go to *Actions → Deploy → Run workflow*. It takes about
-   3 minutes and ends by checking that `https://nacosyabatech.com/up`
-   answers.
+4. **First deploy.** Go to *Actions*, click **Deploy** in the left sidebar,
+   then **Run workflow** on the right (leave *rollback* unticked). Don't use
+   *Re-run all jobs* on an older Deploy run: that redeploys that run's old
+   commit. It takes about 3 minutes and ends by checking that
+   `https://nacosyabatech.com/up` answers; if only that last check fails,
+   HTTPS or the domain isn't ready yet, so run it again later.
 5. **Departments and the first admin.** Over SSH:
    ```bash
    cd ~/nacosyabatech.com
@@ -365,7 +401,9 @@ Before telling students, check each item:
 | The deploy fails at "SSH key" or "Upload" | Check the four `DEPLOY_*` secrets. `DEPLOY_KNOWN_HOSTS` must be the `ssh-keyscan` output. |
 | The deploy says ".env is missing" | Create `~/nacos/shared/.env` (step 1.4). |
 | The site shows "500" after a settings change | Run `php artisan optimize` in `~/nacosyabatech.com`, since settings are cached. |
-| `/up/scheduler` fails | Check the cron job in the panel (step 1.6). It must use `/usr/local/php83/bin/php`. |
+| `/up/scheduler` fails | Run `crontab -l` over SSH (step 1.6): the `* * * * *` line must be there once and use `/usr/local/php83/bin/php`. A change in the panel's cron page can remove it. |
+| SSH says "Connection closed" right after the password | Usually a mistyped password, or a short block after several failed tries. Wait 15 minutes and paste the password instead of typing it. |
+| "This username already exists" when creating a user | DreamHost usernames are shared by all customers. Pick a more specific one. |
 | `/up/backups` fails | Run `php artisan backup:run` over SSH and read the error. The admin dashboard shows the last one too. |
 | "mysqldump: command not found" | Add `MYSQLDUMP_PATH=/usr/bin/mysqldump` (or wherever `which mysqldump` says) to `.env`, then run `php artisan optimize`. |
 | Something broke after a deploy | Roll back (*Actions → Deploy → rollback*), then look at the alert email. |
