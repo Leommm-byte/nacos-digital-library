@@ -3,6 +3,9 @@
 @endphp
 
 <x-layouts.app :title="$book->title" :description="'By '.$book->author.' · '.$book->level->label().' '.$book->department->name">
+    @if ($book->currentFile)
+        <x-slot:head>@include('partials.reader-assets', ['rel' => 'prefetch'])</x-slot:head>
+    @endif
     <nav aria-label="Breadcrumb">
         <a href="{{ route('library.index') }}" class="page-header-back"><x-icon name="chevron-left" /> Library</a>
     </nav>

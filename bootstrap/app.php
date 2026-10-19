@@ -4,6 +4,7 @@ use App\Http\Controllers\Operations\HealthController;
 use App\Http\Middleware\EnforceAccountState;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\ServerTiming;
 use App\Support\Operations\Alerts;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(ServerTiming::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->web(append: [EnforceAccountState::class]);
         $middleware->alias(['role' => EnsureRole::class]);

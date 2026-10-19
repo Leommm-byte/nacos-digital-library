@@ -15,8 +15,10 @@ use App\Models\User;
 use Database\Seeders\Support\DemoPdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -128,6 +130,56 @@ class UploadTest extends TestCase
             ->postJson(route('uploads.store'), $this->details(['type' => 'pdf']))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('pdf');
+    }
+
+    #[Test]
+    public function a_retried_upload_is_stored_once(): void
+    {
+        $key = (string) Str::uuid();
+        $send = fn () => $this->actingAs($this->student)
+            ->postJson(route('uploads.store'), $this->details(['type' => 'pdf', 'pdf' => $this->pdf(), 'upload_key' => $key]));
+
+        $first = $send()->assertCreated()->json('redirect');
+        // The phone lost the answer and sends the same upload again.
+        $send()->assertCreated()->assertJson(['redirect' => $first]);
+
+        $this->assertSame(1, Book::count());
+        $this->assertCount(1, $this->storedFiles());
+
+        // A new upload (a new key) is a new book.
+        $this->actingAs($this->student)
+            ->postJson(route('uploads.store'), $this->details(['type' => 'pdf', 'pdf' => $this->pdf(), 'upload_key' => (string) Str::uuid()]))
+            ->assertCreated();
+        $this->assertSame(2, Book::count());
+    }
+
+    #[Test]
+    public function a_retry_while_the_first_try_is_still_saving_is_asked_to_wait(): void
+    {
+        $key = (string) Str::uuid();
+        Cache::add("uploads:done:{$this->student->id}:{$key}:busy", true, 300);
+
+        $this->actingAs($this->student)
+            ->postJson(route('uploads.store'), $this->details(['type' => 'pdf', 'pdf' => $this->pdf(), 'upload_key' => $key]))
+            ->assertStatus(409);
+
+        $this->assertSame(0, Book::count());
+    }
+
+    #[Test]
+    public function upload_keys_are_kept_per_student(): void
+    {
+        $key = (string) Str::uuid();
+        $this->actingAs($this->student)
+            ->postJson(route('uploads.store'), $this->details(['type' => 'pdf', 'pdf' => $this->pdf(), 'upload_key' => $key]))
+            ->assertCreated();
+
+        $other = User::factory()->for($this->department)->create();
+        $this->actingAs($other)
+            ->postJson(route('uploads.store'), $this->details(['type' => 'pdf', 'pdf' => $this->pdf(), 'upload_key' => $key]))
+            ->assertCreated();
+
+        $this->assertSame(1, Book::where('uploader_id', $other->id)->count());
     }
 
     #[Test]

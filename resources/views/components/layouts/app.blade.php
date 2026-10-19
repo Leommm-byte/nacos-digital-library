@@ -11,6 +11,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     @include('partials.head', ['title' => $title, 'description' => $description])
+    {{ $head ?? '' }}
 </head>
 <body @class(['flex min-h-dvh flex-col', 'has-tabbar' => $tabbar]) @if ($user) data-user="{{ \App\Support\Offline::owner($user) }}" @endif>
     <a href="#main" class="skip-link">Skip to content</a>

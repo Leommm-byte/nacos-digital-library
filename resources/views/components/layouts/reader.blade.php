@@ -6,6 +6,7 @@
 <head>
     @include('partials.head', ['title' => $title, 'description' => null])
     <meta name="robots" content="noindex">
+    {{ $head ?? '' }}
 </head>
 @php
     // The offline reader (offline/reader) is the same for everyone.

@@ -23,8 +23,11 @@
                 data-cover-max="{{ config('uploads.cover_max_kb') * 1024 }}"
                 data-max-pages="{{ config('uploads.max_pages') }}"
                 data-page-pixels="{{ config('uploads.page_max_pixels') }}"
-                data-assets="{{ asset('build') }}/">
+                data-assets="{{ asset('build') }}/"
+                data-server-reads="{{ \App\Support\Uploads\PageReader::enabled() ? 1 : 0 }}">
                 @csrf
+                {{-- Sent again with a retried upload, so it is stored once. --}}
+                <input type="hidden" name="upload_key" value="{{ \Illuminate\Support\Str::uuid() }}">
 
                 @error('upload')
                     <x-alert type="error">{{ $message }}</x-alert>
@@ -114,6 +117,7 @@
                         <span class="text-muted tabular-nums" data-upload-percent></span>
                     </div>
                     <div class="upload-bar" aria-hidden="true"><span data-upload-bar></span></div>
+                    <p class="mt-2 text-sm text-muted">Keep this page open until it finishes. If the connection drops, it carries on by itself when you're back.</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">

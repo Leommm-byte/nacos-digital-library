@@ -40,6 +40,9 @@ self.addEventListener('activate', (event) => {
                 await caches.delete(name);
             }
         }
+        // Pages start downloading while the worker wakes up (it can take a
+        // moment on a slow phone) instead of after.
+        await self.registration.navigationPreload?.enable().catch(() => {});
         await self.clients.claim();
     })());
 });
@@ -60,7 +63,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (request.mode === 'navigate') {
-        event.respondWith(navigate(request, url));
+        event.respondWith(navigate(event, url));
         return;
     }
 
@@ -83,9 +86,9 @@ function guest(url) {
     return new Request(url, { credentials: 'omit', redirect: 'error' });
 }
 
-async function navigate(request, url) {
+async function navigate(event, url) {
     try {
-        return await fetch(request);
+        return (await event.preloadResponse) ?? await fetch(event.request);
     } catch (error) {
         const cache = await caches.open(STATIC_CACHE);
         const read = url.pathname.match(/^\/library\/([^/]+)\/read$/);

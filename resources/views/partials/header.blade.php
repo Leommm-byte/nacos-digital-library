@@ -1,7 +1,7 @@
 @php
     // Small counts for the header: unread notifications for everyone,
     // uploads waiting for review for reviewers.
-    $unread = $user && Route::has('notifications.index') ? $user->unreadNotifications()->count() : 0;
+    $unread = $user && Route::has('notifications.index') ? $user->unreadNotificationCount() : 0;
     $waiting = $user && Route::has('review.index') && Gate::allows('review-uploads')
         ? \App\Models\Book::reviewableBy($user)->where('status', \App\Enums\BookStatus::Pending)->count()
         : null;

@@ -7,9 +7,15 @@
  *   few megabytes instead of hundreds.
  * - The words on each photo are read on the device (Tesseract OCR, self-
  *   hosted, downloaded only when needed), so the book can be searched.
+ *   Skipped when the server reads the pages itself (AI), on slow or
+ *   data-saving connections, and once it takes too long: searchable text is
+ *   a bonus, never a reason for the upload to drag.
  * - For a PDF, PDF.js counts the pages, takes the text and draws page 1 as
- *   the cover when none is chosen.
+ *   the cover when none is chosen, within a time limit.
  * - The upload shows its progress, and errors appear next to their fields.
+ * - While it works the screen is kept on and leaving the page asks first. A
+ *   dropped connection (or a phone that paused the page) is retried when
+ *   the student is back; the upload_key makes sure it is stored once.
  *
  * Without this script the form posts normally and the server does without.
  */
@@ -18,6 +24,45 @@ import { toast } from './toast';
 
 const ORIGINAL_PHOTO_MAX = 25 * 1024 * 1024;
 const TEXT_MAX_CHARS = 300_000;
+
+// Reading text on the device gives up after this long, per page and overall.
+const OCR_PAGE_MS = 20_000;
+const OCR_TOTAL_MS = 90_000;
+// Counting a PDF's pages, its text and its cover: then it is sent without.
+const PDF_PREPARE_MS = 30_000;
+// Tries at sending before telling the student it didn't work.
+const SEND_TRIES = 4;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Resolves to `fallback` if `promise` takes longer than `ms`. */
+function within(promise, ms, fallback) {
+    let timer;
+    return Promise.race([
+        promise,
+        new Promise((resolve) => {
+            timer = setTimeout(() => resolve(fallback), ms);
+        }),
+    ]).finally(() => clearTimeout(timer));
+}
+
+/** A random UUID (v4), the form the server expects for upload_key. */
+function newKey() {
+    if (crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/** Data saver on, or a 2G/3G connection: the 7 MB OCR download isn't worth it. */
+function slowNetwork() {
+    const connection = navigator.connection;
+    return Boolean(connection?.saveData) || /(^|-)(2g|3g)$/.test(connection?.effectiveType ?? '');
+}
 
 export function initUpload() {
     const form = document.querySelector('form[data-upload]');
@@ -47,6 +92,8 @@ export function initUpload() {
         pixels: Number(form.dataset.pagePixels) || 2000,
     };
     const assets = form.dataset.assets;
+    // The server reads every page with AI, so the device needn't.
+    const serverReads = form.dataset.serverReads === '1';
 
     // Photos chosen so far (the file input only holds the last selection).
     let photos = [];
@@ -231,7 +278,42 @@ export function initUpload() {
         ui.bar.style.transform = `scaleX(${fraction ?? 0})`;
     }
 
+    /* Keeping the page alive ----------------------------------------- */
+
+    let busy = false;
+    let wakeLock = null;
+
+    async function keepAwake() {
+        try {
+            wakeLock = (await navigator.wakeLock?.request('screen')) ?? null;
+        } catch {
+            // Not allowed (low battery, no permission): fine.
+        }
+    }
+
+    // A wake lock ends when the page is hidden; take it again on return.
+    document.addEventListener('visibilitychange', () => {
+        if (busy && document.visibilityState === 'visible') {
+            keepAwake();
+        }
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (busy) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
+
+    function start() {
+        busy = true;
+        keepAwake();
+    }
+
     function done() {
+        busy = false;
+        wakeLock?.release().catch(() => {});
+        wakeLock = null;
         ui.progress.hidden = true;
         ui.submit.disabled = false;
         ui.submit.removeAttribute('aria-busy');
@@ -272,11 +354,18 @@ export function initUpload() {
                     },
                 }),
             );
-            const worker = await ocr;
+            const worker = await within(ocr, OCR_PAGE_MS, null);
+            if (!worker) {
+                throw new Error('OCR took too long to load');
+            }
             readText.onProgress = onProgress;
-            const { data } = await worker.recognize(canvas);
-            return data.text.trim();
+            const result = await within(worker.recognize(canvas), OCR_PAGE_MS, null);
+            if (!result) {
+                throw new Error('OCR took too long');
+            }
+            return result.data.text.trim();
         } catch {
+            ocr?.then((worker) => worker.terminate()).catch(() => {});
             // Reading text is a bonus: the upload goes ahead without it.
             ocr = Promise.reject(new Error('OCR unavailable'));
             ocr.catch(() => {});
@@ -288,6 +377,20 @@ export function initUpload() {
         data.append('pdf', pdfFile);
         progress('Reading the PDF…');
 
+        // Whatever is ready when time runs out is sent; the rest is skipped.
+        const deadline = Date.now() + PDF_PREPARE_MS;
+        const fields = {};
+        await within(readPdf(fields, deadline), PDF_PREPARE_MS, null);
+        for (const [name, value] of Object.entries(fields)) {
+            if (name === 'cover') {
+                data.append('cover', value, 'cover.jpg');
+            } else {
+                data.append(name, value);
+            }
+        }
+    }
+
+    async function readPdf(fields, deadline) {
         try {
             const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.min.mjs');
             const { default: workerUrl } = await import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url');
@@ -299,7 +402,7 @@ export function initUpload() {
                 cMapUrl: `${assets}pdfjs/cmaps/`,
                 wasmUrl: `${assets}pdfjs/wasm/`,
             }).promise;
-            data.append('page_count', String(pdf.numPages));
+            fields.page_count = String(pdf.numPages);
 
             if (!ui.cover.files.length) {
                 const page = await pdf.getPage(1);
@@ -311,17 +414,17 @@ export function initUpload() {
                 await page.render({ canvas, viewport }).promise;
                 const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
                 if (blob) {
-                    data.append('cover', blob, 'cover.jpg');
+                    fields.cover = blob;
                 }
             }
 
             let text = '';
-            for (let number = 1; number <= pdf.numPages && text.length < TEXT_MAX_CHARS; number++) {
+            for (let number = 1; number <= pdf.numPages && text.length < TEXT_MAX_CHARS && Date.now() < deadline; number++) {
                 progress(`Reading the PDF: page ${number} of ${pdf.numPages}`, number / pdf.numPages);
                 const content = await (await pdf.getPage(number)).getTextContent();
                 text += content.items.map((item) => item.str ?? '').join(' ') + '\n\n';
+                fields.text = text.slice(0, TEXT_MAX_CHARS);
             }
-            data.append('text', text.slice(0, TEXT_MAX_CHARS));
             await pdf.destroy();
         } catch {
             // Damaged or unusual PDFs still upload; the server checks them.
@@ -330,6 +433,8 @@ export function initUpload() {
 
     async function preparePhotos(data) {
         const total = photos.length;
+        const deadline = Date.now() + OCR_TOTAL_MS;
+        let reading = !serverReads && !slowNetwork();
 
         for (const [index, photo] of photos.entries()) {
             const label = `page ${index + 1} of ${total}`;
@@ -337,17 +442,23 @@ export function initUpload() {
             const { canvas, blob } = await shrink(photo.file);
             data.append('pages[]', blob, `page-${index + 1}.jpg`);
 
-            progress(`Reading the text on ${label}…`, index / total);
-            const text = await readText(canvas, (fraction) =>
-                progress(`Reading the text on ${label}…`, (index + fraction) / total),
-            );
-            data.append(`page_text[${index}]`, text);
+            reading &&= Date.now() < deadline;
+            if (reading) {
+                progress(`Reading the text on ${label}…`, index / total);
+                const text = await readText(canvas, (fraction) =>
+                    progress(`Reading the text on ${label}…`, (index + fraction) / total),
+                );
+                data.append(`page_text[${index}]`, text);
+                // Unavailable or too slow on this phone: send the rest as is.
+                reading = ocr !== null && !(await ocr.then(() => false, () => true));
+            }
+            canvas.width = canvas.height = 0;
         }
     }
 
     /* Sending --------------------------------------------------------- */
 
-    function send(data) {
+    function sendOnce(data) {
         return new Promise((resolve) => {
             const request = new XMLHttpRequest();
             request.open('POST', form.action);
@@ -360,8 +471,49 @@ export function initUpload() {
             });
             request.addEventListener('load', () => resolve(request));
             request.addEventListener('error', () => resolve(null));
+            request.addEventListener('abort', () => resolve(null));
             request.send(data);
         });
+    }
+
+    const backOnline = () =>
+        new Promise((resolve) => {
+            const check = () => {
+                if (navigator.onLine !== false && document.visibilityState === 'visible') {
+                    document.removeEventListener('visibilitychange', check);
+                    window.removeEventListener('online', check);
+                    resolve();
+                }
+            };
+            document.addEventListener('visibilitychange', check);
+            window.addEventListener('online', check);
+            check();
+        });
+
+    /**
+     * Sends, and tries again after a dropped connection, a server hiccup
+     * (5xx) or while an earlier try is still being saved (409). Answers
+     * that won't change by trying again (201, 4xx) come straight back.
+     */
+    async function send(data) {
+        let response = null;
+
+        for (let attempt = 1; attempt <= SEND_TRIES; attempt++) {
+            if (attempt > 1) {
+                progress('The connection dropped. Trying again…', null);
+                await backOnline();
+                await sleep(response?.status === 409 ? 10_000 : 2_000 * attempt);
+                progress('Uploading…', 0);
+            }
+
+            response = await sendOnce(data);
+            const retry = response === null || response.status === 0 || response.status === 409 || response.status >= 500;
+            if (!retry) {
+                return response;
+            }
+        }
+
+        return response;
     }
 
     form.addEventListener('submit', async (event) => {
@@ -378,6 +530,14 @@ export function initUpload() {
 
         ui.submit.disabled = true;
         ui.submit.setAttribute('aria-busy', 'true');
+        start();
+
+        // A new key for each new upload (the form may have come back from
+        // the browser's history with the last one's); retries reuse it.
+        const key = form.querySelector('input[name="upload_key"]');
+        if (key) {
+            key.value = newKey();
+        }
 
         // Everything but the file inputs, which are added after preparing.
         const data = new FormData(form);
@@ -397,6 +557,7 @@ export function initUpload() {
 
         if (response && response.status === 201) {
             progress('Done', 1);
+            busy = false;
             window.location.assign(JSON.parse(response.responseText).redirect);
             return;
         }
@@ -409,6 +570,8 @@ export function initUpload() {
             toast('This upload is too large. Try fewer or smaller pages.');
         } else if (response?.status === 419) {
             toast('Your session expired. Reload the page and try again.');
+        } else if (response?.status === 409) {
+            toast('Your upload is still being saved. Check Your uploads in a minute.');
         } else if (response?.status === 429) {
             toast('Too many uploads in a short time. Wait a minute and try again.');
         } else {
