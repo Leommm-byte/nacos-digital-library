@@ -8,7 +8,7 @@
 <dialog class="install-dialog" data-install-dialog tabindex="-1" aria-labelledby="install-dialog-title" aria-describedby="install-dialog-text"
     @unless (app()->isProduction()) data-install-preview @endunless>
     <div class="install-dialog-head">
-        <img src="{{ asset('icons/icon-192.png') }}" alt="" width="56" height="56" class="install-dialog-icon">
+        <img src="{{ asset('app-icons/icon-192.png') }}" alt="" width="56" height="56" class="install-dialog-icon">
         <div class="min-w-0 flex-1">
             <h2 id="install-dialog-title" class="text-lg">Install the NACOS app</h2>
             <p id="install-dialog-text" class="mt-1 text-sm text-muted">Open it from your home screen like any app: quicker to reach, full screen, and the books you keep offline work without data.</p>

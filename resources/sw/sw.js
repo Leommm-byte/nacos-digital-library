@@ -72,7 +72,7 @@ self.addEventListener('fetch', (event) => {
     // Built assets have content hashes in their names; the scan reader's
     // language data is large and only for uploads, so it isn't kept.
     if ((url.pathname.startsWith('/build/') && !url.pathname.startsWith('/build/tesseract/'))
-        || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/images/')) {
+        || url.pathname.startsWith('/app-icons/') || url.pathname.startsWith('/images/')) {
         event.respondWith(cacheFirst(request));
     }
 });

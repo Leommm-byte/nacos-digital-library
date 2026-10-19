@@ -107,6 +107,11 @@ DreamHost's terms don't allow load testing shared servers.
   unchanged) and a logged-out phone can't open them. Logout doesn't send
   `Clear-Site-Data`: Chrome then walks its whole cache, every site's, and
   logging out took seconds.
+- The app's icons live in `public/app-icons/`, not `public/icons/`: Debian's
+  stock Apache (the local image, and likely DreamHost) has `Alias /icons/
+  /usr/share/apache2/icons/`, which wins over the app's folder and turns
+  every `/icons/…` request into a 404 (broken installed-app icon and
+  install pop-up). Don't put public files under `/icons/`.
 - Service workers only run on HTTPS or `localhost`, so "Keep offline" and
   the install card don't appear when a phone opens the dev machine by its
   IP (`http://192.168…`). To try them on a phone, use Chrome's USB port

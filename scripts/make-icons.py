@@ -41,7 +41,7 @@ def icon(size, logo_share, background):
     return canvas
 
 
-out = ROOT / 'public/icons'
+out = ROOT / 'public/app-icons'
 out.mkdir(exist_ok=True)
 
 # "any": the round logo on a white disc-friendly square.

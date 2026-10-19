@@ -28,7 +28,7 @@ class ServiceWorkerController extends Controller
             '/offline',
             '/offline/read',
             '/manifest.webmanifest',
-            '/icons/icon-192.png',
+            '/app-icons/icon-192.png',
             '/images/logo-96.webp',
             '/images/logo-192.webp',
             ...$this->files($manifest, self::CORE_ENTRIES),
