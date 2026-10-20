@@ -57,7 +57,7 @@ class UserAdminTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.users.index'))
             ->assertOk()
             ->assertSee('4 accounts · 2 signed in · 2 not yet')
-            ->assertSeeInOrder(['Ike Invited', 'Not signed in yet', 'Invitation waiting to be emailed'])
+            ->assertSeeInOrder(['Ike Invited', 'Not signed in yet', 'Invitation not sent yet'])
             ->assertSeeInOrder(['Sade Slip', 'Not signed in yet', 'Has a password slip'])
             ->assertSeeInOrder(['Tunde Bello', 'Signed in', 'Last on'])
             ->assertDontSee('>Active<', false);
@@ -69,7 +69,7 @@ class UserAdminTest extends TestCase
             ->assertSee('Tunde Bello')->assertDontSee('Sade Slip');
 
         $this->get(route('admin.users.show', $invited))
-            ->assertSee('Not signed in yet')->assertSee('Never: invitation waiting to be emailed');
+            ->assertSee('Not signed in yet')->assertSee('Never: invitation not sent yet');
     }
 
     #[Test]

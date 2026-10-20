@@ -56,13 +56,13 @@
                             <td><x-badge :variant="$user->role !== \App\Enums\Role::Student ? 'primary' : ($user->isGraduated() ? 'accent' : 'neutral')">{{ $user->roleLabel() }}</x-badge></td>
                             <td>
                                 @php($state = \App\Support\Accounts\SignInState::for($user))
-                                <span class="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-nowrap">
+                                <span class="flex flex-wrap items-center gap-1 whitespace-nowrap">
                                     @if ($user->isSuspended())
                                         <x-badge variant="danger">Suspended</x-badge>
                                     @endif
                                     <x-badge :variant="$state->signedIn ? 'primary' : 'neutral'">{{ $state->label }}</x-badge>
                                 </span>
-                                <span class="mt-1 block whitespace-nowrap text-xs text-muted">{{ $state->detail }}</span>
+                                <span class="mt-1 block text-xs text-muted">{{ $state->detail }}</span>
                             </td>
                         </tr>
                     @endforeach

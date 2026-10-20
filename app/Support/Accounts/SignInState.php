@@ -29,8 +29,8 @@ final class SignInState
         $invitation = $user->invitation;
 
         return new self(false, 'Not signed in yet', match ($invitation?->status()) {
-            AccountInvitation::WAITING => 'Invitation waiting to be emailed',
-            AccountInvitation::SENT => 'Invitation emailed, not used yet',
+            AccountInvitation::WAITING => 'Invitation not sent yet',
+            AccountInvitation::SENT => 'Invitation emailed',
             AccountInvitation::EXPIRED => 'Invitation expired',
             default => $user->must_change_password ? 'Has a password slip' : 'Never signed in',
         });
