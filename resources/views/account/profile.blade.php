@@ -13,8 +13,8 @@
             </div>
 
             <div class="mt-4 flex flex-wrap gap-2">
-                <x-badge variant="primary">{{ $user->role->label() }}</x-badge>
-                @if ($user->isGraduated())
+                <x-badge :variant="$user->roleLabel() === 'Graduate' ? 'accent' : 'primary'">{{ $user->roleLabel() }}</x-badge>
+                @if ($user->isGraduated() && $user->roleLabel() !== 'Graduate')
                     <x-badge variant="accent">Graduate</x-badge>
                 @endif
                 <x-badge data-preview-text="level">{{ $user->level->label() }}</x-badge>
@@ -86,7 +86,7 @@
                     {{-- Disabled fields aren't submitted; send the current values. --}}
                     <input type="hidden" name="department_id" value="{{ $user->department_id }}">
                     <input type="hidden" name="level" value="{{ $user->level->value }}">
-                    <p class="text-sm text-muted">As a {{ strtolower($user->role->label()) }}, your department and level can only be changed by an admin.</p>
+                    <p class="text-sm text-muted">As a {{ strtolower($user->roleLabel()) }}, your department and level can only be changed by an admin.</p>
                 @endif
 
                 <div class="flex flex-wrap gap-3 pt-2">

@@ -1,5 +1,6 @@
 @php
     $zone = config('app.display_timezone');
+    $signIn = \App\Support\Accounts\SignInState::for($user);
     $self = auth()->user()?->is($user);
     $slip = session('slip');
     $roleOptions = collect(\App\Enums\Role::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all();
@@ -10,13 +11,14 @@
 <x-layouts.admin :title="$user->fullname">
     <x-page-header :title="$user->fullname" :subtitle="$user->matric_number.' · '.$user->classLabel().' · '.$user->department->name" :back="route('admin.users.index')" back-label="Users">
         <x-slot:actions>
-            <x-badge :variant="$user->role === \App\Enums\Role::Student ? 'neutral' : 'primary'">{{ $user->role->label() }}</x-badge>
+            <x-badge :variant="$user->role !== \App\Enums\Role::Student ? 'primary' : ($user->isGraduated() ? 'accent' : 'neutral')">{{ $user->roleLabel() }}</x-badge>
             @if ($user->isSuspended())
                 <x-badge variant="danger">Suspended</x-badge>
             @endif
-            @if ($user->isGraduated())
+            @if ($user->isGraduated() && $user->role !== \App\Enums\Role::Student)
                 <x-badge variant="accent">Graduate</x-badge>
             @endif
+            <x-badge :variant="$signIn->signedIn ? 'primary' : 'neutral'">{{ $signIn->label }}</x-badge>
         </x-slot:actions>
     </x-page-header>
 
@@ -41,8 +43,8 @@
                     <div><dt>Email</dt><dd>{{ $user->email ?? 'Not given' }}@if ($user->email && ! $user->email_verified_at) <span class="text-xs font-normal text-muted">(not confirmed)</span>@endif</dd></div>
                     <div><dt>Nominal roll</dt><dd>{{ $roll ? ($roll->classLabel() ?: 'On the roll') : 'Not on the roll' }}</dd></div>
                     <div><dt>Two-step verification</dt><dd>{{ $user->hasTwoFactorEnabled() ? 'On' : 'Off' }}</dd></div>
-                    <div><dt>Last login</dt><dd>{{ $user->last_login_at?->timezone($zone)->format('j M Y, g:i a') ?? 'Never' }}</dd></div>
-                    <div><dt>Joined</dt><dd>{{ $user->created_at->timezone($zone)->format('j M Y') }}</dd></div>
+                    <div><dt>Last login</dt><dd>{{ $user->last_login_at?->timezone($zone)->format('j M Y, g:i a') ?? 'Never: '.lcfirst($signIn->detail) }}</dd></div>
+                    <div><dt>Account made</dt><dd>{{ $user->created_at->timezone($zone)->format('j M Y') }}</dd></div>
                     <div><dt>Uploads</dt><dd>{{ number_format($uploads) }}</dd></div>
                 </dl>
             </x-card>

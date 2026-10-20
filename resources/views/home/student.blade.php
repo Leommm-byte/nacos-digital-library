@@ -8,7 +8,9 @@
                 <div class="mt-4 flex flex-wrap gap-2">
                     <span class="hero-chip">{{ $user->isGraduated() ? 'Graduate' : trim($user->level->label().' '.\App\Support\Classes\Arms::short($user->arm)) }}</span>
                     <span class="hero-chip">{{ $user->department->name }}</span>
-                    <span class="hero-chip">{{ $user->role->label() }}</span>
+                    @unless ($user->roleLabel() === 'Graduate')
+                        <span class="hero-chip">{{ $user->roleLabel() }}</span>
+                    @endunless
                 </div>
             </div>
             <form method="GET" action="{{ route('library.index') }}" role="search" class="hero-search">

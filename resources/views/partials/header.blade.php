@@ -57,7 +57,7 @@
                     <div class="menu-panel">
                         <div class="border-b border-border px-2.5 pt-1.5 pb-2.5 mb-1">
                             <p class="truncate font-semibold">{{ $user->fullname }}</p>
-                            <p class="truncate text-sm text-muted">{{ $user->matric_number }} · {{ $user->role->label() }}</p>
+                            <p class="truncate text-sm text-muted">{{ $user->matric_number }} · {{ $user->roleLabel() }}</p>
                         </div>
                         @if (Route::has('profile.edit'))
                             <a href="{{ route('profile.edit') }}" class="menu-item"><x-icon name="user" /> Profile</a>

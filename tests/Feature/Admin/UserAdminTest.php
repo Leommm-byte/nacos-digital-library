@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Department;
 use App\Models\User;
+use App\Support\Accounts\Invitations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
@@ -41,6 +42,49 @@ class UserAdminTest extends TestCase
             ->assertSee('Gbenga Governor')->assertDontSee('Tunde Bello');
 
         $this->get(route('admin.users.show', $this->student))->assertOk()->assertSee('Tunde Bello')->assertSee('Not on the roll');
+    }
+
+    #[Test]
+    public function the_list_tells_signed_in_students_from_accounts_nobody_has_used(): void
+    {
+        $this->student->forceFill(['last_login_at' => now()->subDay()])->save();
+        $slip = User::factory()->create(['fullname' => 'Sade Slip']);
+        $slip->forceFill(['must_change_password' => true])->save();
+        $invited = User::factory()->create(['fullname' => 'Ike Invited']);
+        Invitations::queue($invited, by: $this->admin);
+        $this->admin->forceFill(['last_login_at' => now()])->save();
+
+        $this->actingAs($this->admin)->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('4 accounts · 2 signed in · 2 not yet')
+            ->assertSeeInOrder(['Ike Invited', 'Not signed in yet', 'Invitation waiting to be emailed'])
+            ->assertSeeInOrder(['Sade Slip', 'Not signed in yet', 'Has a password slip'])
+            ->assertSeeInOrder(['Tunde Bello', 'Signed in', 'Last on'])
+            ->assertDontSee('>Active<', false);
+
+        $this->get(route('admin.users.index', ['status' => 'not-signed-in']))
+            ->assertSee('Sade Slip')->assertSee('Ike Invited')->assertDontSee('Tunde Bello')
+            ->assertSee('2 accounts found · 0 signed in · 2 not yet');
+        $this->get(route('admin.users.index', ['status' => 'signed-in']))
+            ->assertSee('Tunde Bello')->assertDontSee('Sade Slip');
+
+        $this->get(route('admin.users.show', $invited))
+            ->assertSee('Not signed in yet')->assertSee('Never: invitation waiting to be emailed');
+    }
+
+    #[Test]
+    public function graduated_students_are_shown_as_graduates(): void
+    {
+        $this->student->forceFill(['graduated_at' => now()])->save();
+        $governor = User::factory()->role(Role::Governor)->create();
+        $governor->forceFill(['graduated_at' => now()])->save();
+
+        $this->assertSame('Graduate', User::findOrFail($this->student->id)->roleLabel());
+        $this->assertSame('Governor', User::findOrFail($governor->id)->roleLabel());
+        $this->assertSame('Student', User::factory()->create()->roleLabel());
+
+        $this->actingAs(User::findOrFail($this->student->id))->get(route('home'))
+            ->assertOk()->assertSee('F/ND/24/1234567 · Graduate')->assertDontSee('hero-chip">Student', false);
     }
 
     #[Test]
