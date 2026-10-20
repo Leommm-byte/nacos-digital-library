@@ -91,6 +91,15 @@ async function navigate(event, url) {
         return (await event.preloadResponse) ?? await fetch(event.request);
     } catch (error) {
         const cache = await caches.open(STATIC_CACHE);
+
+        // The offline pages themselves (/offline, /offline/read?book=…).
+        if (url.pathname === '/offline' || url.pathname === '/offline/read') {
+            const page = await cache.match(url.pathname);
+            if (page) {
+                return page;
+            }
+        }
+
         const read = url.pathname.match(/^\/library\/([^/]+)\/read$/);
 
         if (read && await bookIndex(read[1])) {
