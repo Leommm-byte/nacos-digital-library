@@ -46,6 +46,16 @@ function within(promise, ms, fallback) {
     ]).finally(() => clearTimeout(timer));
 }
 
+/*
+ * The text read from a book goes up as a small file, not a form field: a
+ * whole textbook's text is hundreds of kilobytes, and shared hosting's web
+ * firewall (ModSecurity) turns away requests whose plain fields pass
+ * about 128 KB, after the whole upload has been sent.
+ */
+function textFile(text) {
+    return new Blob([text], { type: 'text/plain' });
+}
+
 /** A random UUID (v4), the form the server expects for upload_key. */
 function newKey() {
     if (crypto.randomUUID) {
@@ -384,6 +394,8 @@ export function initUpload() {
         for (const [name, value] of Object.entries(fields)) {
             if (name === 'cover') {
                 data.append('cover', value, 'cover.jpg');
+            } else if (name === 'text') {
+                data.append('text_file', textFile(value), 'text.txt');
             } else {
                 data.append(name, value);
             }
@@ -433,6 +445,7 @@ export function initUpload() {
 
     async function preparePhotos(data) {
         const total = photos.length;
+        const texts = [];
         const deadline = Date.now() + OCR_TOTAL_MS;
         let reading = !serverReads && !slowNetwork();
 
@@ -448,11 +461,15 @@ export function initUpload() {
                 const text = await readText(canvas, (fraction) =>
                     progress(`Reading the text on ${label}…`, (index + fraction) / total),
                 );
-                data.append(`page_text[${index}]`, text);
+                texts[index] = text;
                 // Unavailable or too slow on this phone: send the rest as is.
                 reading = ocr !== null && !(await ocr.then(() => false, () => true));
             }
             canvas.width = canvas.height = 0;
+        }
+
+        if (texts.some(Boolean)) {
+            data.append('page_text_file', textFile(JSON.stringify(Array.from(texts, (text) => text ?? ''))), 'pages.json');
         }
     }
 
@@ -575,7 +592,9 @@ export function initUpload() {
         } else if (response?.status === 429) {
             toast('Too many uploads in a short time. Wait a minute and try again.');
         } else {
-            toast('The upload didn\'t go through. Check your connection and try again.');
+            toast(response
+                ? `The upload didn't go through (error ${response.status}). Try again, and if it keeps happening, tell an admin the error number.`
+                : 'The upload didn\'t go through. Check your connection and try again.');
         }
     });
 }

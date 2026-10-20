@@ -207,6 +207,38 @@ class UploadTest extends TestCase
     }
 
     #[Test]
+    public function the_upload_script_sends_a_whole_textbooks_text_as_a_file(): void
+    {
+        // Hundreds of kilobytes: shared hosting's firewall refuses form
+        // fields that big, so the script sends a file instead.
+        $text = str_repeat('Operating systems schedule processes. ', 10_000); // 380,000 characters
+
+        $this->actingAs($this->student)->postJson(route('uploads.store'), $this->details([
+            'type' => 'pdf',
+            'pdf' => $this->pdf(),
+            'text_file' => UploadedFile::fake()->createWithContent('text.txt', $text),
+        ]))->assertCreated();
+
+        $saved = BookText::findOrFail(Book::firstOrFail()->id)->text;
+        // Kept up to the limit (300,000 characters).
+        $this->assertGreaterThan(290_000, mb_strlen($saved));
+        $this->assertLessThanOrEqual(300_000, mb_strlen($saved));
+        $this->assertStringStartsWith('Operating systems schedule processes.', $saved);
+    }
+
+    #[Test]
+    public function scanned_pages_text_can_come_as_one_file(): void
+    {
+        $this->actingAs($this->student)->postJson(route('uploads.store'), $this->details([
+            'type' => 'scan',
+            'pages' => [UploadedFile::fake()->image('p1.jpg', 800, 1100), UploadedFile::fake()->image('p2.jpg', 800, 1100)],
+            'page_text_file' => UploadedFile::fake()->createWithContent('pages.json', json_encode(['Linked lists', 'Binary trees'])),
+        ]))->assertCreated();
+
+        $this->assertSame("Linked lists\n\nBinary trees", BookText::findOrFail(Book::firstOrFail()->id)->text);
+    }
+
+    #[Test]
     public function photos_of_pages_become_one_pdf_with_the_first_page_as_cover(): void
     {
         $this->actingAs($this->student)->post(route('uploads.store'), $this->details([
