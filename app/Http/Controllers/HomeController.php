@@ -81,7 +81,7 @@ class HomeController extends Controller
                 'saved' => $savedCount,
                 'uploads' => (int) ($uploads->total ?? 0),
                 'approved' => (int) ($uploads->approved ?? 0),
-                'unread' => $user->unreadNotifications()->count(),
+                'unread' => $user->unreadNotificationCount(),
             ],
             'announcements' => Announcements::latest($user, 3),
             'executives' => $this->executives(),

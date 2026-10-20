@@ -35,3 +35,22 @@
     } catch (e) {}
 </script>
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+{{-- Chrome and Edge fetch a page as soon as a finger lands on (or a mouse
+     rests over) a link to it, so it often opens at once. Links that change
+     something when opened, files and the reader (which counts a read) are
+     left alone. Laravel doesn't treat these fetches as visits (no "previous
+     page" change). --}}
+<script type="speculationrules" nonce="{{ Vite::cspNonce() }}">
+{
+    "prefetch": [{
+        "where": {
+            "and": [
+                { "href_matches": "/*" },
+                { "not": { "href_matches": ["/logout", "/notifications/*", "/library/*/read", "/library/*/file", "/*/template", "/*/*/template", "/admin/audit/export", "/admin/accounts/slips", "/invitation/*", "/sw.js", "/up/*"] } },
+                { "not": { "selector_matches": "[download], [target=_blank], [data-no-prefetch]" } }
+            ]
+        },
+        "eagerness": "moderate"
+    }]
+}
+</script>

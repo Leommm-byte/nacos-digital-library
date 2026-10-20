@@ -136,6 +136,14 @@ class User extends Authenticatable implements MustVerifyEmail
         ]);
     }
 
+    /** Counted once per request: the header and the home page both show it. */
+    private ?int $unreadCount = null;
+
+    public function unreadNotificationCount(): int
+    {
+        return $this->unreadCount ??= $this->unreadNotifications()->count();
+    }
+
     /**
      * The student's class: programme, level and arm. Null for graduates,
      * and when the school doesn't run that combination (an old account).

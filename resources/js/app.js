@@ -10,6 +10,7 @@ import { initAutosubmit } from './autosubmit';
 import { initToast } from './toast';
 import { initOffline } from './offline';
 import { initInstall } from './install';
+import { initNavigationProgress } from './navigation';
 
 initTheme();
 initMenus();
@@ -23,6 +24,7 @@ initAutosubmit();
 initToast();
 initOffline();
 initInstall();
+initNavigationProgress();
 
 // The reader (and PDF.js with it) only loads on the reading page.
 if (document.querySelector('[data-reader]')) {

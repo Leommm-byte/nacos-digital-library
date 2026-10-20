@@ -38,6 +38,10 @@ return [
     // /up/scheduler reports a problem when the cron hasn't run for this long.
     'scheduler_max_silence_minutes' => 5,
 
+    // Requests slower than this are logged ("Slow request", with the time
+    // spent in the database). 0 turns the log off.
+    'slow_request_ms' => (int) env('SLOW_REQUEST_MS', 2000),
+
     // A daily email when the files and database together pass this size.
     'disk_warn_gb' => (float) env('DISK_WARN_GB', 20),
 

@@ -190,9 +190,14 @@ the link. Rolling back switches the link back.
    post_max_size = 64M
    max_file_uploads = 80
    memory_limit = 256M
+   max_execution_time = 300
+   max_input_time = 300
    ```
    Scanned books are sent as one file per page (up to 60 pages plus a
    cover). PHP's default of 20 files per request would silently drop pages.
+   The two time limits give a big upload on a slow phone connection, and
+   building the book from its pages, 5 minutes instead of PHP's 30 to 60
+   seconds.
 6. **Cron.** The panel's *Cron Jobs* page can't run a job every minute (its
    shortest choice is every 10 minutes, and selecting all 60 minutes is
    refused), so add it over SSH instead. Log in as `USER` and run
@@ -406,4 +411,45 @@ Before telling students, check each item:
 | "This username already exists" when creating a user | DreamHost usernames are shared by all customers. Pick a more specific one. |
 | `/up/backups` fails | Run `php artisan backup:run` over SSH and read the error. The admin dashboard shows the last one too. |
 | "mysqldump: command not found" | Add `MYSQLDUMP_PATH=/usr/bin/mysqldump` (or wherever `which mysqldump` says) to `.env`, then run `php artisan optimize`. |
+| The site feels slow | See "The site feels slow" below. |
 | Something broke after a deploy | Roll back (*Actions → Deploy → rollback*), then look at the alert email. |
+
+## The site feels slow
+
+Measure before changing anything. Every page says where its time went:
+
+1. **In a browser.** On a computer, open the site in Chrome, press F12, open
+   the *Network* tab and reload. Click the page's own row (the first one)
+   and open *Timing*: under *Server Timing*, `boot` is starting PHP and
+   Laravel, `db` the time spent waiting on the database (and how many
+   queries), and `app` the whole request on the server. Anything else in
+   the total is the network between the phone and DreamHost.
+2. **On the server.** Over SSH, in `~/nacosyabatech.com`:
+   ```bash
+   /usr/local/php83/bin/php artisan ops:latency
+   ```
+   It times connecting to the database, one query, the cache (each store)
+   and the disk. A page runs 10 to 30 queries, so a query over 5 ms is felt
+   on every click.
+3. **The slow log.** Requests over 2 seconds (`SLOW_REQUEST_MS` in `.env`)
+   are written to `~/nacos/shared/storage/logs/laravel-<date>.log` as
+   "Slow request", with the page, the database time and the query count:
+   ```bash
+   grep "Slow request" ~/nacos/shared/storage/logs/laravel-*.log | tail -20
+   ```
+
+What the numbers mean:
+
+| Finding | What to do |
+|---|---|
+| `boot` is over 150 ms | OPcache is probably off. Check the top of `~/.php/8.3/phprc` still has DreamHost's opcache section (step 1.5), then run `killall -u USER php83.cgi` (or wait a few minutes) so PHP restarts. Also run `php artisan optimize`. |
+| `ops:latency` shows the file cache much faster than the database cache | Set `CACHE_STORE=file` in `~/nacos/shared/.env`, then `php artisan optimize`. Sessions stay in the database (sign-out everywhere needs it). |
+| One query takes over 5 ms | The database server is far from the web server, or busy. Ask DreamHost support to check that the MySQL host and the site are in the same data centre. |
+| `db` is small and `app` is large | The page itself is slow. Send the slow log lines to whoever maintains the site. |
+| The server numbers are small but pages still feel slow | It is the connection. Pages open almost at once when they were fetched ahead (Chrome does this when a finger lands on a link), and a bar along the top shows a page is on its way. |
+
+Uploads: photos are shrunk on the phone, and their text is read on the
+phone only when it is quick (skipped on slow or data-saving connections,
+and when the site reads pages with AI). The upload keeps the screen on,
+asks before the page is left, and carries on by itself after a dropped
+connection, without making a copy.

@@ -1,4 +1,7 @@
 <x-layouts.reader :title="$book->title">
+    @if ($fileUrl)
+        <x-slot:head>@include('partials.reader-assets', ['rel' => 'preload'])</x-slot:head>
+    @endif
     <div class="reader" @if ($fileUrl) data-reader @endif
         data-src="{{ $fileUrl }}"
         data-start-page="{{ $startPage }}"

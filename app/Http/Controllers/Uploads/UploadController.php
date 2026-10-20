@@ -24,9 +24,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -74,6 +76,38 @@ class UploadController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        // Building a book from 60 photos can take a while on shared hosting.
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
+        // The upload script sends the same key again when it retries after a
+        // dropped connection; if the first attempt was stored after all, the
+        // retry gets that book instead of a copy.
+        $key = $request->input('upload_key');
+        $doneKey = is_string($key) && Str::isUuid($key) ? "uploads:done:{$user->id}:{$key}" : null;
+        $done = $doneKey !== null ? Cache::get($doneKey) : null;
+        if (is_string($done) && ($book = Book::where('uploader_id', $user->id)->where('public_id', $done)->first())) {
+            return $this->stored($request, $book);
+        }
+
+        // Still being saved by the first attempt: the script waits and asks
+        // again, and then gets the book above.
+        if ($doneKey !== null && ! Cache::add("{$doneKey}:busy", true, 300)) {
+            return response()->json(['message' => 'This upload is still being saved.'], 409);
+        }
+
+        try {
+            return $this->save($request, $upload, $user, $doneKey);
+        } finally {
+            if ($doneKey !== null) {
+                Cache::forget("{$doneKey}:busy");
+            }
+        }
+    }
+
+    private function save(Request $request, BookUpload $upload, User $user, ?string $doneKey): RedirectResponse|JsonResponse
+    {
         if ($reason = UploadLimits::blockReason($user)) {
             throw ValidationException::withMessages(['upload' => $reason]);
         }
@@ -134,6 +168,15 @@ class UploadController extends Controller
 
         Audit::record('book_uploaded', $book);
 
+        if ($doneKey !== null) {
+            Cache::put($doneKey, $book->public_id, now()->addDay());
+        }
+
+        return $this->stored($request, $book);
+    }
+
+    private function stored(Request $request, Book $book): RedirectResponse|JsonResponse
+    {
         // Shown once on the next page: the thank-you note.
         $request->session()->flash('uploaded', true);
         $url = route('uploads.show', $book);
@@ -352,6 +395,7 @@ class UploadController extends Controller
             'text' => ['nullable', 'string', 'max:1000000'],
             'page_text' => ['nullable', 'array'],
             'page_text.*' => ['nullable', 'string', 'max:50000'],
+            'upload_key' => ['nullable', 'string', 'max:64'],
         ];
     }
 }
