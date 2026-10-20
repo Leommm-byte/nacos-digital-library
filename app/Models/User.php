@@ -136,6 +136,15 @@ class User extends Authenticatable implements MustVerifyEmail
         ]);
     }
 
+    /**
+     * The role as people see it: a student who has graduated is a
+     * "Graduate" (course reps, governors and admins keep their title).
+     */
+    public function roleLabel(): string
+    {
+        return $this->role === Role::Student && $this->isGraduated() ? 'Graduate' : $this->role->label();
+    }
+
     /** Counted once per request: the header and the home page both show it. */
     private ?int $unreadCount = null;
 

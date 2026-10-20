@@ -1,13 +1,16 @@
 @php
     $roles = ['' => 'Any role'] + collect(\App\Enums\Role::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all();
-    $statuses = ['' => 'Any status', 'active' => 'Active', 'suspended' => 'Suspended', 'graduated' => 'Graduates'];
+    $statuses = ['' => 'Any status', 'signed-in' => 'Signed in', 'not-signed-in' => 'Not signed in yet', 'suspended' => 'Suspended', 'graduated' => 'Graduates'];
+    $total = $users->total();
+    $summary = number_format($total).' '.\Illuminate\Support\Str::plural('account', $total).($search !== '' || array_filter($filters) ? ' found' : '')
+        .($total > 0 ? ' · '.number_format($signedIn).' signed in · '.number_format($total - $signedIn).' not yet' : '');
     $levels = ['' => 'Any level'] + collect(\App\Enums\Level::cases())->mapWithKeys(fn ($l) => [$l->value => $l->label()])->all();
     $arms = ['' => 'Any course'] + collect(\App\Support\Classes\Arms::all())->map(fn ($a) => $a['stage'].' '.$a['short'])->all();
     $programmes = ['' => 'Any programme'] + collect(\App\Enums\Programme::cases())->mapWithKeys(fn ($p) => [$p->value => $p->label()])->all();
 @endphp
 
 <x-layouts.admin title="Users">
-    <x-page-header title="Users" :subtitle="number_format($users->total()).' '.\Illuminate\Support\Str::plural('account', $users->total()).($search !== '' || array_filter($filters) ? ' found' : '')">
+    <x-page-header title="Users" :subtitle="$summary">
         <x-slot:actions>
             <x-button href="{{ route('admin.accounts.index') }}" icon="user-plus">Create accounts</x-button>
         </x-slot:actions>
@@ -50,15 +53,16 @@
                             </td>
                             <td class="whitespace-nowrap">{{ $user->matric_number }}</td>
                             <td class="whitespace-nowrap">{{ trim($user->level->label().' '.\App\Support\Classes\Arms::short($user->arm)) }} · {{ $user->programme->label() }}</td>
-                            <td><x-badge :variant="$user->role === \App\Enums\Role::Student ? 'neutral' : 'primary'">{{ $user->role->label() }}</x-badge></td>
+                            <td><x-badge :variant="$user->role !== \App\Enums\Role::Student ? 'primary' : ($user->isGraduated() ? 'accent' : 'neutral')">{{ $user->roleLabel() }}</x-badge></td>
                             <td>
-                                @if ($user->isSuspended())
-                                    <x-badge variant="danger">Suspended</x-badge>
-                                @elseif ($user->isGraduated())
-                                    <x-badge variant="accent">Graduate</x-badge>
-                                @else
-                                    <span class="text-sm text-muted">Active</span>
-                                @endif
+                                @php($state = \App\Support\Accounts\SignInState::for($user))
+                                <span class="flex flex-wrap items-center gap-1 whitespace-nowrap">
+                                    @if ($user->isSuspended())
+                                        <x-badge variant="danger">Suspended</x-badge>
+                                    @endif
+                                    <x-badge :variant="$state->signedIn ? 'primary' : 'neutral'">{{ $state->label }}</x-badge>
+                                </span>
+                                <span class="mt-1 block text-xs text-muted">{{ $state->detail }}</span>
                             </td>
                         </tr>
                     @endforeach

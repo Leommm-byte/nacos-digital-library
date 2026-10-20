@@ -155,9 +155,9 @@ class UploadController extends Controller
                 'description' => $data['description'] ?? null,
                 'department_id' => (int) $data['department_id'],
                 'level' => $data['level'],
-                'text' => $data['text'] ?? null,
+                'text' => $this->uploadedText($request) ?? $data['text'] ?? null,
                 'page_count' => isset($data['page_count']) ? (int) $data['page_count'] : null,
-                'page_text' => $data['page_text'] ?? [],
+                'page_text' => $this->uploadedPageTexts($request) ?? $data['page_text'] ?? [],
             ], $pdf, $pages, $cover);
         } catch (UnreadableImage) {
             // GD couldn't read one of the images.
@@ -173,6 +173,37 @@ class UploadController extends Controller
         }
 
         return $this->stored($request, $book);
+    }
+
+    /**
+     * A PDF's text, sent by the upload script as a file.
+     */
+    private function uploadedText(Request $request): ?string
+    {
+        $file = $request->file('text_file');
+
+        return $file instanceof UploadedFile
+            ? mb_substr((string) file_get_contents($file->getRealPath()), 0, (int) config('uploads.text_max_chars'))
+            : null;
+    }
+
+    /**
+     * Each scanned page's text, sent by the upload script as a JSON list.
+     *
+     * @return array<int, string>|null
+     */
+    private function uploadedPageTexts(Request $request): ?array
+    {
+        $file = $request->file('page_text_file');
+        if (! $file instanceof UploadedFile) {
+            return null;
+        }
+
+        $texts = json_decode((string) file_get_contents($file->getRealPath()), true);
+
+        return is_array($texts)
+            ? array_map(fn ($text) => is_string($text) ? mb_substr($text, 0, 50_000) : '', array_values($texts))
+            : [];
     }
 
     private function stored(Request $request, Book $book): RedirectResponse|JsonResponse
@@ -395,6 +426,9 @@ class UploadController extends Controller
             'text' => ['nullable', 'string', 'max:1000000'],
             'page_text' => ['nullable', 'array'],
             'page_text.*' => ['nullable', 'string', 'max:50000'],
+            // The upload script sends the text as files (resources/js/upload.js).
+            'text_file' => ['nullable', 'file', 'max:4096'],
+            'page_text_file' => ['nullable', 'file', 'max:4096'],
             'upload_key' => ['nullable', 'string', 'max:64'],
         ];
     }

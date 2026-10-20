@@ -35,14 +35,13 @@ class UserController extends Controller
         $search = trim($request->string('q')->toString());
         $filters = $request->validate([
             'role' => ['nullable', Rule::enum(Role::class)],
-            'status' => ['nullable', Rule::in([...array_column(UserStatus::cases(), 'value'), 'graduated'])],
+            'status' => ['nullable', Rule::in([...array_column(UserStatus::cases(), 'value'), 'graduated', 'signed-in', 'not-signed-in'])],
             'level' => ['nullable', Rule::enum(Level::class)],
             'programme' => ['nullable', Rule::enum(Programme::class)],
             'arm' => ['nullable', Rule::in(array_keys(Arms::all()))],
         ]);
 
-        $users = User::query()
-            ->with('department:id,name')
+        $query = User::query()
             ->when($search !== '', function (Builder $query) use ($search) {
                 $query->where(function (Builder $query) use ($search) {
                     $query->where('fullname', 'like', '%'.$search.'%')
@@ -51,18 +50,29 @@ class UserController extends Controller
                 });
             })
             ->when($filters['role'] ?? null, fn (Builder $query, $role) => $query->where('role', $role))
-            ->when($filters['status'] ?? null, fn (Builder $query, $status) => $status === 'graduated'
-                ? $query->whereNotNull('graduated_at')
-                : $query->where('status', $status))
+            ->when($filters['status'] ?? null, fn (Builder $query, $status) => match ($status) {
+                'graduated' => $query->whereNotNull('graduated_at'),
+                'signed-in' => $query->whereNotNull('last_login_at'),
+                'not-signed-in' => $query->whereNull('last_login_at'),
+                default => $query->where('status', $status),
+            })
             ->when($filters['level'] ?? null, fn (Builder $query, $level) => $query->where('level', $level))
             ->when($filters['programme'] ?? null, fn (Builder $query, $programme) => $query->where('programme', $programme))
-            ->when($filters['arm'] ?? null, fn (Builder $query, $arm) => $query->where('arm', $arm))
+            ->when($filters['arm'] ?? null, fn (Builder $query, $arm) => $query->where('arm', $arm));
+
+        // Of the accounts found, how many have been used: accounts made from
+        // the nominal roll exist before the student has signed in.
+        $signedIn = (clone $query)->whereNotNull('last_login_at')->count();
+
+        $users = $query
+            ->with(['department:id,name', 'invitation:id,user_id,sent_at,expires_at,accepted_at'])
             ->orderBy('fullname')
             ->paginate(25)
             ->withQueryString();
 
         return view('admin.users.index', [
             'users' => $users,
+            'signedIn' => $signedIn,
             'search' => $search,
             'filters' => $filters,
         ]);
@@ -70,7 +80,7 @@ class UserController extends Controller
 
     public function show(User $user): View
     {
-        $user->load('department:id,name');
+        $user->load(['department:id,name', 'invitation']);
 
         return view('admin.users.show', [
             'user' => $user,
