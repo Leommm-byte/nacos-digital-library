@@ -115,8 +115,11 @@ class OfflineTest extends TestCase
         $this->assertFileExists(public_path('manifest.webmanifest'));
         $manifest = json_decode((string) file_get_contents(public_path('manifest.webmanifest')), true);
         $this->assertSame('standalone', $manifest['display']);
-        foreach ($manifest['icons'] as $icon) {
+        $icons = array_merge($manifest['icons'], ...array_column($manifest['shortcuts'], 'icons'));
+        foreach ($icons as $icon) {
             $this->assertFileExists(public_path(ltrim($icon['src'], '/')));
+            // Apache's default /icons/ alias would hide the file.
+            $this->assertStringStartsNotWith('/icons/', $icon['src']);
         }
     }
 
