@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Offline\ServiceWorkerController;
 use App\Http\Controllers\Operations\HealthController;
 use App\Http\Middleware\EnforceAccountState;
 use App\Http\Middleware\EnsureRole;
@@ -21,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             Route::get('/up/scheduler', [HealthController::class, 'scheduler'])->name('up.scheduler');
             Route::get('/up/backups', [HealthController::class, 'backups'])->name('up.backups');
+            // Browsers ask for the service worker on nearly every visit; it's
+            // the same for everyone, so it starts no session (no database).
+            Route::get('/sw.js', ServiceWorkerController::class)->name('service-worker');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
