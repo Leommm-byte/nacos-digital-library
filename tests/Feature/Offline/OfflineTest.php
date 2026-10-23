@@ -82,9 +82,18 @@ class OfflineTest extends TestCase
 
         $this->assertNotSame($owner, Offline::owner($other));
         $this->assertSame($owner, Offline::owner($this->student));
-        $this->assertStringNotContainsString((string) $this->student->id, $owner);
+        // A keyed hash: 20 hex characters, nothing readable. (Not "doesn't
+        // contain the id": a short id like 504 turns up in a hex string by
+        // chance, which made this test fail now and then.)
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{20}$/', $owner);
+        $this->assertNotSame((string) $this->student->id, $owner);
+        $this->assertStringNotContainsString($this->student->matric_number, $owner);
 
         $this->actingAs($this->student)->get(route('home'))->assertSee('data-user="'.$owner.'"', false);
+
+        // It depends on the app key, so it can't be worked out from the id.
+        config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+        $this->assertNotSame($owner, Offline::owner($this->student));
     }
 
     #[Test]
