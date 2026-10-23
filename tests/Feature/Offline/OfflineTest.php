@@ -7,6 +7,7 @@ use App\Models\Book;
 use App\Models\User;
 use App\Support\Offline;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -28,7 +29,12 @@ class OfflineTest extends TestCase
     #[Test]
     public function the_service_worker_lists_the_build_and_never_caches_itself(): void
     {
+        DB::enableQueryLog();
         $response = $this->get('/sw.js')->assertOk();
+
+        // Fetched on nearly every visit: no session, so no database work.
+        $response->assertCookieMissing((string) config('session.cookie'));
+        $this->assertSame([], DB::getQueryLog());
 
         $this->assertStringStartsWith('application/javascript', (string) $response->headers->get('Content-Type'));
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));

@@ -280,6 +280,11 @@ the link. Rolling back switches the link back.
 - **A failed database update.** The new release isn't switched to, and the
   site stays on the old one. Both the workflow and the alert email say what
   failed.
+- **Right after a switch.** `release.sh` stops the site's PHP processes
+  (`php83.cgi`) so the next request starts on the new release; without it,
+  some kept serving the old one for a few minutes (a new page, then a click
+  answered by old code, e.g. "The selected status is invalid"). To check
+  the name of the processes once: `ps -u USER -o comm | grep php`.
 
 ## 3. Backups (Backblaze B2)
 

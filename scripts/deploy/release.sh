@@ -31,12 +31,23 @@ switch_to() {
     mv -fT "$SITE.next" "$SITE"
 }
 
+# The site's PHP processes (FastCGI, run as this user) remember where files
+# are for a couple of minutes, so after the switch some would keep serving
+# the old release: a page from the new one, then a click answered by the
+# old one ("The selected status is invalid"). Stopping them makes the next
+# request start fresh on the new release. Only *.cgi processes: not this
+# script's own php, nor the queue worker.
+restart_php() {
+    pkill -u "$(id -un)" -f 'php[0-9.]*\.cgi' 2>/dev/null || true
+}
+
 if [ "${1:-}" = "rollback" ]; then
     live=$(current)
     previous=$(ls -1dt "$APP_ROOT"/releases/*/ 2>/dev/null | sed 's#/$##' | grep -vx "$live" | head -n 1 || true)
     [ -n "$previous" ] || fail "There is no earlier release to go back to."
     say "Switching back to $(basename "$previous")"
     switch_to "$previous"
+    restart_php
     (cd "$previous" && "$PHP" artisan queue:restart >/dev/null && "$PHP" artisan up >/dev/null) || true
     say "Live: $(basename "$previous"). Database changes made by newer releases were not undone."
     exit 0
@@ -90,6 +101,7 @@ fi
 
 say "Going live"
 switch_to "$release"
+restart_php
 "$PHP" artisan queue:restart >/dev/null
 "$PHP" artisan up >/dev/null
 

@@ -23,7 +23,6 @@ use App\Http\Controllers\Library\BookmarkController;
 use App\Http\Controllers\Library\LibraryController;
 use App\Http\Controllers\Library\ReadingController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\Offline\ServiceWorkerController;
 use App\Http\Controllers\Reader\BookFileController;
 use App\Http\Controllers\Reader\ReaderController;
 use App\Http\Controllers\Reader\ReadingProgressController;
@@ -35,9 +34,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
-// Offline support (PR 14): the service worker and the two pages it keeps on
-// the phone. Public and the same for everyone, so they hold nothing personal.
-Route::get('/sw.js', ServiceWorkerController::class)->name('service-worker');
+// Offline support (PR 14): the two pages the service worker keeps on the
+// phone. Public and the same for everyone, so they hold nothing personal.
+// The worker itself (/sw.js) is in bootstrap/app.php, outside this group.
 Route::view('/offline', 'offline.index')->name('offline');
 Route::view('/offline/read', 'offline.reader')->name('offline.read');
 
