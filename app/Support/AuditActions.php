@@ -67,6 +67,13 @@ class AuditActions
         'audit_exported' => 'Exported the audit log',
         'department_opened' => 'Opened a department',
         'department_closed' => 'Closed a department',
+        'vote_space_created' => 'Added a department\'s election space',
+        'vote_space_updated' => 'Edited a department\'s election space',
+        'vote_space_paused' => 'Paused a department\'s election space',
+        'vote_space_resumed' => 'Resumed a department\'s election space',
+        'vote_space_admin_added' => 'Added a department election admin',
+        'vote_space_admin_password' => 'Gave a department election admin a new password',
+        'vote_space_admin_removed' => 'Removed a department election admin',
     ];
 
     public static function label(string $action): string
@@ -86,7 +93,7 @@ class AuditActions
             str_contains($action, 'removed'), str_contains($action, 'rejected') => 'red',
             str_starts_with($action, 'book_') => 'blue',
             str_starts_with($action, 'election_'), str_starts_with($action, 'roll_') => 'violet',
-            str_starts_with($action, 'user_'), str_starts_with($action, 'settings_'), str_starts_with($action, 'department_'),
+            str_starts_with($action, 'user_'), str_starts_with($action, 'settings_'), str_starts_with($action, 'department_'), str_starts_with($action, 'vote_space_'),
             str_starts_with($action, 'accounts_'), str_starts_with($action, 'audit_'), str_starts_with($action, 'announcement_'),
             str_starts_with($action, 'timetable_'), str_starts_with($action, 'exam'), str_starts_with($action, 'session_') => 'yellow',
             default => 'green',

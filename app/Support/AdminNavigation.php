@@ -23,6 +23,7 @@ class AdminNavigation
             ['announcements.manage', 'Announcements', 'bell', 'announcements.*'],
             ['elections.manage', 'Elections', 'vote', 'elections.manage*'],
             ['admin.executives.index', 'Executives', 'users', 'admin.executives.*'],
+            ['admin.departments.index', 'Departments', 'building-2', 'admin.departments.*'],
             ['timetable.edit', 'Class timetables', 'calendar-clock', 'timetable.edit'],
             ['exams.manage', 'Exam timetable', 'calendar-days', 'exams.manage'],
             ['admin.reports', 'Reports', 'chart-column', 'admin.reports'],

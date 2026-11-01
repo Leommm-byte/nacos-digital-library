@@ -21,7 +21,7 @@ class ElectionPosition extends Model
      */
     public function election(): BelongsTo
     {
-        return $this->belongsTo(Election::class);
+        return $this->belongsTo(Election::class)->withoutGlobalScope('nacos');
     }
 
     /**

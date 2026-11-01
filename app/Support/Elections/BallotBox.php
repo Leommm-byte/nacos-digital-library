@@ -5,6 +5,7 @@ namespace App\Support\Elections;
 use App\Models\Election;
 use App\Models\ElectionCandidate;
 use App\Models\User;
+use App\Models\Voter;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,7 +32,7 @@ class BallotBox
      *
      * @throws BallotRejected
      */
-    public static function cast(Election $election, User $user, array $choices): void
+    public static function cast(Election $election, User|Voter $user, array $choices): void
     {
         $picked = self::check($election, $user, $choices);
 
@@ -40,7 +41,7 @@ class BallotBox
                 // A shared lock lets ballots run side by side but makes
                 // closing the election wait for the ones in progress, and
                 // ballots after it see that it closed.
-                $current = Election::query()->whereKey($election->id)->sharedLock()->firstOrFail();
+                $current = Election::everywhere()->whereKey($election->id)->sharedLock()->firstOrFail();
 
                 if (! $current->isAcceptingVotes()) {
                     throw new BallotRejected('Voting for this election has closed.');
@@ -53,9 +54,11 @@ class BallotBox
                 sort($candidates);
                 ElectionCandidate::query()->whereKey($candidates)->orderBy('id')->lockForUpdate()->get(['id']);
 
-                DB::table('election_voters')->insert([
+                // A department's voters are recorded in their own table
+                // (organization_election_voters), the same way.
+                DB::table($election->votersTable())->insert([
                     'election_id' => $election->id,
-                    'user_id' => $user->id,
+                    $user instanceof Voter ? 'voter_id' : 'user_id' => $user->id,
                     'voted_at' => now(),
                 ]);
 
@@ -90,7 +93,7 @@ class BallotBox
      * @param  array<int|string, mixed>  $choices
      * @return array<int, int> position id => candidate id
      */
-    private static function check(Election $election, User $user, array $choices): array
+    private static function check(Election $election, User|Voter $user, array $choices): array
     {
         if (! $election->isAcceptingVotes()) {
             throw new BallotRejected('Voting for this election has closed.');

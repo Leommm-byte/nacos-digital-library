@@ -10,7 +10,8 @@ import { gzipSync } from 'node:zlib';
 
 const BUDGET = {
     // Every page: the stylesheet, the main script and what it imports.
-    css: 24 * 1024,
+    // 25 KB: department election spaces (docs/department-elections.md) added ~0.5 KB.
+    css: 25 * 1024,
     js: 24 * 1024,
     // Both variable fonts (already compressed).
     fonts: 80 * 1024,

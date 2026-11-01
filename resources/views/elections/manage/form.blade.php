@@ -8,11 +8,11 @@
     $lateAccounts = $errors->any() ? (bool) old('allow_late_accounts') : $election->allow_late_accounts;
 @endphp
 
-<x-layouts.admin :title="$editing ? 'Edit election' : 'New election'">
+<x-dynamic-component :component="$desk->layout()" :title="$editing ? 'Edit election' : 'New election'">
     <x-page-header :title="$editing ? 'Edit election' : 'New election'" subtitle="Positions and candidates come next. Nothing is public until you launch it."
-        :back="$editing ? route('elections.manage.show', $election) : route('elections.manage')" :back-label="$editing ? $election->title : 'Manage elections'" />
+        :back="$editing ? $desk->route('.show', $election) : $desk->route('')" :back-label="$editing ? $election->title : 'Manage elections'" />
 
-    <form method="POST" action="{{ $editing ? route('elections.manage.update', $election) : route('elections.manage.store') }}" class="max-w-2xl space-y-6" novalidate>
+    <form method="POST" action="{{ $editing ? $desk->route('.update', $election) : $desk->route('.store') }}" class="max-w-2xl space-y-6" novalidate>
         @csrf
         @if ($editing)
             @method('PUT')
@@ -36,27 +36,33 @@
                 <x-icon-tile name="users" tone="blue" size="sm" />
                 <div>
                     <h2 class="text-base">Who can vote</h2>
-                    <p class="text-sm text-muted">Every active account, unless you limit it below.</p>
+                    <p class="text-sm text-muted">{{ $desk->isDepartment() ? 'Every registered student on the nominal roll, unless you limit it below.' : 'Every active account, unless you limit it below.' }}</p>
                 </div>
             </div>
 
+            @if ($desk->isDepartment())
+                {{-- A department's elections are always for its roll: only
+                     students on it can register. --}}
+                <p class="text-sm text-muted">{{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the nominal roll now. <a href="{{ $desk->rollUrl() }}" class="link">{{ $rollCount ? 'See the roll' : 'Import the roll' }}</a></p>
+            @else
             <label class="roll-toggle">
                 <input type="checkbox" name="roll_only" value="1" class="mt-1 size-4 shrink-0 accent-[var(--primary)]" @checked($rollOnly)>
                 <span>
                     <strong>Only students on the nominal roll</strong>
                     <span class="block text-sm text-muted">
                         Graduates and made-up matric numbers can't vote. {{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the roll now.
-                        <a href="{{ route('roll.index') }}" class="link">{{ $rollCount ? 'See the roll' : 'Import the roll' }}</a>
+                        <a href="{{ $desk->rollUrl() }}" class="link">{{ $rollCount ? 'See the roll' : 'Import the roll' }}</a>
                     </span>
                 </span>
             </label>
+            @endif
 
             <label class="roll-toggle">
                 <input type="checkbox" name="allow_late_accounts" value="1" class="mt-1 size-4 shrink-0 accent-[var(--primary)]" @checked($lateAccounts)>
                 <span>
                     <strong>Accounts created during voting can vote too</strong>
                     <span class="block text-sm text-muted">
-                        Off by default: only accounts that exist when voting opens can vote, so nobody can sign up with an unregistered classmate's matric number and vote as them. Ask students to sign up before you launch, or create their accounts from the roll on <a href="{{ route('admin.accounts.index') }}" class="link">Create accounts</a>.
+                        Off by default: only accounts that exist when voting opens can vote, so nobody can sign up with an unregistered classmate's matric number and vote as them. @if ($desk->isDepartment())Ask students to register before you launch.@else Ask students to sign up before you launch, or create their accounts from the roll on <a href="{{ route('admin.accounts.index') }}" class="link">Create accounts</a>.@endif
                     </span>
                 </span>
             </label>
@@ -87,13 +93,13 @@
                         </label>
                     @endforeach
                 </div>
-                <p class="mt-1.5 text-sm text-muted">None ticked means all levels. The class on the nominal roll counts over the one students chose at signup.</p>
+                <p class="mt-1.5 text-sm text-muted">None ticked means all levels. {{ $desk->isDepartment() ? 'Each student\'s level is the one on the nominal roll.' : 'The class on the nominal roll counts over the one students chose at signup.' }}</p>
                 @error('levels')
                     <p class="field-error">{{ $message }}</p>
                 @enderror
             </fieldset>
 
-            @if (\App\Support\Classes\Arms::all() !== [])
+            @if (! $desk->isDepartment() && \App\Support\Classes\Arms::all() !== [])
                 <fieldset>
                     <legend class="field-label">Courses</legend>
                     <div class="chip-options">
@@ -123,7 +129,7 @@
 
         <div class="flex flex-wrap items-center gap-3">
             <x-button icon="circle-check">{{ $editing ? 'Save changes' : 'Create election' }}</x-button>
-            <x-button href="{{ $editing ? route('elections.manage.show', $election) : route('elections.manage') }}" variant="ghost">Cancel</x-button>
+            <x-button href="{{ $editing ? $desk->route('.show', $election) : $desk->route('') }}" variant="ghost">Cancel</x-button>
         </div>
     </form>
-</x-layouts.admin>
+</x-dynamic-component>

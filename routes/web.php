@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BookController as AdminBookController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\ExecutiveController as AdminExecutiveController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SessionController;
@@ -159,6 +160,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/books', [AdminBookController::class, 'index'])->name('books.index');
         Route::delete('/books/{book}', [AdminBookController::class, 'destroy'])->name('books.destroy');
 
+        // Departments NACOS runs elections for (docs/department-elections.md).
+        Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/departments/create', [DepartmentController::class, 'create'])->name('departments.create');
+        Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('/departments/{department}', [DepartmentController::class, 'show'])->name('departments.show');
+        Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
+        Route::put('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');
+        Route::put('/departments/{department}/status', [DepartmentController::class, 'status'])->name('departments.status');
+        Route::post('/departments/{department}/admins', [DepartmentController::class, 'storeAdmin'])->middleware('throttle:20,1')->name('departments.admins.store');
+        Route::post('/departments/{department}/admins/{admin}/password', [DepartmentController::class, 'adminPassword'])->whereNumber('admin')->name('departments.admins.password');
+        Route::delete('/departments/{department}/admins/{admin}', [DepartmentController::class, 'destroyAdmin'])->whereNumber('admin')->name('departments.admins.destroy');
+
         Route::get('/reports', ReportController::class)->name('reports');
         Route::get('/audit', [AuditLogController::class, 'index'])->name('audit');
         Route::get('/audit/export', [AuditLogController::class, 'export'])->name('audit.export');
@@ -231,3 +244,6 @@ Route::middleware('auth')->group(function () {
 if (! app()->isProduction()) {
     Route::view('/styleguide', 'styleguide')->name('styleguide');
 }
+
+// Department election spaces (docs/department-elections.md).
+require __DIR__.'/vote.php';

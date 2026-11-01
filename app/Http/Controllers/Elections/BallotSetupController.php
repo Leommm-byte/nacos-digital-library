@@ -9,6 +9,7 @@ use App\Models\ElectionPosition;
 use App\Models\User;
 use App\Rules\ValidMatricNumber;
 use App\Support\Audit;
+use App\Support\Elections\ElectionDesk;
 use App\Support\MatricNumber;
 use App\Support\Uploads\Images;
 use App\Support\Uploads\UnreadableImage;
@@ -26,9 +27,22 @@ use Illuminate\Validation\ValidationException;
  */
 class BallotSetupController extends Controller
 {
-    public function storePosition(Request $request, Election $election): RedirectResponse
+    protected function desk(): ElectionDesk
+    {
+        return ElectionDesk::nacos();
+    }
+
+    /**
+     * Only drafts change (ElectionPolicy).
+     */
+    protected function authorizeChange(Election $election): void
     {
         Gate::authorize('update', $election);
+    }
+
+    public function storePosition(Request $request, Election $election): RedirectResponse
+    {
+        $this->authorizeChange($election);
 
         $data = $request->validateWithBag('position', ['title' => ['required', 'string', 'max:120']]);
 
@@ -37,14 +51,16 @@ class BallotSetupController extends Controller
             'sort_order' => (int) $election->positions()->max('sort_order') + 1,
         ]);
 
-        Audit::record('election_position_added', $election, ['position' => $position->title]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_position_added', $election, ['position' => $position->title]);
+        }
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$position->title} added.");
     }
 
     public function updatePosition(Request $request, Election $election, ElectionPosition $position): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange($election);
 
         $data = $request->validateWithBag("position-{$position->id}", ['title' => ['required', 'string', 'max:120']]);
         $position->update(['title' => (string) $data['title']]);
@@ -57,7 +73,7 @@ class BallotSetupController extends Controller
      */
     public function movePosition(Request $request, Election $election, ElectionPosition $position): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange($election);
 
         $positions = $election->positions()->get()->values();
         $index = $positions->search(fn (ElectionPosition $item) => $item->id === $position->id);
@@ -79,19 +95,21 @@ class BallotSetupController extends Controller
 
     public function destroyPosition(Election $election, ElectionPosition $position): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange($election);
 
         $paths = $position->candidates()->whereNotNull('photo_path')->pluck('photo_path')->all();
         $position->delete();
         Storage::disk('private')->delete($paths);
-        Audit::record('election_position_removed', $election, ['position' => $position->title]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_position_removed', $election, ['position' => $position->title]);
+        }
 
         return $this->back($election)->with('status', "{$position->title} removed.");
     }
 
     public function storeCandidate(Request $request, Election $election, ElectionPosition $position): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange($election);
 
         $bag = "candidate-{$position->id}";
         $data = $this->validatedCandidate($request, $election, $bag);
@@ -106,14 +124,16 @@ class BallotSetupController extends Controller
             $this->savePhoto($election, $candidate, $photo);
         }
 
-        Audit::record('election_candidate_added', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_candidate_added', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
+        }
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$candidate->name} added to {$position->title}.");
     }
 
     public function updateCandidate(Request $request, Election $election, ElectionPosition $position, ElectionCandidate $candidate): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange($election);
 
         $bag = "candidate-edit-{$candidate->id}";
         $data = $this->validatedCandidate($request, $election, $bag, $candidate);
@@ -133,7 +153,7 @@ class BallotSetupController extends Controller
 
     public function destroyCandidate(Election $election, ElectionPosition $position, ElectionCandidate $candidate): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange($election);
 
         $candidate->delete();
 
@@ -141,7 +161,9 @@ class BallotSetupController extends Controller
             Storage::disk('private')->delete($candidate->photo_path);
         }
 
-        Audit::record('election_candidate_removed', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_candidate_removed', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
+        }
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$candidate->name} removed.");
     }
@@ -180,7 +202,8 @@ class BallotSetupController extends Controller
             }
         }
 
-        $userId = $matric !== null ? User::query()->where('matric_number', $matric)->value('id') : null;
+        // Never linked to a NACOS account in a department's election.
+        $userId = $matric !== null && ! $election->isForDepartment() ? User::query()->where('matric_number', $matric)->value('id') : null;
 
         return [
             'name' => (string) $data['name'],
@@ -233,6 +256,6 @@ class BallotSetupController extends Controller
 
     private function back(Election $election, ?string $anchor = null): RedirectResponse
     {
-        return redirect()->to(route('elections.manage.show', $election).($anchor ? "#{$anchor}" : ''));
+        return redirect()->to($this->desk()->route('.show', $election).($anchor ? "#{$anchor}" : ''));
     }
 }

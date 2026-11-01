@@ -49,10 +49,24 @@ class ElectionCandidate extends Model
             return null;
         }
 
+        $version = substr(sha1($this->photo_path), 0, 10);
+
+        // A department's election serves photos from its own space.
+        if ($election instanceof Election && $election->isForDepartment()) {
+            $election->loadMissing('organization:id,slug');
+
+            return route('vote.candidates.photo', [
+                'organization' => $election->organization?->slug,
+                'election' => $election->id,
+                'candidate' => $this->id,
+                'v' => $version,
+            ], $absolute);
+        }
+
         return route('elections.candidates.photo', [
             'election' => $election instanceof Election ? $election->id : $election,
             'candidate' => $this->id,
-            'v' => substr(sha1($this->photo_path), 0, 10),
+            'v' => $version,
         ], $absolute);
     }
 

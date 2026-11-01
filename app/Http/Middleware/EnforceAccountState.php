@@ -23,7 +23,8 @@ class EnforceAccountState
     {
         $user = $request->user();
 
-        if (! $user instanceof User) {
+        // A department's election pages have their own accounts (vote.*).
+        if (! $user instanceof User || $request->routeIs('vote.*')) {
             return $next($request);
         }
 
