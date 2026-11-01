@@ -29,7 +29,11 @@ use Illuminate\Support\Str;
  *   "Password1!", all on the nominal roll;
  * - an open election for them, three positions with three candidates;
  * - their class's timetable and a published exam timetable;
- * - 20 announcements, for everyone and for several classes.
+ * - 20 announcements, for everyone and for several classes;
+ * - a department election space (docs/department-elections.md) at
+ *   /vote/load-dept: 900 students on its roll, F/ND/24/3000001 to
+ *   F/ND/24/3000900, of whom the first 700 have registered (password
+ *   "Password1!"), and an open election for them.
  *
  * Inserted in bulk; run on an empty or demo database only:
  *   php artisan db:seed --class=LoadTestSeeder
@@ -165,8 +169,71 @@ class LoadTestSeeder extends Seeder
 
         $this->seedTimetables($now);
         $this->seedAnnouncements($now);
+        $this->seedDepartment($now, $password);
 
         $this->command->info('Load test data: '.self::BOOKS.' books, '.self::STUDENTS.' students, election #'.$election->id.'.');
+    }
+
+    public const DEPARTMENT_ROLL = 900;
+
+    public const DEPARTMENT_VOTERS = 700;
+
+    /**
+     * A department's election space for the department rush
+     * (tests/load/department-rush.js). Its voters registered the day
+     * before voting opened, so all of them may vote.
+     */
+    private function seedDepartment(Carbon $now, string $password): void
+    {
+        $organizationId = DB::table('organizations')->insertGetId([
+            'name' => 'Load Test Department', 'short_name' => 'LTD', 'slug' => 'load-dept',
+            'status' => 'active', 'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        $roll = [];
+        $voters = [];
+        foreach (range(1, self::DEPARTMENT_ROLL) as $n) {
+            $matric = sprintf('F/ND/24/3%06d', $n);
+            $name = fake()->firstName().' '.fake()->lastName();
+            $roll[] = [
+                'organization_id' => $organizationId, 'matric_number' => $matric, 'fullname' => $name,
+                'level' => $n % 2 ? Level::ND1->value : Level::ND2->value, 'programme' => Programme::FullTime->value,
+                'created_at' => $now, 'updated_at' => $now,
+            ];
+            if ($n <= self::DEPARTMENT_VOTERS) {
+                $voters[] = [
+                    'organization_id' => $organizationId, 'fullname' => $name, 'matric_number' => $matric, 'entry_year' => 2024,
+                    'role' => 'voter', 'status' => 'active', 'password' => $password,
+                    'created_at' => $now->copy()->subDay(), 'updated_at' => $now->copy()->subDay(),
+                ];
+            }
+        }
+        foreach (array_chunk($roll, 500) as $chunk) {
+            DB::table('organization_roll')->insert($chunk);
+        }
+        foreach (array_chunk($voters, 500) as $chunk) {
+            DB::table('voters')->insert($chunk);
+        }
+
+        $election = new Election([
+            'title' => 'Load Test Department Election',
+            'description' => 'Department election used by the load test.',
+            'roll_only' => true,
+        ]);
+        $election->organization_id = $organizationId;
+        $election->status = ElectionStatus::Open;
+        $election->starts_at = $now->copy();
+        $election->ends_at = $now->copy()->addHours(6);
+        $election->save();
+
+        foreach (['President', 'General Secretary', 'Treasurer'] as $order => $title) {
+            $position = $election->positions()->create(['title' => $title, 'sort_order' => $order]);
+            foreach (range(0, 2) as $i) {
+                $position->candidates()->create(['name' => fake()->name(), 'manifesto' => fake()->sentence(10), 'sort_order' => $i]);
+            }
+        }
+
+        LiveResults::publish($election);
     }
 
     /**

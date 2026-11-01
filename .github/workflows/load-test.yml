@@ -107,6 +107,34 @@ jobs:
           k6 run --log-output=file=k6.log -e BASE=http://127.0.0.1 -e VUS=${{ inputs.vus || '150' }} \
             -e VOTERS=${{ inputs.voters || '300' }} -e WATCHERS=${{ inputs.watchers || '500' }} tests/load/student-day.js
 
+      # A department's election day (docs/department-elections.md): 600
+      # sign-ins and ballots, 100 registrations and 300 results watchers,
+      # all from one address as on campus Wi-Fi.
+      - name: Run k6 (department election rush)
+        if: always()
+        run: |
+          k6 run --log-output=file=k6-department.log -e BASE=http://127.0.0.1 tests/load/department-rush.js
+
+      - name: Check the department election after the rush
+        if: always()
+        run: |
+          q() { mysql -h127.0.0.1 -unacos -psecret nacos -N -e "$1" 2>/dev/null; }
+          election=$(q "select id from elections where title = 'Load Test Department Election'")
+          voters=$(q "select count(*) from organization_election_voters where election_id = $election")
+          nacos=$(q "select count(*) from election_voters where election_id = $election")
+          registered=$(q "select count(*) from voters where matric_number > 'F/ND/24/3000700'")
+          live=$(curl -fsS "http://127.0.0.1/live/election-$election.json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["ballots"])')
+          {
+            cat department-rush-summary.md 2>/dev/null
+            echo
+            echo '**Failed department requests** (kind, status, error):'
+            echo '```'
+            grep -o 'FAILED [^"]*' k6-department.log 2>/dev/null | awk '{print $2, $3, $4}' | sort | uniq -c | sort -rn | head -n 20
+            echo '```'
+            echo "**Department election:** $voters ballots recorded (none in NACOS's table: $nacos), live results show $live; $registered students registered during the rush."
+          } | tee -a load-test-summary.md
+          test "$voters" = "$live" && test "$nacos" = "0"
+
       - name: Failed requests by kind and status
         if: always()
         run: |

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Vote;
 
 use App\Enums\ElectionStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\Vote\EnsureDepartmentAdmin;
 use App\Models\Election;
 use App\Models\ElectionCandidate;
 use App\Models\ElectionPosition;
@@ -32,7 +33,7 @@ class ElectionController extends Controller
     {
         $voter = $request->user('voter');
         $voter = $voter instanceof Voter ? $voter : null;
-        abort_if($election->isDraft() && ! $voter?->isAdmin(), 404);
+        abort_if($election->isDraft() && ! $voter?->isAdmin() && ! EnsureDepartmentAdmin::nacosAdmin(), 404);
 
         $election->load('positions.candidates');
 
@@ -79,7 +80,7 @@ class ElectionController extends Controller
     {
         $draft = $election->status === ElectionStatus::Draft;
         $voter = $request->user('voter');
-        abort_if($draft && ! ($voter instanceof Voter && $voter->isAdmin()), 404);
+        abort_if($draft && ! ($voter instanceof Voter && $voter->isAdmin()) && ! EnsureDepartmentAdmin::nacosAdmin(), 404);
 
         $candidate = ElectionCandidate::query()
             ->whereKey($candidate)

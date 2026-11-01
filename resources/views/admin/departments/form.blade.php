@@ -1,6 +1,7 @@
 @php($editing = $department->exists)
 
 <x-layouts.admin :title="$editing ? 'Edit '.$department->name : 'Add a department'">
+    <x-slot:head>@vite('resources/css/vote.css')</x-slot:head>
     <x-page-header :title="$editing ? 'Edit department' : 'Add a department'" subtitle="Its name and logo appear at the top of its election pages."
         :back="$editing ? route('admin.departments.show', $department) : route('admin.departments.index')" :back-label="$editing ? $department->name : 'Departments'" />
 
@@ -8,6 +9,10 @@
         @csrf
         @if ($editing)
             @method('PUT')
+        @endif
+        @if ($application ?? null)
+            <input type="hidden" name="request" value="{{ $application->id }}">
+            <x-alert type="info">Approving the request from {{ $application->contact_name }}. Check the details, then add the department; you'll add its first admin next.</x-alert>
         @endif
 
         <x-card class="space-y-5">
@@ -24,6 +29,23 @@
                     </label>
                 @endif
             </div>
+            <fieldset>
+                <legend class="field-label">Colour</legend>
+                @php($colour = old('colour', $department->colour ?? ''))
+                <div class="chip-options">
+                    <label class="chip-option">
+                        <input type="radio" name="colour" value="" class="sr-only" @checked($colour === '')>
+                        <span><span class="colour-dot" aria-hidden="true"></span> Green (NACOS)</span>
+                    </label>
+                    @foreach (\App\Support\Departments\Colours::ALL as $key => $label)
+                        <label class="chip-option">
+                            <input type="radio" name="colour" value="{{ $key }}" class="sr-only" @checked($colour === $key)>
+                            <span class="brand-{{ $key }}"><span class="colour-dot" aria-hidden="true"></span> {{ $label }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="mt-1.5 text-sm text-muted">Buttons and links on its pages take this colour.</p>
+            </fieldset>
         </x-card>
 
         <x-card class="space-y-5">

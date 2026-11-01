@@ -3,6 +3,7 @@
 <x-layouts.admin :title="$department->name">
     <x-page-header :title="$department->name" :subtitle="preg_replace('#^https?://#', '', $space)" :back="route('admin.departments.index')" back-label="Departments">
         <x-slot:actions>
+            <x-button href="{{ route('vote.admin.roll', $department) }}" icon="settings">Manage roll and elections</x-button>
             <x-button href="{{ $space }}" variant="secondary" icon="eye">Open its space</x-button>
             <x-button href="{{ route('admin.departments.edit', $department) }}" variant="secondary" icon="pencil">Edit</x-button>
         </x-slot:actions>
@@ -31,7 +32,7 @@
                 <li class="stat-tile"><strong>{{ number_format($counts['open']) }}</strong><small>Open now</small></li>
             </ul>
 
-            <x-section title="Admins" description="They upload the department's roll, run its elections and help its voters. They sign in at its space with their email." icon="shield-check" tone="green">
+            <x-section title="Admins" description="They upload the department's roll, run its elections and help its voters, signing in at its space with their email. You can do all of it for them with Manage roll and elections." icon="shield-check" tone="green">
                 @if ($admins->isEmpty())
                     <x-empty-state icon="user-plus" title="No admin yet" text="Add the person running the department's elections. You'll get a slip with their first password." />
                 @else

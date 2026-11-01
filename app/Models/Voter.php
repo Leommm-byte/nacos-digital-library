@@ -8,6 +8,7 @@ use App\Support\MatricNumber;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 
 /**
@@ -32,6 +33,8 @@ use Illuminate\Support\Carbon;
  */
 class Voter extends Authenticatable
 {
+    use Notifiable;
+
     protected $fillable = ['fullname', 'matric_number', 'email', 'password'];
 
     /**

@@ -1,0 +1,170 @@
+/*
+ * Department election spaces (/vote/{slug}, docs/department-elections.md).
+ * Loaded only on their pages (and Admin → Departments), not with app.css,
+ * so NACOS pages don't carry it.
+ */
+@reference './app.css';
+
+/* Department election spaces (/vote/{slug}): the department's own name
+   and logo instead of NACOS's. */
+.vote-brand {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+.vote-brand-name {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.vote-brand-sub {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.vote-logo {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    object-fit: contain;
+}
+
+.vote-logo-lg {
+    width: 4rem;
+    height: 4rem;
+    border-radius: var(--radius-lg);
+}
+
+.vote-logo-initials {
+    display: grid;
+    place-items: center;
+    background: var(--primary);
+    color: var(--on-primary);
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+
+    &.vote-logo-lg {
+        font-size: 1.25rem;
+    }
+}
+
+.vote-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+
+    @variant sm {
+        flex-direction: row;
+        align-items: flex-start;
+        padding: 2rem;
+    }
+}
+
+.vote-eyebrow {
+    color: var(--link);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.vote-hero-title {
+    margin-top: 0.25rem;
+    font-size: 1.75rem;
+    line-height: 1.15;
+
+    @variant md {
+        font-size: 2.25rem;
+    }
+}
+
+/* A department's colour (App\Support\Departments\Colours): white text
+   on each passes contrast; links lighten in dark mode. */
+.brand-blue {
+    --primary: #1d4ed8;
+    --primary-hover: #1e40af;
+    --primary-soft: #eff6ff;
+    --link: #1d4ed8;
+
+    @variant dark {
+        --primary-soft: #172036;
+        --link: #93c5fd;
+    }
+}
+
+.brand-violet {
+    --primary: #6d28d9;
+    --primary-hover: #5b21b6;
+    --primary-soft: #f5f3ff;
+    --link: #6d28d9;
+
+    @variant dark {
+        --primary-soft: #221a36;
+        --link: #c4b5fd;
+    }
+}
+
+.brand-red {
+    --primary: #b91c1c;
+    --primary-hover: #991b1b;
+    --primary-soft: #fef2f2;
+    --link: #b91c1c;
+
+    @variant dark {
+        --primary-soft: #2e1414;
+        --link: #fca5a5;
+    }
+}
+
+.brand-orange {
+    --primary: #c2410c;
+    --primary-hover: #9a3412;
+    --primary-soft: #fff7ed;
+    --link: #c2410c;
+
+    @variant dark {
+        --primary-soft: #2e1c0f;
+        --link: #fdba74;
+    }
+}
+
+.brand-teal {
+    --primary: #0f766e;
+    --primary-hover: #115e59;
+    --primary-soft: #f0fdfa;
+    --link: #0f766e;
+
+    @variant dark {
+        --primary-soft: #0f2a28;
+        --link: #5eead4;
+    }
+}
+
+.colour-dot {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-right: 0.25rem;
+    border-radius: 999px;
+    background: var(--primary);
+    vertical-align: -0.0625rem;
+}
+
+.vote-auth {
+    max-width: 28rem;
+    margin-inline: auto;
+}

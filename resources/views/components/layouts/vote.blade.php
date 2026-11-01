@@ -7,6 +7,8 @@
 
 @php
     $voter = auth('voter')->user();
+    // A NACOS admin (signed in to the NACOS app) can run any space's Manage pages.
+    $nacosAdmin = ! $voter && \App\Http\Middleware\Vote\EnsureDepartmentAdmin::nacosAdmin();
     $site = $organization->name.' elections';
 @endphp
 
@@ -15,8 +17,9 @@
 <head>
     @include('partials.head', ['title' => $title, 'description' => $description ?? "Elections for {$organization->name}: register, vote with a secret ballot and follow the results.", 'siteName' => $site])
     <meta name="robots" content="noindex">
+    @vite('resources/css/vote.css')
 </head>
-<body class="flex min-h-dvh flex-col">
+<body @class(['flex min-h-dvh flex-col', \App\Support\Departments\Colours::bodyClass($organization->colour)])>
     <a href="#main" class="skip-link">Skip to content</a>
 
     <header class="app-header">
@@ -39,6 +42,9 @@
                         @csrf
                         <x-button variant="secondary" size="sm" icon="log-out">Log out</x-button>
                     </form>
+                @elseif ($nacosAdmin)
+                    <x-button href="{{ route('vote.admin.elections') }}" variant="ghost" size="sm" icon="settings" class="hidden sm:inline-flex">Manage</x-button>
+                    <x-button href="{{ route('admin.departments.show', $organization) }}" variant="secondary" size="sm" icon="arrow-left">NACOS admin</x-button>
                 @elseif (! request()->routeIs('vote.login'))
                     <x-button href="{{ route('vote.login') }}" variant="secondary" size="sm" icon="log-in">Log in</x-button>
                 @endif

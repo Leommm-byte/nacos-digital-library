@@ -128,6 +128,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/', [ManageElectionController::class, 'destroy'])->name('.destroy');
             Route::post('/launch', [ManageElectionController::class, 'launch'])->name('.launch');
             Route::post('/close', [ManageElectionController::class, 'close'])->name('.close');
+            Route::get('/results.csv', [ManageElectionController::class, 'resultsCsv'])->name('.results.csv');
+            Route::get('/results/print', [ManageElectionController::class, 'resultsPrint'])->name('.results.print');
 
             Route::post('/positions', [BallotSetupController::class, 'storePosition'])->name('.positions.store');
             Route::put('/positions/{position}', [BallotSetupController::class, 'updatePosition'])->name('.positions.update');
@@ -164,6 +166,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
         Route::get('/departments/create', [DepartmentController::class, 'create'])->name('departments.create');
         Route::post('/departments', [DepartmentController::class, 'store'])->name('departments.store');
+        Route::post('/departments/requests/{application}/decline', [DepartmentController::class, 'decline'])->whereNumber('application')->name('departments.requests.decline');
         Route::get('/departments/{department}', [DepartmentController::class, 'show'])->name('departments.show');
         Route::get('/departments/{department}/edit', [DepartmentController::class, 'edit'])->name('departments.edit');
         Route::put('/departments/{department}', [DepartmentController::class, 'update'])->name('departments.update');

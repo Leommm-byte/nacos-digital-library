@@ -13,12 +13,20 @@ use App\Http\Controllers\Vote\Admin\ElectionController as AdminElectionControlle
 use App\Http\Controllers\Vote\Admin\RollController;
 use App\Http\Controllers\Vote\Admin\VoterController;
 use App\Http\Controllers\Vote\AuthController;
+use App\Http\Controllers\Vote\DirectoryController;
 use App\Http\Controllers\Vote\ElectionController;
 use App\Http\Controllers\Vote\HomeController;
 use App\Http\Controllers\Vote\LogoController;
 use App\Http\Controllers\Vote\PasswordController;
 use App\Http\Controllers\Vote\RegisterController;
 use Illuminate\Support\Facades\Route;
+
+// The list of spaces, and the form for a department to ask for one. Before
+// the {organization} routes; "apply" is a reserved address (Organization).
+Route::get('/vote', [DirectoryController::class, 'index'])->name('vote.directory');
+Route::get('/vote/apply', [DirectoryController::class, 'create'])->name('vote.apply');
+Route::post('/vote/apply', [DirectoryController::class, 'store'])->middleware('throttle:5,60')->name('vote.apply.store');
+Route::get('/vote/apply/sent', [DirectoryController::class, 'sent'])->name('vote.apply.sent');
 
 Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(function () {
     Route::get('/', HomeController::class)->name('home');
@@ -34,9 +42,14 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
         // a whole campus can share one IP on election day.
         Route::post('/login', [AuthController::class, 'store'])->name('login.store');
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
-        // Per-IP cap on new accounts, as for NACOS sign-ups.
-        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:20,10')->name('register.store');
+        // Per-IP cap on new accounts. Generous: a whole class can register
+        // together on one campus IP, and only matric numbers on the roll can
+        // register at all, each once.
+        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:120,10')->name('register.store');
         Route::get('/forgot-password', [PasswordController::class, 'forgot'])->name('password.forgot');
+        Route::post('/forgot-password', [PasswordController::class, 'sendLink'])->middleware('throttle:30,10')->name('password.email');
+        Route::get('/reset-password/{voter}/{token}', [PasswordController::class, 'resetForm'])->whereNumber('voter')->name('password.reset');
+        Route::post('/reset-password/{voter}/{token}', [PasswordController::class, 'reset'])->whereNumber('voter')->middleware('throttle:30,10')->name('password.reset.store');
     });
 
     Route::middleware('vote.auth')->group(function () {
@@ -50,7 +63,9 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
             ->name('elections.vote');
     });
 
-    Route::middleware(['vote.auth', 'vote.admin'])->prefix('admin')->name('admin.')->group(function () {
+    // The department's admins, or a NACOS admin doing the work for them.
+    Route::middleware('vote.admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::view('/guide', 'vote.admin.guide')->name('guide');
         Route::get('/roll', [RollController::class, 'index'])->name('roll');
         Route::get('/roll/template', [RollController::class, 'template'])->name('roll.template');
         Route::post('/roll', [RollController::class, 'store'])->middleware('throttle:department-admin')->name('roll.store');
@@ -74,6 +89,8 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
                 Route::delete('/', [AdminElectionController::class, 'destroy'])->name('.destroy');
                 Route::post('/launch', [AdminElectionController::class, 'launch'])->name('.launch');
                 Route::post('/close', [AdminElectionController::class, 'close'])->name('.close');
+                Route::get('/results.csv', [AdminElectionController::class, 'resultsCsv'])->name('.results.csv');
+                Route::get('/results/print', [AdminElectionController::class, 'resultsPrint'])->name('.results.print');
 
                 Route::post('/positions', [BallotController::class, 'storePosition'])->name('.positions.store');
                 Route::put('/positions/{position}', [BallotController::class, 'updatePosition'])->name('.positions.update');

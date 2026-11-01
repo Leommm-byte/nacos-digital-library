@@ -5,6 +5,9 @@
 @props(['title' => null])
 
 <x-layouts.app :title="$title ? $title.' · Admin' : 'Admin'">
+    @isset($head)
+        <x-slot:head>{{ $head }}</x-slot:head>
+    @endisset
     <div class="admin">
         <nav class="admin-nav" aria-label="Admin">
             <p class="admin-nav-title">Admin</p>

@@ -11,15 +11,18 @@ use App\Enums\VoterRole;
 use App\Models\Election;
 use App\Models\ElectionCandidate;
 use App\Models\Organization;
+use App\Models\OrganizationRequest;
 use App\Models\OrganizationRollEntry;
 use App\Models\User;
 use App\Models\Voter;
+use App\Notifications\VoterPasswordReset;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -118,6 +121,161 @@ class DepartmentElectionsTest extends TestCase
         $this->put(route('vote.password.update', $department), ['password' => 'MyOwnPass9', 'password_confirmation' => 'MyOwnPass9'])
             ->assertRedirect(route('vote.home', $department));
         $this->get(route('vote.admin.elections', $department))->assertOk()->assertSee('Manage elections');
+    }
+
+    #[Test]
+    public function a_nacos_admin_can_do_the_department_admins_work_for_them(): void
+    {
+        $nacosAdmin = User::factory()->role(Role::Admin)->create();
+        $this->actingAs($nacosAdmin);
+
+        $this->get(route('vote.admin.roll', $this->fst))->assertOk()->assertSee('managing Food Science and Technology as a NACOS admin');
+
+        $csv = UploadedFile::fake()->createWithContent('roll.csv', "Matric number,Full name\nF/ND/24/3001001,OKAFOR Tolu\n");
+        $this->post(route('vote.admin.roll.store', $this->fst), ['programme' => 'full_time', 'level' => 'ND1', 'roll' => $csv])
+            ->assertRedirect(route('vote.admin.roll', $this->fst));
+        $this->assertSame(1, $this->fst->roll()->count());
+
+        $this->post(route('vote.admin.elections.store', $this->fst), ['title' => 'Set up by NACOS'])->assertRedirect();
+        $election = $this->fst->elections()->firstOrFail();
+        // Never credited to a NACOS user, and never a NACOS election.
+        $this->assertNull($election->created_by);
+        $this->assertSame(0, Election::query()->count());
+
+        // Still not a voter there.
+        $this->assertGuest('voter');
+        // A NACOS admin can't vote in it either: there's no voter account.
+        $this->get(route('vote.home', $this->fst))->assertSee('NACOS admin');
+    }
+
+    #[Test]
+    public function a_department_asks_for_a_space_and_a_nacos_admin_approves_it(): void
+    {
+        $this->get(route('vote.directory'))->assertOk()->assertSee('Food Science and Technology');
+
+        // A bot filling the hidden field is dropped quietly.
+        $this->post(route('vote.apply.store'), ['department_name' => 'Spam', 'contact_name' => 'x', 'contact_email' => 'x@x.test', 'website' => 'http://spam.test'])
+            ->assertRedirect(route('vote.apply.sent'));
+        $this->assertSame(0, OrganizationRequest::count());
+
+        $this->post(route('vote.apply.store'), [
+            'department_name' => 'Mass Communication', 'contact_name' => 'Ife Adeyemi', 'contact_role' => 'President',
+            'contact_email' => 'Ife@Mac.test', 'message' => 'Election on 20 November.',
+        ])->assertRedirect(route('vote.apply.sent'));
+        $application = OrganizationRequest::firstOrFail();
+        $this->assertSame('ife@mac.test', $application->contact_email);
+
+        $nacosAdmin = User::factory()->role(Role::Admin)->create();
+        $this->actingAs($nacosAdmin)->get(route('admin.departments.index'))->assertSee('Mass Communication')->assertSee('Approve');
+        $this->get(route('admin.departments.create', ['request' => $application->id]))
+            ->assertOk()->assertSee('value="Mass Communication"', false)->assertSee('Election on 20 November.');
+
+        $this->post(route('admin.departments.store'), ['name' => 'Mass Communication', 'colour' => 'blue', 'request' => $application->id])
+            ->assertRedirect(route('admin.departments.show', 'mass-communication'));
+        $department = Organization::where('slug', 'mass-communication')->firstOrFail();
+        $this->assertSame('blue', $department->colour);
+        $this->assertSame(OrganizationRequest::APPROVED, $application->refresh()->status);
+        $this->assertSame($department->id, $application->organization_id);
+
+        // Its pages take its colour.
+        $this->get(route('vote.home', $department))->assertSee('brand-blue');
+    }
+
+    #[Test]
+    public function requests_can_be_declined_and_page_addresses_are_reserved(): void
+    {
+        $application = OrganizationRequest::create(['department_name' => 'Nope', 'contact_name' => 'A', 'contact_email' => 'a@a.test']);
+        $this->actingAs(User::factory()->role(Role::Admin)->create());
+
+        $this->post(route('admin.departments.requests.decline', $application->id))->assertRedirect();
+        $this->assertSame(OrganizationRequest::DECLINED, $application->refresh()->status);
+
+        $this->post(route('admin.departments.store'), ['name' => 'Apply', 'slug' => 'apply'])->assertSessionHasErrors('slug');
+        $this->post(route('admin.departments.store'), ['name' => 'Odd', 'colour' => 'neon'])->assertSessionHasErrors('colour');
+    }
+
+    #[Test]
+    public function results_download_as_a_spreadsheet_and_print(): void
+    {
+        $this->onRoll($this->fst, 'F/ND/24/3001001');
+        $voter = $this->voter($this->fst);
+        $voter->forceFill(['created_at' => now()->subDay()])->save();
+        $election = $this->openElection($this->fst);
+        $position = $election->positions()->firstOrFail();
+        $bola = $position->candidates()->where('name', 'Bola')->firstOrFail();
+        $this->actingAs($voter, 'voter')->post(route('vote.elections.vote', [$this->fst, $election]), ['choices' => [$position->id => $bola->id]]);
+        ElectionLifecycle::close($election);
+        auth('voter')->logout();
+
+        $this->actingAs($this->admin, 'voter');
+        $csv = $this->get(route('vote.admin.elections.results.csv', [$this->fst, $election]))->assertOk()->streamedContent();
+        $this->assertStringContainsString('Final results', $csv);
+        $this->assertStringContainsString('President,Bola,1,100,Winner', $csv);
+        $this->assertStringContainsString('President,Chidi,0,0,', $csv);
+
+        $this->get(route('vote.admin.elections.results.print', [$this->fst, $election]))
+            ->assertOk()->assertSee('Food Science and Technology')->assertSee('Winner')->assertSee('Powered by NACOS YabaTech');
+
+        // NACOS's own elections have them too.
+        $nacos = Election::factory()->closed()->withBallot()->create();
+        $this->actingAs(User::factory()->role(Role::Admin)->create())
+            ->get(route('elections.manage.results.csv', $nacos))->assertOk()->assertDownload();
+        // A NACOS route never serves a department's election.
+        $this->get(route('elections.manage.results.csv', $election))->assertNotFound();
+    }
+
+    #[Test]
+    public function a_student_with_an_email_resets_a_forgotten_password(): void
+    {
+        Notification::fake();
+        $voter = $this->voter($this->fst, ['email' => 'tolu@mail.test']);
+        $noEmail = $this->voter($this->fst, ['matric_number' => 'F/ND/24/3001002']);
+
+        $this->post(route('vote.password.email', $this->fst), ['login' => 'f/nd/24/3001001'])->assertSessionHas('status');
+        $this->post(route('vote.password.email', $this->fst), ['login' => $noEmail->matric_number])->assertSessionHas('status');
+        Notification::assertSentTo($voter, VoterPasswordReset::class);
+        Notification::assertNotSentTo($noEmail, VoterPasswordReset::class);
+
+        $url = '';
+        Notification::assertSentTo($voter, VoterPasswordReset::class, function (VoterPasswordReset $notification) use (&$url) {
+            $url = $notification->url;
+
+            return true;
+        });
+
+        // Not from another department's space.
+        $other = Organization::create(['name' => 'Other', 'slug' => 'other']);
+        $this->get(str_replace('/vote/food-science/', '/vote/other/', $url))->assertNotFound();
+
+        $this->get($url)->assertOk()->assertSee('Choose a new password');
+        $this->post($url, ['password' => 'BrandNew99', 'password_confirmation' => 'BrandNew99'])->assertRedirect(route('vote.login', $this->fst));
+        $this->assertTrue(Hash::check('BrandNew99', $voter->refresh()->password));
+
+        // The link works once.
+        $this->get($url)->assertNotFound();
+    }
+
+    #[Test]
+    public function reset_links_expire_after_an_hour(): void
+    {
+        Notification::fake();
+        $voter = $this->voter($this->fst, ['email' => 'tolu@mail.test']);
+        $this->post(route('vote.password.email', $this->fst), ['login' => 'tolu@mail.test']);
+        $url = '';
+        Notification::assertSentTo($voter, VoterPasswordReset::class, function (VoterPasswordReset $notification) use (&$url) {
+            $url = $notification->url;
+
+            return true;
+        });
+
+        $this->travel(61)->minutes();
+        $this->get($url)->assertNotFound();
+    }
+
+    #[Test]
+    public function department_admins_have_a_guide(): void
+    {
+        $this->actingAs($this->admin, 'voter')->get(route('vote.admin.guide', $this->fst))->assertOk()->assertSee('Running your election')->assertSee('food-science');
     }
 
     #[Test]
@@ -232,9 +390,9 @@ class DepartmentElectionsTest extends TestCase
         $this->get(route('vote.elections.show', [$other, $fstElection]))->assertNotFound();
         $this->get(route('vote.home', $this->fst))->assertSee('FST Primaries')->assertDontSee('NACOS General Election');
 
-        // A NACOS admin isn't a department admin, and a NACOS student can't vote there.
+        // A NACOS student isn't a department admin.
+        $this->actingAs($student)->get(route('vote.admin.elections', $this->fst))->assertRedirect(route('vote.login', $this->fst));
         $nacosAdmin = User::factory()->role(Role::Admin)->create();
-        $this->actingAs($nacosAdmin)->get(route('vote.admin.elections', $this->fst))->assertRedirect(route('vote.login', $this->fst));
         $this->actingAs($nacosAdmin)->get(route('elections.manage'))->assertSee('NACOS General Election')->assertDontSee('FST Primaries');
         $this->assertSame(1, Election::query()->count());
         $this->assertSame(2, Election::everywhere()->count());
