@@ -30,9 +30,12 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
 
     Route::middleware('vote.guest')->group(function () {
         Route::get('/login', [AuthController::class, 'create'])->name('login');
-        Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:10,1')->name('login.store');
+        // Failed sign-ins are limited in AuthController, not per address here:
+        // a whole campus can share one IP on election day.
+        Route::post('/login', [AuthController::class, 'store'])->name('login.store');
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
-        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:10,1')->name('register.store');
+        // Per-IP cap on new accounts, as for NACOS sign-ups.
+        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:20,10')->name('register.store');
         Route::get('/forgot-password', [PasswordController::class, 'forgot'])->name('password.forgot');
     });
 
@@ -42,14 +45,15 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
         Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
         Route::post('/elections/{election}/ballot', [ElectionController::class, 'vote'])
             ->whereNumber('election')
-            ->middleware('throttle:10,1')
+            // Per voter, not per address (AppServiceProvider).
+            ->middleware('throttle:department-ballot')
             ->name('elections.vote');
     });
 
     Route::middleware(['vote.auth', 'vote.admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/roll', [RollController::class, 'index'])->name('roll');
         Route::get('/roll/template', [RollController::class, 'template'])->name('roll.template');
-        Route::post('/roll', [RollController::class, 'store'])->middleware('throttle:10,1')->name('roll.store');
+        Route::post('/roll', [RollController::class, 'store'])->middleware('throttle:department-admin')->name('roll.store');
         Route::post('/roll/students', [RollController::class, 'storeOne'])->name('roll.students.store');
         Route::delete('/roll/students/{entry}', [RollController::class, 'destroy'])->whereNumber('entry')->name('roll.students.destroy');
 

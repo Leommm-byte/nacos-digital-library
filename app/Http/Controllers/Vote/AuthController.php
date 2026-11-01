@@ -11,15 +11,27 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
  * Signing in to a department's election space: students with their matric
  * number, the department's admins with their matric number or email.
+ *
+ * Only failed attempts count, as for NACOS (LoginRequest): per account and
+ * address, and a looser limit per address, because a whole campus can share
+ * one IP on election day.
  */
 class AuthController extends Controller
 {
+    private const MAX_ATTEMPTS_PER_ACCOUNT = 5;
+
+    private const MAX_ATTEMPTS_PER_IP = 100;
+
+    /** Checked when the account is unknown, so timing doesn't reveal which exist. */
+    private const DUMMY_HASH = '$2y$12$7DpYq2Wv8yzFkjW1qNBpyu7HHRDbUUolIAri7MfvDrv2fazZYLPFu';
+
     public function create(): View
     {
         return view('vote.auth.login');
@@ -35,13 +47,29 @@ class AuthController extends Controller
         ]);
 
         $login = trim((string) $data['login']);
-        $voter = $organization->voters()
-            ->where(str_contains($login, '@') ? 'email' : 'matric_number', str_contains($login, '@') ? strtolower($login) : MatricNumber::normalize($login))
-            ->first();
+        $login = str_contains($login, '@') ? strtolower($login) : MatricNumber::normalize($login);
+        $accountKey = "vote-login:{$organization->id}:{$login}|{$request->ip()}";
+        $ipKey = "vote-login-ip:{$request->ip()}";
 
-        if (! $voter instanceof Voter || ! Hash::check((string) $data['password'], $voter->password)) {
+        $account = RateLimiter::tooManyAttempts($accountKey, self::MAX_ATTEMPTS_PER_ACCOUNT);
+        $ip = RateLimiter::tooManyAttempts($ipKey, self::MAX_ATTEMPTS_PER_IP);
+
+        if ($account || $ip) {
+            $seconds = max($account ? RateLimiter::availableIn($accountKey) : 0, $ip ? RateLimiter::availableIn($ipKey) : 0);
+
+            throw ValidationException::withMessages(['login' => 'Too many attempts. Try again in '.($seconds > 60 ? ceil($seconds / 60).' minutes' : $seconds.' seconds').'.']);
+        }
+
+        $voter = $organization->voters()->where(str_contains($login, '@') ? 'email' : 'matric_number', $login)->first();
+
+        if (! Hash::check((string) $data['password'], $voter->password ?? self::DUMMY_HASH) || ! $voter instanceof Voter) {
+            RateLimiter::hit($accountKey, 60);
+            RateLimiter::hit($ipKey, 600);
+
             throw ValidationException::withMessages(['login' => 'That matric number and password don\'t match. Check both and try again.']);
         }
+
+        RateLimiter::clear($accountKey);
 
         if ($voter->status !== UserStatus::Active) {
             throw ValidationException::withMessages(['login' => 'This account has been suspended. Ask the department\'s election admin.']);

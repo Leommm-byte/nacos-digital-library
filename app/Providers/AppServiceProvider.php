@@ -8,10 +8,13 @@ use App\Support\Classes\SchoolClass;
 use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -35,6 +38,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Never allow migrate:fresh, db:wipe and friends against production.
         DB::prohibitDestructiveCommands($production);
+
+        // Department election spaces (routes/vote.php): limits per account,
+        // not per address, since a whole campus can share one IP. Their
+        // accounts are the "voter" guard's, which plain "throttle:" can't see.
+        $perVoter = fn (Request $request) => 'voter:'.($request->user('voter')?->getAuthIdentifier() ?? $request->ip());
+        RateLimiter::for('department-ballot', fn (Request $request) => Limit::perMinute(10)->by($perVoter($request)));
+        RateLimiter::for('department-admin', fn (Request $request) => Limit::perMinute(10)->by($perVoter($request)));
 
         if ($production) {
             URL::forceHttps();

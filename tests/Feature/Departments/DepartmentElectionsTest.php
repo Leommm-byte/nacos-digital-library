@@ -343,6 +343,27 @@ class DepartmentElectionsTest extends TestCase
     }
 
     #[Test]
+    public function a_whole_campus_on_one_address_can_sign_in_but_guessing_is_slowed(): void
+    {
+        // Many students behind one campus IP sign in within a minute.
+        for ($i = 1; $i <= 15; $i++) {
+            $matric = sprintf('F/ND/24/30020%02d', $i);
+            $this->voter($this->fst, ['matric_number' => $matric, 'fullname' => "Student {$i}"]);
+            $this->post(route('vote.login.store', $this->fst), ['login' => $matric, 'password' => 'Password1!'])
+                ->assertRedirect(route('vote.home', $this->fst));
+            auth('voter')->logout();
+        }
+
+        // Guessing one account's password is stopped after five tries.
+        for ($i = 0; $i < 5; $i++) {
+            $this->post(route('vote.login.store', $this->fst), ['login' => 'F/ND/24/3002001', 'password' => 'wrong-'.$i]);
+        }
+        $this->post(route('vote.login.store', $this->fst), ['login' => 'F/ND/24/3002001', 'password' => 'Password1!'])
+            ->assertSessionHasErrors(['login' => 'Too many attempts. Try again in 60 seconds.']);
+        $this->assertGuest('voter');
+    }
+
+    #[Test]
     public function a_paused_space_shows_a_notice_and_nobody_can_sign_in(): void
     {
         $this->fst->forceFill(['status' => UserStatus::Suspended])->save();
