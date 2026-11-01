@@ -34,8 +34,10 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
         // a whole campus can share one IP on election day.
         Route::post('/login', [AuthController::class, 'store'])->name('login.store');
         Route::get('/register', [RegisterController::class, 'create'])->name('register');
-        // Per-IP cap on new accounts, as for NACOS sign-ups.
-        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:20,10')->name('register.store');
+        // Per-IP cap on new accounts. Generous: a whole class can register
+        // together on one campus IP, and only matric numbers on the roll can
+        // register at all, each once.
+        Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:120,10')->name('register.store');
         Route::get('/forgot-password', [PasswordController::class, 'forgot'])->name('password.forgot');
     });
 

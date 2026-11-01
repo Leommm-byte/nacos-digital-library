@@ -113,7 +113,7 @@ All from *Manage* at the top of the space.
 - **Rate limits.** A whole campus can share one IP on election day, so nothing is limited per address alone:
   - signing in counts only failed attempts, per account and address (5 a minute), plus a loose 100 per address;
   - ballots and roll uploads are limited per account (`department-ballot`, `department-admin` in `AppServiceProvider`);
-  - registration allows 20 per address every 10 minutes, as NACOS sign-ups do.
+  - registration allows 120 per address every 10 minutes (a class can register together on campus Wi-Fi; only matric numbers on the roll can register, each once).
 - **Tests:** `tests/Feature/Departments/DepartmentElectionsTest.php`.
 - **Demo data:** `DemoDepartmentSeeder` (local and screenshots) seeds Food
   Science and Technology. Both accounts use the password `Password1!`:
