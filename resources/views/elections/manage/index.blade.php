@@ -2,17 +2,17 @@
     $zone = config('app.display_timezone');
 @endphp
 
-<x-layouts.admin title="Manage elections">
-    <x-page-header title="Manage elections" subtitle="Set up an election, choose who can vote, then open voting for a set time." :back="route('elections.index')" back-label="Elections">
+<x-dynamic-component :component="$desk->layout()" title="Manage elections">
+    <x-page-header title="Manage elections" subtitle="Set up an election, choose who can vote, then open voting for a set time." :back="$desk->publicIndexUrl()" back-label="Elections">
         <x-slot:actions>
-            <x-button href="{{ route('roll.index') }}" variant="secondary" icon="users">Nominal roll</x-button>
-            <x-button href="{{ route('elections.manage.create') }}" icon="plus">New election</x-button>
+            <x-button href="{{ $desk->rollUrl() }}" variant="secondary" icon="users">Nominal roll</x-button>
+            <x-button href="{{ $desk->route('.create') }}" icon="plus">New election</x-button>
         </x-slot:actions>
     </x-page-header>
 
     @if ($elections->isEmpty())
         <x-empty-state icon="vote" tone="green" title="No elections yet" text="Create one, add its positions and candidates, then launch it when you're ready.">
-            <x-button href="{{ route('elections.manage.create') }}" icon="plus">New election</x-button>
+            <x-button href="{{ $desk->route('.create') }}" icon="plus">New election</x-button>
         </x-empty-state>
     @else
         <ul class="upload-list">
@@ -25,7 +25,7 @@
                     };
                 @endphp
                 <li>
-                    <a href="{{ route('elections.manage.show', $election) }}" class="upload-row">
+                    <a href="{{ $desk->route('.show', $election) }}" class="upload-row">
                         <x-icon-tile name="vote" :tone="$tone" size="sm" />
                         <span class="min-w-0 flex-1">
                             <span class="upload-row-title">{{ $election->title }}</span>
@@ -49,4 +49,4 @@
 
         {{ $elections->links('partials.pagination') }}
     @endif
-</x-layouts.admin>
+</x-dynamic-component>

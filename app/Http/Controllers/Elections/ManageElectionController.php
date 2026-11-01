@@ -7,10 +7,10 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Http\Controllers\Controller;
 use App\Models\Election;
-use App\Models\RollEntry;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\Classes\Arms;
+use App\Support\Elections\ElectionDesk;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
 use Illuminate\Http\RedirectResponse;
@@ -25,17 +25,37 @@ use Illuminate\View\View;
  * Admins set up elections (details, who may vote, positions, candidates),
  * launch them for a set time and can stop them early. Several elections
  * can exist side by side; nothing is ever wiped to start a new one.
+ *
+ * Departments run their own elections with the same screens
+ * (App\Http\Controllers\Vote\Admin\ElectionController): desk() says
+ * which elections, routes and layout.
  */
 class ManageElectionController extends Controller
 {
     /** Matric entry years an election can be limited to start from. */
     public const FIRST_ENTRY_YEAR = 2019;
 
+    protected function desk(): ElectionDesk
+    {
+        return ElectionDesk::nacos();
+    }
+
+    /**
+     * Only drafts change (ElectionPolicy).
+     */
+    protected function authorizeChange(string $ability, Election $election): void
+    {
+        Gate::authorize($ability, $election);
+    }
+
     public function index(): View
     {
+        $desk = $this->desk();
+
         return view('elections.manage.index', [
-            'elections' => Election::query()
-                ->withCount(['positions', 'voters'])
+            'desk' => $desk,
+            'elections' => $desk->elections()
+                ->withCount(['positions', $desk->isDepartment() ? 'departmentVoters as voters_count' : 'voters'])
                 ->orderByRaw("case status when 'open' then 0 when 'draft' then 1 else 2 end")
                 ->latest('id')
                 ->paginate(20),
@@ -45,23 +65,28 @@ class ManageElectionController extends Controller
     public function create(): View
     {
         return view('elections.manage.form', [
+            'desk' => $this->desk(),
             'election' => new Election(['title' => '']),
             'years' => $this->years(),
-            'rollCount' => RollEntry::query()->count(),
+            'rollCount' => $this->desk()->rollCount(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $election = new Election($this->validated($request));
-        /** @var User $user */
+        $desk = $this->desk();
+        $election->organization_id = $desk->organization?->id;
+        // A department's admins aren't NACOS users.
         $user = $request->user();
-        $election->created_by = $user->id;
+        $election->created_by = ! $desk->isDepartment() && $user instanceof User ? $user->id : null;
         $election->save();
 
-        Audit::record('election_created', $election, ['title' => $election->title]);
+        if (! $desk->isDepartment()) {
+            Audit::record('election_created', $election, ['title' => $election->title]);
+        }
 
-        return redirect()->route('elections.manage.show', $election)
+        return redirect()->to($desk->route('.show', $election))
             ->with('status', 'Election created. Add its positions and candidates next.');
     }
 
@@ -70,10 +95,11 @@ class ManageElectionController extends Controller
         $election->load('positions.candidates');
 
         return view('elections.manage.show', [
+            'desk' => $this->desk(),
             'election' => $election,
             'results' => LiveResults::read($election),
             'electorate' => $election->electorate()->count(),
-            'rollCount' => RollEntry::query()->count(),
+            'rollCount' => $this->desk()->rollCount(),
             'ballots' => $election->ballotCount(),
             'launchProblem' => $election->isDraft() ? ElectionLifecycle::launchProblem($election) : null,
         ]);
@@ -81,36 +107,40 @@ class ManageElectionController extends Controller
 
     public function edit(Election $election): View
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange('update', $election);
 
-        return view('elections.manage.form', ['election' => $election, 'years' => $this->years(), 'rollCount' => RollEntry::query()->count()]);
+        return view('elections.manage.form', ['desk' => $this->desk(), 'election' => $election, 'years' => $this->years(), 'rollCount' => $this->desk()->rollCount()]);
     }
 
     public function update(Request $request, Election $election): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange('update', $election);
 
         $election->update($this->validated($request));
-        Audit::record('election_updated', $election, ['title' => $election->title]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_updated', $election, ['title' => $election->title]);
+        }
 
-        return redirect()->route('elections.manage.show', $election)->with('status', 'Election details saved.');
+        return redirect()->to($this->desk()->route('.show', $election))->with('status', 'Election details saved.');
     }
 
     public function destroy(Election $election): RedirectResponse
     {
-        Gate::authorize('delete', $election);
+        $this->authorizeChange('delete', $election);
 
         $election->delete();
         LiveResults::forget($election);
         Storage::disk('private')->deleteDirectory("candidate-photos/{$election->id}");
-        Audit::record('election_deleted', $election, ['title' => $election->title]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_deleted', $election, ['title' => $election->title]);
+        }
 
-        return redirect()->route('elections.manage')->with('status', 'Draft election deleted.');
+        return redirect()->to($this->desk()->route(''))->with('status', 'Draft election deleted.');
     }
 
     public function launch(Request $request, Election $election): RedirectResponse
     {
-        Gate::authorize('update', $election);
+        $this->authorizeChange('update', $election);
 
         $data = $request->validate([
             'hours' => ['required', 'integer', Rule::in(Election::DURATIONS)],
@@ -124,7 +154,7 @@ class ManageElectionController extends Controller
 
         ElectionLifecycle::launch($election, (int) $data['hours']);
 
-        return redirect()->route('elections.manage.show', $election)->with('status', 'Voting is open.');
+        return redirect()->to($this->desk()->route('.show', $election))->with('status', 'Voting is open.');
     }
 
     public function close(Election $election): RedirectResponse
@@ -133,7 +163,7 @@ class ManageElectionController extends Controller
 
         ElectionLifecycle::close($election);
 
-        return redirect()->route('elections.manage.show', $election)->with('status', 'Voting closed. The final results are published.');
+        return redirect()->to($this->desk()->route('.show', $election))->with('status', 'Voting closed. The final results are published.');
     }
 
     /**
@@ -171,6 +201,10 @@ class ManageElectionController extends Controller
 
         /** @var list<string> $arms */
         $arms = array_values(array_unique((array) ($data['arms'] ?? [])));
+        // Departments have no courses (arms), and their elections are always
+        // for students on their roll: registering needs a place on it.
+        $department = $this->desk()->isDepartment();
+        $arms = $department ? [] : $arms;
 
         return [
             'title' => (string) $data['title'],
@@ -180,7 +214,7 @@ class ManageElectionController extends Controller
             'arms' => $arms === [] ? null : $arms,
             'entry_year_from' => isset($data['entry_year_from']) ? (int) $data['entry_year_from'] : null,
             'entry_year_to' => isset($data['entry_year_to']) ? (int) $data['entry_year_to'] : null,
-            'roll_only' => $request->boolean('roll_only'),
+            'roll_only' => $department || $request->boolean('roll_only'),
             'allow_late_accounts' => $request->boolean('allow_late_accounts'),
         ];
     }

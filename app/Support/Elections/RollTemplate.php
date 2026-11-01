@@ -17,8 +17,9 @@ class RollTemplate
 {
     /**
      * Writes the filled template to a temporary file and returns its path.
+     * Departments' rolls (docs/department-elections.md) have no courses.
      */
-    public static function make(?Programme $programme, ?Level $level, ?string $arm = null): string
+    public static function make(?Programme $programme, ?Level $level, ?string $arm = null, bool $courses = true): string
     {
         $path = tempnam(sys_get_temp_dir(), 'roll');
 
@@ -34,7 +35,7 @@ class RollTemplate
 
         $sheet = 'xl/worksheets/sheet1.xml';
         $xml = (string) $zip->getFromName($sheet);
-        $arms = array_map(fn (array $arm) => $arm['short'], Arms::all());
+        $arms = $courses ? array_map(fn (array $arm) => $arm['short'], Arms::all()) : [];
         $hint = $arms === [] ? 'Leave empty' : self::joinWords($arms).' (HND only); leave empty for ND';
         $xml = str_replace(
             ['{{PROGRAMME}}', '{{LEVEL}}', '{{ARM}}', '{{ARM_HINT}}', '{{ARM_LIST}}'],

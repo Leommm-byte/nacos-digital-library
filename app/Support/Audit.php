@@ -20,7 +20,9 @@ class Audit
         $request = request();
 
         return AuditLog::create([
-            'user_id' => $userId ?? auth()->id(),
+            // Always a NACOS user: on a department's election pages the
+            // default guard is "voter", whose ids aren't users'.
+            'user_id' => $userId ?? auth('web')->id(),
             'action' => $action,
             'subject_type' => $subject ? class_basename($subject) : null,
             'subject_id' => $subject?->getKey(),

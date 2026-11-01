@@ -1,7 +1,9 @@
-{{-- Shared <head> contents. Expects $title and $description (both optional). --}}
+{{-- Shared <head> contents. Expects $title and $description (both optional);
+     $siteName replaces "NACOS YabaTech" on a department's election pages. --}}
+@php($siteName ??= config('app.name'))
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{ $title ? $title.' · '.config('app.name') : config('app.name') }}</title>
+<title>{{ $title ? $title.' · '.$siteName : $siteName }}</title>
 <meta name="description" content="{{ $description ?? 'Books, past questions, elections and student services for NACOS YabaTech.' }}">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
@@ -15,8 +17,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 {{-- Link previews in WhatsApp, X, Facebook and others. --}}
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="{{ config('app.name') }}">
-<meta property="og:title" content="{{ $title ?: config('app.name') }}">
+<meta property="og:site_name" content="{{ $siteName }}">
+<meta property="og:title" content="{{ $title ?: $siteName }}">
 <meta property="og:description" content="{{ $description ?? 'Books, past questions, elections and student services for NACOS YabaTech.' }}">
 <meta property="og:url" content="{{ url()->current() }}">
 <meta property="og:image" content="{{ asset('images/share.png') }}">

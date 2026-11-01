@@ -11,13 +11,13 @@
     }
 @endphp
 
-<x-layouts.admin :title="$election->title">
-    <x-page-header :title="$election->title" :subtitle="$election->description" eyebrow="Manage election" :back="route('elections.manage')" back-label="Manage elections">
+<x-dynamic-component :component="$desk->layout()" :title="$election->title">
+    <x-page-header :title="$election->title" :subtitle="$election->description" eyebrow="Manage election" :back="$desk->route('')" back-label="Manage elections">
         <x-slot:actions>
             @if ($draft)
-                <x-button href="{{ route('elections.manage.edit', $election) }}" variant="secondary" icon="pencil">Edit details</x-button>
+                <x-button href="{{ $desk->route('.edit', $election) }}" variant="secondary" icon="pencil">Edit details</x-button>
             @else
-                <x-button href="{{ route('elections.show', $election) }}" variant="secondary" icon="eye">Public page</x-button>
+                <x-button href="{{ $desk->publicUrl($election) }}" variant="secondary" icon="eye">Public page</x-button>
             @endif
         </x-slot:actions>
     </x-page-header>
@@ -45,17 +45,17 @@
                                     <span class="upload-step"><span>{{ $loop->iteration }}</span></span>
                                     <h3 class="min-w-0 flex-1 text-base">{{ $position->title }}</h3>
                                     <div class="flex items-center gap-1">
-                                        <form method="POST" action="{{ route('elections.manage.positions.move', [$election, $position]) }}">
+                                        <form method="POST" action="{{ $desk->route('.positions.move', [$election, $position]) }}">
                                             @csrf
                                             <input type="hidden" name="direction" value="up">
                                             <button type="submit" class="icon-btn" aria-label="Move {{ $position->title }} up" @disabled($loop->first)><x-icon name="arrow-up" /></button>
                                         </form>
-                                        <form method="POST" action="{{ route('elections.manage.positions.move', [$election, $position]) }}">
+                                        <form method="POST" action="{{ $desk->route('.positions.move', [$election, $position]) }}">
                                             @csrf
                                             <input type="hidden" name="direction" value="down">
                                             <button type="submit" class="icon-btn" aria-label="Move {{ $position->title }} down" @disabled($loop->last)><x-icon name="arrow-down" /></button>
                                         </form>
-                                        <form method="POST" action="{{ route('elections.manage.positions.destroy', [$election, $position]) }}" data-confirm="Remove {{ $position->title }} and its candidates?">
+                                        <form method="POST" action="{{ $desk->route('.positions.destroy', [$election, $position]) }}" data-confirm="Remove {{ $position->title }} and its candidates?">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="icon-btn icon-btn-danger" aria-label="Remove {{ $position->title }}"><x-icon name="trash-2" /></button>
@@ -79,7 +79,7 @@
                                                             <p class="mt-1 line-clamp-2 text-sm text-muted">{{ $candidate->manifesto }}</p>
                                                         @endif
                                                     </div>
-                                                    <form method="POST" action="{{ route('elections.manage.candidates.destroy', [$election, $position, $candidate]) }}" data-confirm="Remove {{ $candidate->name }}?">
+                                                    <form method="POST" action="{{ $desk->route('.candidates.destroy', [$election, $position, $candidate]) }}" data-confirm="Remove {{ $candidate->name }}?">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="icon-btn icon-btn-danger" aria-label="Remove {{ $candidate->name }}"><x-icon name="trash-2" /></button>
@@ -88,7 +88,7 @@
                                                 <details class="setup-details" @if ($editBag->any()) open @endif>
                                                     <summary>Edit {{ $candidate->name }}</summary>
                                                     @include('elections.manage.candidate-form', [
-                                                        'action' => route('elections.manage.candidates.update', [$election, $position, $candidate]),
+                                                        'action' => $desk->route('.candidates.update', [$election, $position, $candidate]),
                                                         'method' => 'PUT',
                                                         'bag' => 'candidate-edit-'.$candidate->id,
                                                         'prefix' => 'candidate-'.$candidate->id,
@@ -104,7 +104,7 @@
                                 <details class="setup-details" @if ($addBag->any() || $position->candidates->isEmpty()) open @endif>
                                     <summary><x-icon name="user-plus" /> Add a candidate</summary>
                                     @include('elections.manage.candidate-form', [
-                                        'action' => route('elections.manage.candidates.store', [$election, $position]),
+                                        'action' => $desk->route('.candidates.store', [$election, $position]),
                                         'method' => 'POST',
                                         'bag' => 'candidate-'.$position->id,
                                         'prefix' => 'new-candidate-'.$position->id,
@@ -115,7 +115,7 @@
 
                                 <details class="setup-details" @if ($renameBag->any()) open @endif>
                                     <summary><x-icon name="pencil" /> Rename position</summary>
-                                    <form method="POST" action="{{ route('elections.manage.positions.update', [$election, $position]) }}" class="setup-form" novalidate>
+                                    <form method="POST" action="{{ $desk->route('.positions.update', [$election, $position]) }}" class="setup-form" novalidate>
                                         @csrf
                                         @method('PUT')
                                         <x-field name="title" :id="'position-title-'.$position->id" label="Position" :bag="'position-'.$position->id" required maxlength="120" :value="$position->title" :old="$renameBag->any()" />
@@ -126,7 +126,7 @@
                         @endforeach
                     </ol>
 
-                    <form method="POST" action="{{ route('elections.manage.positions.store', $election) }}" class="setup-add mt-4" novalidate>
+                    <form method="POST" action="{{ $desk->route('.positions.store', $election) }}" class="setup-add mt-4" novalidate>
                         @csrf
                         <x-field name="title" id="new-position" label="Add a position" bag="position" required maxlength="120" placeholder="e.g. Welfare Director" :old="$errors->getBag('position')->any()" />
                         <x-button icon="plus" variant="secondary">Add position</x-button>
@@ -150,14 +150,14 @@
                     <h2 class="text-base">Who can vote</h2>
                 </div>
                 <p class="text-sm">{{ $election->eligibilitySummary() }}.</p>
-                <p class="text-sm text-muted">{{ number_format($electorate) }} {{ \Illuminate\Support\Str::plural('account', $electorate) }} can vote{{ $draft ? ' right now' : '' }}.@if ($draft) <a href="{{ route('elections.manage.edit', $election) }}" class="link">Change</a>@endif</p>
+                <p class="text-sm text-muted">{{ number_format($electorate) }} {{ \Illuminate\Support\Str::plural('account', $electorate) }} can vote{{ $draft ? ' right now' : '' }}.@if ($draft) <a href="{{ $desk->route('.edit', $election) }}" class="link">Change</a>@endif</p>
                 @if ($election->excludesLateAccounts())
                     <p class="text-sm text-muted">Only accounts created before voting opened ({{ $election->starts_at->timezone(config('app.display_timezone'))->format('D j M, g:i a') }}).</p>
                 @elseif (! $election->allow_late_accounts)
                     <p class="text-sm text-muted">Only accounts that exist when voting opens. Students who haven't signed up should do so before you launch.</p>
                 @endif
                 @if ($election->roll_only)
-                    <p class="text-sm text-muted">{{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the <a href="{{ route('roll.index') }}" class="link">nominal roll</a>; only those with an account can vote.</p>
+                    <p class="text-sm text-muted">{{ number_format($rollCount) }} {{ \Illuminate\Support\Str::plural('student', $rollCount) }} on the <a href="{{ $desk->rollUrl() }}" class="link">nominal roll</a>; only those with an account can vote.</p>
                 @endif
             </x-card>
 
@@ -171,7 +171,7 @@
                     @if ($launchProblem)
                         <x-alert type="warning">{{ $launchProblem }}</x-alert>
                     @endif
-                    <form method="POST" action="{{ route('elections.manage.launch', $election) }}" class="space-y-4"
+                    <form method="POST" action="{{ $desk->route('.launch', $election) }}" class="space-y-4"
                         data-confirm="Open voting now? Positions and candidates can't change after this.">
                         @csrf
                         <x-select name="hours" label="Voting time" :value="6" :options="$durations" />
@@ -179,7 +179,7 @@
                     </form>
                 </x-card>
 
-                <form method="POST" action="{{ route('elections.manage.destroy', $election) }}" class="px-1" data-confirm="Delete this draft election?">
+                <form method="POST" action="{{ $desk->route('.destroy', $election) }}" class="px-1" data-confirm="Delete this draft election?">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="link text-sm text-danger">Delete this draft</button>
@@ -197,7 +197,7 @@
                         <div><dt>Closes</dt><dd>{{ $election->ends_at?->timezone($zone)->format('D j M, g:i a') }}</dd></div>
                         <div><dt>Ballots cast</dt><dd>{{ number_format($ballots) }}</dd></div>
                     </dl>
-                    <form method="POST" action="{{ route('elections.manage.close', $election) }}" data-confirm="Stop voting now? This can't be undone, and the final results will be published.">
+                    <form method="POST" action="{{ $desk->route('.close', $election) }}" data-confirm="Stop voting now? This can't be undone, and the final results will be published.">
                         @csrf
                         <x-button variant="danger" icon="circle-stop" class="w-full">Stop voting now</x-button>
                     </form>
@@ -217,4 +217,4 @@
             @endif
         </aside>
     </div>
-</x-layouts.admin>
+</x-dynamic-component>

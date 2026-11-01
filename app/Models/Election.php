@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\DB;
  * the one the student chose at signup.
  *
  * @property int $id
+ * @property int|null $organization_id
  * @property string $title
  * @property string|null $description
  * @property list<string>|null $levels
@@ -45,11 +46,57 @@ use Illuminate\Support\Facades\DB;
  * @property Carbon|null $closed_at
  * @property int|null $created_by
  * @property Carbon $created_at
+ * @property-read Organization|null $organization
  */
 class Election extends Model
 {
     /** @use HasFactory<ElectionFactory> */
     use HasFactory;
+
+    /**
+     * NACOS's own elections everywhere by default: a department's elections
+     * (docs/department-elections.md) only appear through its Organization.
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope('nacos', fn (Builder $query) => $query->whereNull('elections.organization_id'));
+    }
+
+    /**
+     * Every election, NACOS's and the departments': for the scheduler and
+     * the live results, which serve them all.
+     *
+     * @return Builder<static>
+     */
+    public static function everywhere(): Builder
+    {
+        return static::query()->withoutGlobalScope('nacos');
+    }
+
+    /**
+     * On a department's pages (/vote/{organization}/…) only that
+     * department's elections are found; elsewhere only NACOS's.
+     */
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        $route = request()->route();
+        $organization = $route !== null && in_array('organization', $route->parameterNames(), true)
+            ? Organization::current()
+            : null;
+
+        if ($route !== null && in_array('organization', $route->parameterNames(), true) && $organization === null) {
+            return null;
+        }
+
+        $query = $organization !== null ? $organization->elections() : static::query();
+
+        return $query->where($field ?? $this->getRouteKeyName(), $value)->first();
+    }
+
+    public function isForDepartment(): bool
+    {
+        return $this->organization_id !== null;
+    }
 
     /** Voting windows an admin can launch an election for, in hours. */
     public const DURATIONS = [1, 2, 6, 12, 24, 48, 72];
@@ -67,6 +114,7 @@ class Election extends Model
         'arms' => null,
         'entry_year_from' => null,
         'entry_year_to' => null,
+        'organization_id' => null,
         'roll_only' => true,
         'allow_late_accounts' => false,
         'starts_at' => null,
@@ -183,8 +231,12 @@ class Election extends Model
     /**
      * Null when the user may vote in this election, otherwise why not.
      */
-    public function ineligibilityReason(User $user): ?string
+    public function ineligibilityReason(User|Voter $user): ?string
     {
+        if ($user instanceof Voter || $this->isForDepartment()) {
+            return $this->departmentIneligibilityReason($user);
+        }
+
         if ($user->status !== UserStatus::Active) {
             return 'Your account isn\'t active.';
         }
@@ -256,7 +308,43 @@ class Election extends Model
         return ! $this->allow_late_accounts && $this->starts_at !== null;
     }
 
-    public function isEligible(User $user): bool
+    /**
+     * A department's elections: its own active voters on its roll, created
+     * before voting opened (unless late accounts are allowed), with the
+     * roll's class and the matric number's entry year.
+     */
+    private function departmentIneligibilityReason(User|Voter $voter): ?string
+    {
+        if (! $voter instanceof Voter || $voter->organization_id !== $this->organization_id) {
+            return 'This election is for another department\'s voters.';
+        }
+
+        if ($voter->status !== UserStatus::Active) {
+            return 'Your account isn\'t active.';
+        }
+
+        if ($this->excludesLateAccounts() && $voter->created_at->gt($this->starts_at)) {
+            return 'Your account was created after voting opened, so it can\'t vote in this election. Only accounts that existed when voting opened can vote.';
+        }
+
+        $entry = $voter->matric_number === null ? null : OrganizationRollEntry::query()
+            ->where('organization_id', $this->organization_id)
+            ->where('matric_number', $voter->matric_number)
+            ->first(['level', 'programme']);
+
+        if ($entry === null) {
+            return 'Your matric number isn\'t on the department\'s nominal roll, so you can\'t vote. If that\'s a mistake, ask the department\'s election admin to check the roll.';
+        }
+
+        $outside = (($this->programmes ?? []) !== [] && ! in_array($entry->programme?->value, $this->programmes, true))
+            || (($this->levels ?? []) !== [] && ! in_array($entry->level?->value, $this->levels, true))
+            || ($this->entry_year_from !== null && ($voter->entry_year === null || $voter->entry_year < $this->entry_year_from))
+            || ($this->entry_year_to !== null && ($voter->entry_year === null || $voter->entry_year > $this->entry_year_to));
+
+        return $outside ? 'This election is for '.$this->eligibilitySummary().'.' : null;
+    }
+
+    public function isEligible(User|Voter $user): bool
     {
         return $this->ineligibilityReason($user) === null;
     }
@@ -264,10 +352,14 @@ class Election extends Model
     /**
      * Everyone who may vote, as a query (for turnout).
      *
-     * @return Builder<User>
+     * @return Builder<User>|Builder<Voter>
      */
     public function electorate(): Builder
     {
+        if ($this->isForDepartment()) {
+            return $this->departmentElectorate();
+        }
+
         $query = User::query()->where('users.status', UserStatus::Active)->whereNull('users.graduated_at');
 
         if ($this->excludesLateAccounts()) {
@@ -307,8 +399,53 @@ class Election extends Model
         return $query;
     }
 
-    public function hasVoted(User $user): bool
+    /**
+     * A department's electorate: its active voters on its roll.
+     *
+     * @return Builder<Voter>
+     */
+    private function departmentElectorate(): Builder
     {
+        $query = Voter::query()
+            ->where('voters.organization_id', $this->organization_id)
+            ->where('voters.status', UserStatus::Active)
+            ->join('organization_roll', function ($join) {
+                $join->on('organization_roll.matric_number', '=', 'voters.matric_number')
+                    ->on('organization_roll.organization_id', '=', 'voters.organization_id');
+            });
+
+        if ($this->excludesLateAccounts()) {
+            $query->where('voters.created_at', '<=', $this->starts_at);
+        }
+
+        if (($this->programmes ?? []) !== []) {
+            $query->whereIn('organization_roll.programme', $this->programmes);
+        }
+
+        if (($this->levels ?? []) !== []) {
+            $query->whereIn('organization_roll.level', $this->levels);
+        }
+
+        if ($this->entry_year_from !== null) {
+            $query->where('voters.entry_year', '>=', $this->entry_year_from);
+        }
+
+        if ($this->entry_year_to !== null) {
+            $query->where('voters.entry_year', '<=', $this->entry_year_to);
+        }
+
+        return $query;
+    }
+
+    public function hasVoted(User|Voter $user): bool
+    {
+        if ($user instanceof Voter) {
+            return DB::table('organization_election_voters')
+                ->where('election_id', $this->id)
+                ->where('voter_id', $user->id)
+                ->exists();
+        }
+
         return DB::table('election_voters')
             ->where('election_id', $this->id)
             ->where('user_id', $user->id)
@@ -317,7 +454,13 @@ class Election extends Model
 
     public function ballotCount(): int
     {
-        return DB::table('election_voters')->where('election_id', $this->id)->count();
+        return DB::table($this->votersTable())->where('election_id', $this->id)->count();
+    }
+
+    /** Where this election records who voted (never what they chose). */
+    public function votersTable(): string
+    {
+        return $this->isForDepartment() ? 'organization_election_voters' : 'election_voters';
     }
 
     /**
@@ -347,6 +490,24 @@ class Election extends Model
     public function voters(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'election_voters')->withPivot('voted_at');
+    }
+
+    /**
+     * A department's voters who have cast a ballot (never what they chose).
+     *
+     * @return BelongsToMany<Voter, $this>
+     */
+    public function departmentVoters(): BelongsToMany
+    {
+        return $this->belongsToMany(Voter::class, 'organization_election_voters')->withPivot('voted_at');
+    }
+
+    /**
+     * @return BelongsTo<Organization, $this>
+     */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     /**

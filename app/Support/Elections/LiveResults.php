@@ -73,7 +73,7 @@ class LiveResults
      */
     public static function catchUpAll(): void
     {
-        Election::query()->where('status', ElectionStatus::Open)->pluck('id')
+        Election::everywhere()->where('status', ElectionStatus::Open)->pluck('id')
             ->each(fn ($id) => self::catchUp((int) $id));
     }
 
@@ -89,7 +89,7 @@ class LiveResults
         try {
             for ($round = 0; $round < 3 && Cache::pull($stale); $round++) {
                 // Fresh each time: the election may have closed meanwhile.
-                $election = Election::query()->find($electionId);
+                $election = Election::everywhere()->find($electionId);
                 if ($election === null) {
                     return;
                 }

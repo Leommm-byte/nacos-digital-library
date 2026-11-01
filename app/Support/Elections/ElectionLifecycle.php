@@ -4,6 +4,7 @@ namespace App\Support\Elections;
 
 use App\Enums\ElectionStatus;
 use App\Models\Election;
+use App\Models\OrganizationRollEntry;
 use App\Models\RollEntry;
 use App\Support\Audit;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,11 @@ class ElectionLifecycle
      */
     public static function launchProblem(Election $election): ?string
     {
-        if ($election->roll_only && ! RollEntry::query()->exists()) {
+        if ($election->isForDepartment()) {
+            if (! OrganizationRollEntry::query()->where('organization_id', $election->organization_id)->exists()) {
+                return 'The nominal roll is empty. Upload it first: only students on it can vote.';
+            }
+        } elseif ($election->roll_only && ! RollEntry::query()->exists()) {
             return 'The nominal roll is empty. Import it first, or untick "Only students on the nominal roll".';
         }
 
@@ -49,7 +54,10 @@ class ElectionLifecycle
         $election->save();
 
         LiveResults::publish($election);
-        Audit::record('election_launched', $election, ['title' => $election->title, 'hours' => $hours]);
+        // NACOS's audit log is NACOS's: departments' elections stay out of it.
+        if (! $election->isForDepartment()) {
+            Audit::record('election_launched', $election, ['title' => $election->title, 'hours' => $hours]);
+        }
     }
 
     /**
@@ -61,7 +69,7 @@ class ElectionLifecycle
     {
         $closed = DB::transaction(function () use ($election) {
             // Waits for ballots in progress (they hold a shared lock).
-            $current = Election::query()->whereKey($election->id)->lockForUpdate()->first();
+            $current = Election::everywhere()->whereKey($election->id)->lockForUpdate()->first();
 
             if ($current === null || $current->status !== ElectionStatus::Open) {
                 return false;
@@ -87,11 +95,13 @@ class ElectionLifecycle
         $election->setRawAttributes($closed->getAttributes(), true);
 
         LiveResults::publish($election);
-        Audit::record('election_closed', $election, [
-            'title' => $election->title,
-            'automatic' => $automatic,
-            'ballots' => $election->ballotCount(),
-        ]);
+        if (! $election->isForDepartment()) {
+            Audit::record('election_closed', $election, [
+                'title' => $election->title,
+                'automatic' => $automatic,
+                'ballots' => $election->ballotCount(),
+            ]);
+        }
 
         return true;
     }
@@ -104,7 +114,7 @@ class ElectionLifecycle
     {
         $closed = 0;
 
-        Election::query()
+        Election::everywhere()
             ->where('status', ElectionStatus::Open)
             ->where('ends_at', '<=', now())
             ->get()

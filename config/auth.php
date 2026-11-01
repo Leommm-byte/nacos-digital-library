@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Voter;
 
 return [
 
@@ -42,6 +43,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Department election spaces (/vote/{slug}): their own accounts,
+        // never signed in to the NACOS app.
+        'voter' => [
+            'driver' => 'session',
+            'provider' => 'voters',
+        ],
     ],
 
     /*
@@ -65,6 +73,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'voters' => [
+            'driver' => 'eloquent',
+            'model' => Voter::class,
         ],
 
         // 'users' => [

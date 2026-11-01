@@ -6,6 +6,10 @@ use App\Http\Middleware\EnforceAccountState;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\ServerTiming;
+use App\Http\Middleware\Vote\AuthenticateVoter;
+use App\Http\Middleware\Vote\EnsureDepartmentAdmin;
+use App\Http\Middleware\Vote\RedirectIfVoter;
+use App\Http\Middleware\Vote\ResolveOrganization;
 use App\Support\Operations\Alerts;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,7 +35,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(ServerTiming::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->web(append: [EnforceAccountState::class]);
-        $middleware->alias(['role' => EnsureRole::class]);
+        $middleware->alias([
+            'role' => EnsureRole::class,
+            // Department election spaces (routes/vote.php).
+            'vote' => ResolveOrganization::class,
+            'vote.auth' => AuthenticateVoter::class,
+            'vote.guest' => RedirectIfVoter::class,
+            'vote.admin' => EnsureDepartmentAdmin::class,
+        ]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));
     })

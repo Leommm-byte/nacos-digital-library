@@ -32,3 +32,8 @@ the decisions already made with the owner, and PR status.
   screen (phone/desktop, light/dark) into the branch `screenshots/<branch>`;
   review those images before opening a PR, and add new screens to
   `scripts/screenshots.mjs`.
+- Department election spaces (`/vote/{slug}`, docs/department-elections.md)
+  have their own accounts (`voter` guard) and tables. Election's `nacos`
+  scope keeps them out of the NACOS app: never remove it, and use
+  `Election::everywhere()` only where both are meant (scheduler, live
+  results).
