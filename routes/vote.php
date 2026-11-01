@@ -52,7 +52,8 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
             ->name('elections.vote');
     });
 
-    Route::middleware(['vote.auth', 'vote.admin'])->prefix('admin')->name('admin.')->group(function () {
+    // The department's admins, or a NACOS admin doing the work for them.
+    Route::middleware('vote.admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/roll', [RollController::class, 'index'])->name('roll');
         Route::get('/roll/template', [RollController::class, 'template'])->name('roll.template');
         Route::post('/roll', [RollController::class, 'store'])->middleware('throttle:department-admin')->name('roll.store');

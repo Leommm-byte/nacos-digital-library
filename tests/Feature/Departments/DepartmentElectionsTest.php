@@ -121,6 +121,31 @@ class DepartmentElectionsTest extends TestCase
     }
 
     #[Test]
+    public function a_nacos_admin_can_do_the_department_admins_work_for_them(): void
+    {
+        $nacosAdmin = User::factory()->role(Role::Admin)->create();
+        $this->actingAs($nacosAdmin);
+
+        $this->get(route('vote.admin.roll', $this->fst))->assertOk()->assertSee('managing Food Science and Technology as a NACOS admin');
+
+        $csv = UploadedFile::fake()->createWithContent('roll.csv', "Matric number,Full name\nF/ND/24/3001001,OKAFOR Tolu\n");
+        $this->post(route('vote.admin.roll.store', $this->fst), ['programme' => 'full_time', 'level' => 'ND1', 'roll' => $csv])
+            ->assertRedirect(route('vote.admin.roll', $this->fst));
+        $this->assertSame(1, $this->fst->roll()->count());
+
+        $this->post(route('vote.admin.elections.store', $this->fst), ['title' => 'Set up by NACOS'])->assertRedirect();
+        $election = $this->fst->elections()->firstOrFail();
+        // Never credited to a NACOS user, and never a NACOS election.
+        $this->assertNull($election->created_by);
+        $this->assertSame(0, Election::query()->count());
+
+        // Still not a voter there.
+        $this->assertGuest('voter');
+        // A NACOS admin can't vote in it either: there's no voter account.
+        $this->get(route('vote.home', $this->fst))->assertSee('NACOS admin');
+    }
+
+    #[Test]
     public function only_nacos_admins_manage_departments(): void
     {
         $this->actingAs(User::factory()->create())->get(route('admin.departments.index'))->assertForbidden();
@@ -232,9 +257,9 @@ class DepartmentElectionsTest extends TestCase
         $this->get(route('vote.elections.show', [$other, $fstElection]))->assertNotFound();
         $this->get(route('vote.home', $this->fst))->assertSee('FST Primaries')->assertDontSee('NACOS General Election');
 
-        // A NACOS admin isn't a department admin, and a NACOS student can't vote there.
+        // A NACOS student isn't a department admin.
+        $this->actingAs($student)->get(route('vote.admin.elections', $this->fst))->assertRedirect(route('vote.login', $this->fst));
         $nacosAdmin = User::factory()->role(Role::Admin)->create();
-        $this->actingAs($nacosAdmin)->get(route('vote.admin.elections', $this->fst))->assertRedirect(route('vote.login', $this->fst));
         $this->actingAs($nacosAdmin)->get(route('elections.manage'))->assertSee('NACOS General Election')->assertDontSee('FST Primaries');
         $this->assertSame(1, Election::query()->count());
         $this->assertSame(2, Election::everywhere()->count());

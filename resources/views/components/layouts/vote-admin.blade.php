@@ -28,6 +28,9 @@
             </ul>
         </nav>
         <div class="min-w-0">
+            @if (! auth('voter')->check())
+                <x-alert type="info" class="mb-6">You're managing {{ $organization->name }} as a NACOS admin. Changes you make here are the same as the department's admins making them. <a href="{{ route('admin.departments.show', $organization) }}" class="link">Back to Admin → Departments</a></x-alert>
+            @endif
             {{ $slot }}
         </div>
     </div>

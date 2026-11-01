@@ -7,6 +7,8 @@
 
 @php
     $voter = auth('voter')->user();
+    // A NACOS admin (signed in to the NACOS app) can run any space's Manage pages.
+    $nacosAdmin = ! $voter && \App\Http\Middleware\Vote\EnsureDepartmentAdmin::nacosAdmin();
     $site = $organization->name.' elections';
 @endphp
 
@@ -39,6 +41,9 @@
                         @csrf
                         <x-button variant="secondary" size="sm" icon="log-out">Log out</x-button>
                     </form>
+                @elseif ($nacosAdmin)
+                    <x-button href="{{ route('vote.admin.elections') }}" variant="ghost" size="sm" icon="settings" class="hidden sm:inline-flex">Manage</x-button>
+                    <x-button href="{{ route('admin.departments.show', $organization) }}" variant="secondary" size="sm" icon="arrow-left">NACOS admin</x-button>
                 @elseif (! request()->routeIs('vote.login'))
                     <x-button href="{{ route('vote.login') }}" variant="secondary" size="sm" icon="log-in">Log in</x-button>
                 @endif
