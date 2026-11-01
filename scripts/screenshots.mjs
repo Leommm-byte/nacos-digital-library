@@ -229,12 +229,14 @@ const pages = [
     ['vote-register', '/vote/food-science/register', null],
     ['vote-login', '/vote/food-science/login', null],
     ['vote-home-voter', '/vote/food-science', 'vote:food-science:F/ND/24/3101001'],
+    // These open the linked page by its address: a click's navigation can
+    // finish before waitForNavigation starts listening.
     ['vote-ballot', '/vote/food-science', 'vote:food-science:F/ND/24/3101001', async (page) => {
-        await Promise.all([page.waitForNavigation(), page.click('.election-card a.stretched-link')]);
+        await page.goto(await page.locator('.election-card a.stretched-link').first().getAttribute('href'), { waitUntil: 'networkidle' });
     }],
     ['vote-admin-elections', '/vote/food-science/admin/elections', 'vote:food-science:admin@fst.test'],
     ['vote-admin-election', '/vote/food-science/admin/elections', 'vote:food-science:admin@fst.test', async (page) => {
-        await Promise.all([page.waitForNavigation(), page.locator('a.upload-row', { hasText: 'Planning' }).click()]);
+        await page.goto(await page.locator('a.upload-row', { hasText: 'Planning' }).getAttribute('href'), { waitUntil: 'networkidle' });
     }],
     ['vote-admin-election-form', '/vote/food-science/admin/elections/create', 'vote:food-science:admin@fst.test'],
     ['vote-admin-roll', '/vote/food-science/admin/roll', 'vote:food-science:admin@fst.test'],
