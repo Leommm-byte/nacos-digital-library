@@ -11,6 +11,7 @@ use App\Enums\VoterRole;
 use App\Models\Election;
 use App\Models\ElectionCandidate;
 use App\Models\Organization;
+use App\Models\OrganizationRequest;
 use App\Models\OrganizationRollEntry;
 use App\Models\User;
 use App\Models\Voter;
@@ -143,6 +144,52 @@ class DepartmentElectionsTest extends TestCase
         $this->assertGuest('voter');
         // A NACOS admin can't vote in it either: there's no voter account.
         $this->get(route('vote.home', $this->fst))->assertSee('NACOS admin');
+    }
+
+    #[Test]
+    public function a_department_asks_for_a_space_and_a_nacos_admin_approves_it(): void
+    {
+        $this->get(route('vote.directory'))->assertOk()->assertSee('Food Science and Technology');
+
+        // A bot filling the hidden field is dropped quietly.
+        $this->post(route('vote.apply.store'), ['department_name' => 'Spam', 'contact_name' => 'x', 'contact_email' => 'x@x.test', 'website' => 'http://spam.test'])
+            ->assertRedirect(route('vote.apply.sent'));
+        $this->assertSame(0, OrganizationRequest::count());
+
+        $this->post(route('vote.apply.store'), [
+            'department_name' => 'Mass Communication', 'contact_name' => 'Ife Adeyemi', 'contact_role' => 'President',
+            'contact_email' => 'Ife@Mac.test', 'message' => 'Election on 20 November.',
+        ])->assertRedirect(route('vote.apply.sent'));
+        $application = OrganizationRequest::firstOrFail();
+        $this->assertSame('ife@mac.test', $application->contact_email);
+
+        $nacosAdmin = User::factory()->role(Role::Admin)->create();
+        $this->actingAs($nacosAdmin)->get(route('admin.departments.index'))->assertSee('Mass Communication')->assertSee('Approve');
+        $this->get(route('admin.departments.create', ['request' => $application->id]))
+            ->assertOk()->assertSee('value="Mass Communication"', false)->assertSee('Election on 20 November.');
+
+        $this->post(route('admin.departments.store'), ['name' => 'Mass Communication', 'colour' => 'blue', 'request' => $application->id])
+            ->assertRedirect(route('admin.departments.show', 'mass-communication'));
+        $department = Organization::where('slug', 'mass-communication')->firstOrFail();
+        $this->assertSame('blue', $department->colour);
+        $this->assertSame(OrganizationRequest::APPROVED, $application->refresh()->status);
+        $this->assertSame($department->id, $application->organization_id);
+
+        // Its pages take its colour.
+        $this->get(route('vote.home', $department))->assertSee('brand-blue');
+    }
+
+    #[Test]
+    public function requests_can_be_declined_and_page_addresses_are_reserved(): void
+    {
+        $application = OrganizationRequest::create(['department_name' => 'Nope', 'contact_name' => 'A', 'contact_email' => 'a@a.test']);
+        $this->actingAs(User::factory()->role(Role::Admin)->create());
+
+        $this->post(route('admin.departments.requests.decline', $application->id))->assertRedirect();
+        $this->assertSame(OrganizationRequest::DECLINED, $application->refresh()->status);
+
+        $this->post(route('admin.departments.store'), ['name' => 'Apply', 'slug' => 'apply'])->assertSessionHasErrors('slug');
+        $this->post(route('admin.departments.store'), ['name' => 'Odd', 'colour' => 'neon'])->assertSessionHasErrors('colour');
     }
 
     #[Test]

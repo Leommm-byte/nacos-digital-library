@@ -17,8 +17,9 @@
 <head>
     @include('partials.head', ['title' => $title, 'description' => $description ?? "Elections for {$organization->name}: register, vote with a secret ballot and follow the results.", 'siteName' => $site])
     <meta name="robots" content="noindex">
+    @vite('resources/css/vote.css')
 </head>
-<body class="flex min-h-dvh flex-col">
+<body @class(['flex min-h-dvh flex-col', \App\Support\Departments\Colours::bodyClass($organization->colour)])>
     <a href="#main" class="skip-link">Skip to content</a>
 
     <header class="app-header">

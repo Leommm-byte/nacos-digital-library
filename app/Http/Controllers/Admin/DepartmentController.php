@@ -7,8 +7,10 @@ use App\Enums\UserStatus;
 use App\Enums\VoterRole;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
+use App\Models\OrganizationRequest;
 use App\Models\Voter;
 use App\Support\Audit;
+use App\Support\Departments\Colours;
 use App\Support\TemporaryPassword;
 use App\Support\Uploads\Images;
 use App\Support\Uploads\UnreadableImage;
@@ -36,12 +38,29 @@ class DepartmentController extends Controller
                 ->withCount(['voters', 'roll', 'elections'])
                 ->orderBy('name')
                 ->get(),
+            'requests' => OrganizationRequest::query()->where('status', OrganizationRequest::PENDING)->latest('id')->get(),
         ]);
     }
 
-    public function create(): View
+    /**
+     * The form, filled in from a department's request when approving one.
+     */
+    public function create(Request $request): View
     {
-        return view('admin.departments.form', ['department' => new Organization]);
+        $application = $request->filled('request')
+            ? OrganizationRequest::query()->where('status', OrganizationRequest::PENDING)->find($request->integer('request'))
+            : null;
+
+        return view('admin.departments.form', [
+            'department' => new Organization($application ? [
+                'name' => $application->department_name,
+                'contact_name' => $application->contact_name,
+                'contact_email' => $application->contact_email,
+                'contact_phone' => $application->contact_phone,
+                'notes' => trim(($application->contact_role ? "Contact's role: {$application->contact_role}\n" : '').($application->message ?? '')) ?: null,
+            ] : []),
+            'application' => $application,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -50,10 +69,26 @@ class DepartmentController extends Controller
         $department->save();
         $this->saveLogo($request, $department);
 
+        // Approving a request: it's answered by this department.
+        if ($request->filled('request')) {
+            OrganizationRequest::query()->whereKey($request->integer('request'))->where('status', OrganizationRequest::PENDING)
+                ->update(['status' => OrganizationRequest::APPROVED, 'organization_id' => $department->id]);
+        }
+
         Audit::record('vote_space_created', $department, ['name' => $department->name]);
 
         return redirect()->route('admin.departments.show', $department)
             ->with('status', "{$department->name} is set up. Add its first admin below.");
+    }
+
+    public function decline(OrganizationRequest $application): RedirectResponse
+    {
+        abort_unless($application->status === OrganizationRequest::PENDING, 404);
+        $application->forceFill(['status' => OrganizationRequest::DECLINED])->save();
+
+        Audit::record('vote_space_request_declined', $application, ['name' => $application->department_name]);
+
+        return back()->with('status', "Request from {$application->department_name} declined.");
     }
 
     public function show(Organization $department): View
@@ -73,7 +108,7 @@ class DepartmentController extends Controller
 
     public function edit(Organization $department): View
     {
-        return view('admin.departments.form', ['department' => $department]);
+        return view('admin.departments.form', ['department' => $department, 'application' => null]);
     }
 
     public function update(Request $request, Organization $department): RedirectResponse
@@ -180,7 +215,7 @@ class DepartmentController extends Controller
     }
 
     /**
-     * @return array{name: string, short_name: string|null, slug: string, contact_name: string|null, contact_email: string|null, contact_phone: string|null, notes: string|null}
+     * @return array{name: string, short_name: string|null, slug: string, contact_name: string|null, contact_email: string|null, contact_phone: string|null, notes: string|null, colour: string|null}
      */
     private function validated(Request $request, ?Organization $department = null): array
     {
@@ -189,7 +224,8 @@ class DepartmentController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'short_name' => ['nullable', 'string', 'max:30'],
-            'slug' => ['required', 'string', 'max:60', 'alpha_dash', Rule::unique('organizations', 'slug')->ignore($department?->id)],
+            'slug' => ['required', 'string', 'max:60', 'alpha_dash', Rule::notIn(Organization::RESERVED_SLUGS), Rule::unique('organizations', 'slug')->ignore($department?->id)],
+            'colour' => ['nullable', Rule::in(array_keys(Colours::ALL))],
             'contact_name' => ['nullable', 'string', 'max:150'],
             'contact_email' => ['nullable', 'string', 'email:rfc', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:40'],
@@ -197,6 +233,7 @@ class DepartmentController extends Controller
             'logo' => ['nullable', 'file', 'max:2048', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp'],
         ], [
             'slug.unique' => 'Another department already uses this address.',
+            'slug.not_in' => 'This address is taken by a page of its own. Choose another.',
             'logo.max' => 'The logo must be 2 MB or smaller.',
             'logo.mimes' => 'The logo must be a JPG, PNG or WebP image.',
             'logo.mimetypes' => 'The logo must be a JPG, PNG or WebP image.',
@@ -212,6 +249,7 @@ class DepartmentController extends Controller
             'contact_email' => $optional('contact_email'),
             'contact_phone' => $optional('contact_phone'),
             'notes' => $optional('notes'),
+            'colour' => $optional('colour'),
         ];
     }
 

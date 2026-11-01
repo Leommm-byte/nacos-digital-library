@@ -74,6 +74,7 @@ class AuditActions
         'vote_space_admin_added' => 'Added a department election admin',
         'vote_space_admin_password' => 'Gave a department election admin a new password',
         'vote_space_admin_removed' => 'Removed a department election admin',
+        'vote_space_request_declined' => 'Declined a department\'s request for an election space',
     ];
 
     public static function label(string $action): string

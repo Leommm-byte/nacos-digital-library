@@ -13,12 +13,20 @@ use App\Http\Controllers\Vote\Admin\ElectionController as AdminElectionControlle
 use App\Http\Controllers\Vote\Admin\RollController;
 use App\Http\Controllers\Vote\Admin\VoterController;
 use App\Http\Controllers\Vote\AuthController;
+use App\Http\Controllers\Vote\DirectoryController;
 use App\Http\Controllers\Vote\ElectionController;
 use App\Http\Controllers\Vote\HomeController;
 use App\Http\Controllers\Vote\LogoController;
 use App\Http\Controllers\Vote\PasswordController;
 use App\Http\Controllers\Vote\RegisterController;
 use Illuminate\Support\Facades\Route;
+
+// The list of spaces, and the form for a department to ask for one. Before
+// the {organization} routes; "apply" is a reserved address (Organization).
+Route::get('/vote', [DirectoryController::class, 'index'])->name('vote.directory');
+Route::get('/vote/apply', [DirectoryController::class, 'create'])->name('vote.apply');
+Route::post('/vote/apply', [DirectoryController::class, 'store'])->middleware('throttle:5,60')->name('vote.apply.store');
+Route::get('/vote/apply/sent', [DirectoryController::class, 'sent'])->name('vote.apply.sent');
 
 Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(function () {
     Route::get('/', HomeController::class)->name('home');

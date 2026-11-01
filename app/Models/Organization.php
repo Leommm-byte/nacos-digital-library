@@ -24,12 +24,16 @@ use Illuminate\Support\Carbon;
  * @property string|null $contact_phone
  * @property string|null $notes
  * @property string|null $logo_path
+ * @property string|null $colour
  * @property Carbon $created_at
  * @property Carbon $updated_at
  */
 class Organization extends Model
 {
-    protected $fillable = ['name', 'short_name', 'slug', 'contact_name', 'contact_email', 'contact_phone', 'notes'];
+    protected $fillable = ['name', 'short_name', 'slug', 'contact_name', 'contact_email', 'contact_phone', 'notes', 'colour'];
+
+    /** Addresses under /vote/ that pages of their own use. */
+    public const RESERVED_SLUGS = ['apply'];
 
     /**
      * @var array<string, mixed>
@@ -42,6 +46,7 @@ class Organization extends Model
         'contact_phone' => null,
         'notes' => null,
         'logo_path' => null,
+        'colour' => null,
     ];
 
     protected function casts(): array
