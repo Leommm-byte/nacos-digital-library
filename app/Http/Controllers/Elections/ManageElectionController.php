@@ -79,7 +79,7 @@ class ManageElectionController extends Controller
         $election->organization_id = $desk->organization?->id;
         // A department's admins aren't NACOS users.
         $user = $request->user();
-        $election->created_by = $user instanceof User ? $user->id : null;
+        $election->created_by = ! $desk->isDepartment() && $user instanceof User ? $user->id : null;
         $election->save();
 
         if (! $desk->isDepartment()) {

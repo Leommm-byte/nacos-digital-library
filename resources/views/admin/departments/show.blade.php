@@ -37,12 +37,13 @@
                 @else
                     <ul class="upload-list">
                         @foreach ($admins as $admin)
-                            <li class="upload-row">
+                            <li class="upload-row flex-wrap">
                                 <x-icon-tile name="shield-check" tone="green" size="sm" />
-                                <span class="min-w-0 flex-1">
+                                <span class="min-w-0 flex-1 basis-48">
                                     <span class="upload-row-title">{{ $admin->fullname }}</span>
                                     <span class="upload-row-meta">{{ $admin->email ?? $admin->matric_number }} · {{ $admin->last_login_at ? 'last signed in '.$admin->last_login_at->timezone(config('app.display_timezone'))->format('j M Y') : 'hasn\'t signed in yet' }}</span>
                                 </span>
+                                <div class="ml-auto flex items-center gap-2">
                                 <form method="POST" action="{{ route('admin.departments.admins.password', [$department, $admin->id]) }}" data-confirm="Give {{ $admin->firstName() }} a new password? Their current one stops working.">
                                     @csrf
                                     <x-button size="sm" variant="secondary" icon="key-round">New password</x-button>
@@ -52,6 +53,7 @@
                                     @method('DELETE')
                                     <button type="submit" class="icon-btn icon-btn-danger" aria-label="Remove {{ $admin->fullname }} as admin"><x-icon name="trash-2" /></button>
                                 </form>
+                                </div>
                             </li>
                         @endforeach
                     </ul>

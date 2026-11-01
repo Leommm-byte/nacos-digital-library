@@ -32,7 +32,7 @@ use Illuminate\Support\Carbon;
  */
 class Voter extends Authenticatable
 {
-    protected $fillable = ['organization_id', 'fullname', 'matric_number', 'email', 'password'];
+    protected $fillable = ['fullname', 'matric_number', 'email', 'password'];
 
     /**
      * @var list<string>

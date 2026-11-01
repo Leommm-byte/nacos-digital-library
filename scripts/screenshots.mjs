@@ -222,6 +222,26 @@ const pages = [
     }],
     ['offline-guest', '/offline', null],
     ['styleguide', '/styleguide', 'F/ND/24/0000004'],
+
+    // A department's election space (docs/department-elections.md), seeded
+    // by DemoDepartmentSeeder. "vote:" accounts sign in there, not to NACOS.
+    ['vote-home', '/vote/food-science', null],
+    ['vote-register', '/vote/food-science/register', null],
+    ['vote-login', '/vote/food-science/login', null],
+    ['vote-home-voter', '/vote/food-science', 'vote:food-science:F/ND/24/3101001'],
+    ['vote-ballot', '/vote/food-science', 'vote:food-science:F/ND/24/3101001', async (page) => {
+        await Promise.all([page.waitForNavigation(), page.click('.election-card a.stretched-link')]);
+    }],
+    ['vote-admin-elections', '/vote/food-science/admin/elections', 'vote:food-science:admin@fst.test'],
+    ['vote-admin-election', '/vote/food-science/admin/elections', 'vote:food-science:admin@fst.test', async (page) => {
+        await Promise.all([page.waitForNavigation(), page.locator('a.upload-row', { hasText: 'Planning' }).click()]);
+    }],
+    ['vote-admin-election-form', '/vote/food-science/admin/elections/create', 'vote:food-science:admin@fst.test'],
+    ['vote-admin-roll', '/vote/food-science/admin/roll', 'vote:food-science:admin@fst.test'],
+    ['vote-admin-voters', '/vote/food-science/admin/voters', 'vote:food-science:admin@fst.test'],
+    ['admin-departments', '/admin/departments', 'F/HD/24/3211001'],
+    ['admin-department', '/admin/departments/food-science', 'F/HD/24/3211001'],
+    ['admin-department-form', '/admin/departments/create', 'F/HD/24/3211001'],
 ];
 
 async function askAssistant(page, question, answers, scope = '[data-assistant]') {
@@ -266,6 +286,18 @@ async function fillDetails(page, title) {
 }
 
 async function login(context, matric) {
+    // "vote:{slug}:{login}": a department election space's own account.
+    if (matric.startsWith('vote:')) {
+        const [, slug, account] = matric.split(':');
+        const page = await context.newPage();
+        await page.goto(`${base}/vote/${slug}/login`);
+        await page.fill('#login', account);
+        await page.fill('#password', password);
+        await Promise.all([page.waitForNavigation(), page.click('main form button:has-text("Log in")')]);
+        await page.close();
+        return;
+    }
+
     const page = await context.newPage();
     await page.goto(`${base}/login`);
     await page.fill('#matric_number', matric);
@@ -363,7 +395,9 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
                 await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
                 if (account) {
                     await login(context, account);
-                    context.bookUrl = await firstBookUrl(context);
+                    if (!account.startsWith('vote:')) {
+                        context.bookUrl = await firstBookUrl(context);
+                    }
                 }
                 contexts[key] = context;
             }

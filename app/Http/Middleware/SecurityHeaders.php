@@ -38,7 +38,7 @@ class SecurityHeaders
         // after logging out on a shared phone, Back shows nothing of the
         // previous student's. (They were never reused from the cache
         // anyway; Laravel sends no-cache.)
-        if ($request->user() !== null && str_starts_with((string) $headers->get('Content-Type'), 'text/html')) {
+        if (($request->user() ?? $request->user('voter')) !== null && str_starts_with((string) $headers->get('Content-Type'), 'text/html')) {
             $headers->set('Cache-Control', 'no-store, private');
         }
 

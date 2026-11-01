@@ -32,7 +32,9 @@ class ResolveOrganization
 
         URL::defaults(['organization' => $organization->slug]);
         View::share('organization', $organization);
-        Auth::shouldUse('voter');
+        // The "voter" guard is asked for by name everywhere here, never made
+        // the default: the sessions table would otherwise record voters'
+        // ids as users' (LoginSession lists and ends sessions by user_id).
 
         $voter = Auth::guard('voter')->user();
         if ($voter instanceof Voter && ($voter->organization_id !== $organization->id || $voter->isSuspended())) {

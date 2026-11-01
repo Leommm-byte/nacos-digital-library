@@ -141,6 +141,9 @@ class DepartmentElectionsTest extends TestCase
         ])->assertRedirect(route('vote.home', $this->fst));
 
         $voter = Voter::where('matric_number', 'F/ND/24/3001001')->firstOrFail();
+        // Signed in by name, never as the default guard: the sessions table
+        // keys NACOS users' devices by the default guard's id.
+        $this->assertSame('web', auth()->getDefaultDriver());
         $this->assertSame($this->fst->id, $voter->organization_id);
         $this->assertSame(2024, $voter->entry_year);
         $this->assertSame('tolu@mail.test', $voter->email);

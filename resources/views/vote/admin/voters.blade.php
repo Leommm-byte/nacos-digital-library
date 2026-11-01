@@ -22,7 +22,7 @@
     @if ($voters->isEmpty())
         <x-empty-state icon="users" title="{{ $search !== '' ? 'No one found' : 'No one has registered yet' }}" text="{{ $search !== '' ? 'Try another name or matric number.' : 'Share this space\'s address with the department, so students on the roll can register: '.route('vote.register') }}" />
     @else
-        <div class="table-scroll" tabindex="0" role="region" aria-label="Table, scrolls sideways">
+        <div class="table-scroll relative" tabindex="0" role="region" aria-label="Table, scrolls sideways">
             <table class="admin-table">
                 <thead>
                     <tr><th>Name</th><th>Matric number</th><th>Registered</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr>
