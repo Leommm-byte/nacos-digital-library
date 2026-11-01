@@ -42,6 +42,11 @@ function apply(theme) {
 }
 
 export function initTheme() {
+    // A page that sets its own theme (the printable results) keeps it.
+    if (document.documentElement.hasAttribute('data-theme-fixed')) {
+        return;
+    }
+
     apply(stored());
 
     document.addEventListener('click', (event) => {

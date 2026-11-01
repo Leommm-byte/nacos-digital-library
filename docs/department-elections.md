@@ -18,26 +18,34 @@ The first department is Food Science and Technology.
 | Question | Decision |
 |---|---|
 | Address | Under the NACOS domain: `/vote/{slug}`. No new hosting or DNS. |
-| Who can join | Only departments a NACOS admin adds (Admin → Departments). |
+| Who can join | Only departments a NACOS admin approves. Departments ask at `/vote/apply`; a NACOS admin approves or declines under Admin → Departments. |
 | Students in two spaces | A separate account in each (a NACOS account doesn't work in a department's space, and the reverse). |
 | Payment | Collected offline; the app has no billing. A NACOS admin can pause a space (for example while payment is outstanding). |
 
 ## Running it (NACOS admins)
 
-1. **Add the department:** Admin → Departments → *Add a department*.
+1. **Add the department:** either approve its request (Admin → Departments
+   → *Requests* → *Approve*, which opens the form filled in), or *Add a
+   department* yourself.
+   - The public list of spaces is at `/vote`, with *Ask for your
+     department* (`/vote/apply`). Each request emails ALERT_EMAIL.
    - Fill in its name, an optional short name (shown in the logo tile when
      there's no logo) and its address.
    - The address becomes the part after `/vote/`; it's made from the name
      if left empty.
-   - Add the logo and the contact details here. Contact details are only
-     shown to you.
+   - Add the logo, a colour (buttons and links on its pages) and the
+     contact details here. Contact details are only shown to you.
 2. **Add its first admin:** on the department's page, enter their name and
    email.
    - A slip with a temporary password appears once.
    - Send it to them privately. They sign in at the department's space with
      their email and choose their own password.
 3. **Share the address** (`/vote/{slug}`) with the department.
-4. **Later, from the same page:**
+4. **Do the work for them:** *Manage roll and elections* on the
+   department's page opens its Manage area as you (signed in to NACOS):
+   upload its roll, set up its election, help its voters. It works exactly
+   as for its own admins, and you never become a voter there.
+5. **Later, from the same page:**
    - add more admins;
    - give an admin a new password;
    - remove an admin;
@@ -45,7 +53,8 @@ The first department is Food Science and Technology.
 
 ## Running it (a department's admins)
 
-All from *Manage* at the top of the space.
+All from *Manage* at the top of the space. *Guide* there walks through it
+step by step.
 
 1. **Nominal roll.** Upload each class's list (Excel or CSV), choosing its
    programme and level.
@@ -64,11 +73,15 @@ All from *Manage* at the top of the space.
    - Positions and candidates (with photos).
    - *Open voting* for a set time, and *Stop voting now*.
    - Results are public and update live.
+   - Once voting opens, the results download as a spreadsheet (CSV) or
+     print (or save as PDF) from the election's page. NACOS's own elections
+     have the same buttons.
    - Department elections are always for students on the department's roll.
      There are no courses (arms).
 4. **Voters:** see who has registered.
-   - *New password* gives a forgotten password back as a printed slip.
-     There's no email reset in a department's space.
+   - Students who gave an email reset a forgotten password themselves
+     (*Forgot password?*: a link that works once, for 60 minutes).
+   - For everyone else, *New password* gives a printed slip.
    - *Suspend* stops an account from voting.
 
 ## How it's built
@@ -92,7 +105,9 @@ All from *Manage* at the top of the space.
   - Voters sign in through the `voter` guard (`App\Models\Voter`), never
     `web`.
   - The `vote` middleware (`ResolveOrganization`):
-    - finds the department and makes `voter` the default guard;
+    - finds the department and hands it to controllers by type;
+    - never makes `voter` the default guard: the `voter` guard is asked for
+      by name, so `sessions.user_id` only ever holds NACOS users' ids;
     - signs out an account from another department;
     - shows the paused page;
     - fills `{organization}` into every `route()`.
@@ -120,10 +135,27 @@ All from *Manage* at the top of the space.
   - `admin@fst.test`: the department's admin;
   - `F/ND/24/3101001`: a voter who hasn't voted yet.
 
-## Not yet (later phases)
+- **NACOS admins in a space.** `vote.admin` (`EnsureDepartmentAdmin`)
+  lets in the department's admins and NACOS admins (the
+  `manage-departments` gate, on the `web` guard).
+- **Colours.** `App\Support\Departments\Colours`: a fixed palette, each a
+  `.brand-{key}` class on the space's `<body>` that sets the primary
+  tokens (the CSP rules out inline styles). The space's styles are in
+  `resources/css/vote.css`, loaded only on its pages and the department
+  form, not with `app.css`.
+- **Password reset.** `voter_password_resets`, keyed by account (the same
+  email can be in several spaces and in NACOS); only a hash of the token is
+  kept. The email (`VoterPasswordReset`) goes through the queue.
 
-- A form for departments to ask to join (for now, a NACOS admin adds them).
-- Password reset by email, and invitations, in a department's space (for
-  now, admins print slips).
-- Each department's own colours.
-- Exporting results as PDF or CSV.
+## Email delivery
+
+Password reset links and the request alert go through the site's normal
+mail (DreamHost SMTP, with its hourly limit). If many departments use
+email, switch the mailer to a transactional service such as Brevo (free
+up to about 300 emails a day): only `MAIL_*` settings in `.env` change,
+then `php artisan optimize`.
+
+## Not yet
+
+- Invitations by email for a department's roll (students register
+  themselves instead).

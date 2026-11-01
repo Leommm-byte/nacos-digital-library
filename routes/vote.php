@@ -47,6 +47,9 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
         // register at all, each once.
         Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:120,10')->name('register.store');
         Route::get('/forgot-password', [PasswordController::class, 'forgot'])->name('password.forgot');
+        Route::post('/forgot-password', [PasswordController::class, 'sendLink'])->middleware('throttle:30,10')->name('password.email');
+        Route::get('/reset-password/{voter}/{token}', [PasswordController::class, 'resetForm'])->whereNumber('voter')->name('password.reset');
+        Route::post('/reset-password/{voter}/{token}', [PasswordController::class, 'reset'])->whereNumber('voter')->middleware('throttle:30,10')->name('password.reset.store');
     });
 
     Route::middleware('vote.auth')->group(function () {
@@ -62,6 +65,7 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
 
     // The department's admins, or a NACOS admin doing the work for them.
     Route::middleware('vote.admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::view('/guide', 'vote.admin.guide')->name('guide');
         Route::get('/roll', [RollController::class, 'index'])->name('roll');
         Route::get('/roll/template', [RollController::class, 'template'])->name('roll.template');
         Route::post('/roll', [RollController::class, 'store'])->middleware('throttle:department-admin')->name('roll.store');
@@ -85,6 +89,8 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
                 Route::delete('/', [AdminElectionController::class, 'destroy'])->name('.destroy');
                 Route::post('/launch', [AdminElectionController::class, 'launch'])->name('.launch');
                 Route::post('/close', [AdminElectionController::class, 'close'])->name('.close');
+                Route::get('/results.csv', [AdminElectionController::class, 'resultsCsv'])->name('.results.csv');
+                Route::get('/results/print', [AdminElectionController::class, 'resultsPrint'])->name('.results.print');
 
                 Route::post('/positions', [BallotController::class, 'storePosition'])->name('.positions.store');
                 Route::put('/positions/{position}', [BallotController::class, 'updatePosition'])->name('.positions.update');

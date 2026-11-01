@@ -17,9 +17,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Admins set up elections (details, who may vote, positions, candidates),
@@ -164,6 +166,60 @@ class ManageElectionController extends Controller
         ElectionLifecycle::close($election);
 
         return redirect()->to($this->desk()->route('.show', $election))->with('status', 'Voting closed. The final results are published.');
+    }
+
+    /**
+     * The results as a spreadsheet (CSV): the totals, then every candidate's
+     * votes. Live standings while voting is open, final once closed.
+     */
+    public function resultsCsv(Election $election): StreamedResponse
+    {
+        $results = $this->results($election);
+        $zone = (string) config('app.display_timezone');
+        $filename = Str::slug($election->title).'-results.csv';
+
+        return response()->streamDownload(function () use ($election, $results, $zone) {
+            $out = fopen('php://output', 'w');
+            if ($out === false) {
+                return;
+            }
+            fwrite($out, "\u{FEFF}"); // Excel reads the file as UTF-8.
+            fputcsv($out, [$election->title], escape: '');
+            fputcsv($out, [($results['final'] ?? false) ? 'Final results' : 'Live standings (voting still open)', 'Closed', ($election->closed_at ?? $election->ends_at)?->timezone($zone)->format('j M Y, g:i a') ?? ''], escape: '');
+            fputcsv($out, ['Ballots', $results['ballots'] ?? 0, 'Could vote', $results['electorate'] ?? 0, 'Turnout %', $results['turnout'] ?? 0], escape: '');
+            fputcsv($out, [], escape: '');
+            fputcsv($out, ['Position', 'Candidate', 'Votes', 'Percent of the position\'s votes', 'Result'], escape: '');
+            foreach ($results['positions'] ?? [] as $position) {
+                foreach ($position['candidates'] as $candidate) {
+                    $result = $candidate['tied'] ? 'Tied' : ($candidate['leading'] ? (($results['final'] ?? false) ? 'Winner' : 'Leading') : '');
+                    fputcsv($out, [$position['title'], $candidate['name'], $candidate['votes'], $candidate['percent'], $result], escape: '');
+                }
+                fputcsv($out, [$position['title'], 'No vote', $position['skipped'], '', ''], escape: '');
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=utf-8']);
+    }
+
+    /**
+     * The results on one page to print or save as PDF.
+     */
+    public function resultsPrint(Election $election): View
+    {
+        return view('elections.manage.results-print', [
+            'desk' => $this->desk(),
+            'election' => $election,
+            'results' => $this->results($election),
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function results(Election $election): array
+    {
+        abort_if($election->isDraft(), 404);
+
+        return LiveResults::read($election) ?? LiveResults::build($election);
     }
 
     /**

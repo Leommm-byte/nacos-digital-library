@@ -128,6 +128,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/', [ManageElectionController::class, 'destroy'])->name('.destroy');
             Route::post('/launch', [ManageElectionController::class, 'launch'])->name('.launch');
             Route::post('/close', [ManageElectionController::class, 'close'])->name('.close');
+            Route::get('/results.csv', [ManageElectionController::class, 'resultsCsv'])->name('.results.csv');
+            Route::get('/results/print', [ManageElectionController::class, 'resultsPrint'])->name('.results.print');
 
             Route::post('/positions', [BallotSetupController::class, 'storePosition'])->name('.positions.store');
             Route::put('/positions/{position}', [BallotSetupController::class, 'updatePosition'])->name('.positions.update');

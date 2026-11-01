@@ -197,6 +197,10 @@
                         <div><dt>Closes</dt><dd>{{ $election->ends_at?->timezone($zone)->format('D j M, g:i a') }}</dd></div>
                         <div><dt>Ballots cast</dt><dd>{{ number_format($ballots) }}</dd></div>
                     </dl>
+                    <div class="flex flex-wrap gap-2">
+                        <x-button href="{{ $desk->route('.results.csv', $election) }}" variant="secondary" size="sm" icon="download">Results (CSV)</x-button>
+                        <x-button href="{{ $desk->route('.results.print', $election) }}" variant="secondary" size="sm" icon="printer">Print</x-button>
+                    </div>
                     <form method="POST" action="{{ $desk->route('.close', $election) }}" data-confirm="Stop voting now? This can't be undone, and the final results will be published.">
                         @csrf
                         <x-button variant="danger" icon="circle-stop" class="w-full">Stop voting now</x-button>
@@ -212,6 +216,10 @@
                         <div><dt>Voting</dt><dd>{{ $election->starts_at?->timezone($zone)->format('j M, g:i a') }} to {{ ($election->closed_at ?? $election->ends_at)?->timezone($zone)->format('j M, g:i a') }}</dd></div>
                         <div><dt>Ballots cast</dt><dd>{{ number_format($ballots) }}</dd></div>
                     </dl>
+                    <div class="flex flex-wrap gap-2">
+                        <x-button href="{{ $desk->route('.results.csv', $election) }}" variant="secondary" size="sm" icon="download">Results (CSV)</x-button>
+                        <x-button href="{{ $desk->route('.results.print', $election) }}" variant="secondary" size="sm" icon="printer">Print or save as PDF</x-button>
+                    </div>
                     <p class="text-sm text-muted">A closed election can't be reopened. Create a new one for a re-run.</p>
                 </x-card>
             @endif

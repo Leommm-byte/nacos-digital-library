@@ -39,6 +39,7 @@ class DemoDepartmentSeeder extends Seeder
             'slug' => self::SLUG,
             'contact_name' => 'FST Electoral Committee',
             'contact_email' => 'electoral@fst.test',
+            'colour' => 'teal',
         ]);
 
         $admin = new Voter(['fullname' => 'Funmi Electoral', 'email' => 'admin@fst.test', 'password' => 'Password1!']);
@@ -72,7 +73,8 @@ class DemoDepartmentSeeder extends Seeder
             if ($i < 18) {
                 $voter = new Voter(['fullname' => $name, 'matric_number' => $matric, 'password' => 'Password1!']);
                 $voter->organization_id = $fst->id;
-                $voter->created_at = now()->subDays(3);
+                // Before the closed election below opened (8 days ago).
+                $voter->created_at = now()->subDays(10);
                 $voter->save();
                 $voters->push($voter);
             }

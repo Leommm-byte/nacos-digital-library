@@ -15,12 +15,14 @@ use App\Models\OrganizationRequest;
 use App\Models\OrganizationRollEntry;
 use App\Models\User;
 use App\Models\Voter;
+use App\Notifications\VoterPasswordReset;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -190,6 +192,90 @@ class DepartmentElectionsTest extends TestCase
 
         $this->post(route('admin.departments.store'), ['name' => 'Apply', 'slug' => 'apply'])->assertSessionHasErrors('slug');
         $this->post(route('admin.departments.store'), ['name' => 'Odd', 'colour' => 'neon'])->assertSessionHasErrors('colour');
+    }
+
+    #[Test]
+    public function results_download_as_a_spreadsheet_and_print(): void
+    {
+        $this->onRoll($this->fst, 'F/ND/24/3001001');
+        $voter = $this->voter($this->fst);
+        $voter->forceFill(['created_at' => now()->subDay()])->save();
+        $election = $this->openElection($this->fst);
+        $position = $election->positions()->firstOrFail();
+        $bola = $position->candidates()->where('name', 'Bola')->firstOrFail();
+        $this->actingAs($voter, 'voter')->post(route('vote.elections.vote', [$this->fst, $election]), ['choices' => [$position->id => $bola->id]]);
+        ElectionLifecycle::close($election);
+        auth('voter')->logout();
+
+        $this->actingAs($this->admin, 'voter');
+        $csv = $this->get(route('vote.admin.elections.results.csv', [$this->fst, $election]))->assertOk()->streamedContent();
+        $this->assertStringContainsString('Final results', $csv);
+        $this->assertStringContainsString('President,Bola,1,100,Winner', $csv);
+        $this->assertStringContainsString('President,Chidi,0,0,', $csv);
+
+        $this->get(route('vote.admin.elections.results.print', [$this->fst, $election]))
+            ->assertOk()->assertSee('Food Science and Technology')->assertSee('Winner')->assertSee('Powered by NACOS YabaTech');
+
+        // NACOS's own elections have them too.
+        $nacos = Election::factory()->closed()->withBallot()->create();
+        $this->actingAs(User::factory()->role(Role::Admin)->create())
+            ->get(route('elections.manage.results.csv', $nacos))->assertOk()->assertDownload();
+        // A NACOS route never serves a department's election.
+        $this->get(route('elections.manage.results.csv', $election))->assertNotFound();
+    }
+
+    #[Test]
+    public function a_student_with_an_email_resets_a_forgotten_password(): void
+    {
+        Notification::fake();
+        $voter = $this->voter($this->fst, ['email' => 'tolu@mail.test']);
+        $noEmail = $this->voter($this->fst, ['matric_number' => 'F/ND/24/3001002']);
+
+        $this->post(route('vote.password.email', $this->fst), ['login' => 'f/nd/24/3001001'])->assertSessionHas('status');
+        $this->post(route('vote.password.email', $this->fst), ['login' => $noEmail->matric_number])->assertSessionHas('status');
+        Notification::assertSentTo($voter, VoterPasswordReset::class);
+        Notification::assertNotSentTo($noEmail, VoterPasswordReset::class);
+
+        $url = '';
+        Notification::assertSentTo($voter, VoterPasswordReset::class, function (VoterPasswordReset $notification) use (&$url) {
+            $url = $notification->url;
+
+            return true;
+        });
+
+        // Not from another department's space.
+        $other = Organization::create(['name' => 'Other', 'slug' => 'other']);
+        $this->get(str_replace('/vote/food-science/', '/vote/other/', $url))->assertNotFound();
+
+        $this->get($url)->assertOk()->assertSee('Choose a new password');
+        $this->post($url, ['password' => 'BrandNew99', 'password_confirmation' => 'BrandNew99'])->assertRedirect(route('vote.login', $this->fst));
+        $this->assertTrue(Hash::check('BrandNew99', $voter->refresh()->password));
+
+        // The link works once.
+        $this->get($url)->assertNotFound();
+    }
+
+    #[Test]
+    public function reset_links_expire_after_an_hour(): void
+    {
+        Notification::fake();
+        $voter = $this->voter($this->fst, ['email' => 'tolu@mail.test']);
+        $this->post(route('vote.password.email', $this->fst), ['login' => 'tolu@mail.test']);
+        $url = '';
+        Notification::assertSentTo($voter, VoterPasswordReset::class, function (VoterPasswordReset $notification) use (&$url) {
+            $url = $notification->url;
+
+            return true;
+        });
+
+        $this->travel(61)->minutes();
+        $this->get($url)->assertNotFound();
+    }
+
+    #[Test]
+    public function department_admins_have_a_guide(): void
+    {
+        $this->actingAs($this->admin, 'voter')->get(route('vote.admin.guide', $this->fst))->assertOk()->assertSee('Running your election')->assertSee('food-science');
     }
 
     #[Test]
