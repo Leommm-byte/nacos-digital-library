@@ -51,9 +51,7 @@ class BallotSetupController extends Controller
             'sort_order' => (int) $election->positions()->max('sort_order') + 1,
         ]);
 
-        if (! $election->isForDepartment()) {
-            Audit::record('election_position_added', $election, ['position' => $position->title]);
-        }
+        Audit::election($election, 'election_position_added', ['position' => $position->title]);
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$position->title} added.");
     }
@@ -100,9 +98,7 @@ class BallotSetupController extends Controller
         $paths = $position->candidates()->whereNotNull('photo_path')->pluck('photo_path')->all();
         $position->delete();
         Storage::disk('private')->delete($paths);
-        if (! $election->isForDepartment()) {
-            Audit::record('election_position_removed', $election, ['position' => $position->title]);
-        }
+        Audit::election($election, 'election_position_removed', ['position' => $position->title]);
 
         return $this->back($election)->with('status', "{$position->title} removed.");
     }
@@ -124,9 +120,7 @@ class BallotSetupController extends Controller
             $this->savePhoto($election, $candidate, $photo);
         }
 
-        if (! $election->isForDepartment()) {
-            Audit::record('election_candidate_added', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
-        }
+        Audit::election($election, 'election_candidate_added', ['position' => $position->title, 'candidate' => $candidate->name]);
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$candidate->name} added to {$position->title}.");
     }
@@ -161,9 +155,7 @@ class BallotSetupController extends Controller
             Storage::disk('private')->delete($candidate->photo_path);
         }
 
-        if (! $election->isForDepartment()) {
-            Audit::record('election_candidate_removed', $election, ['position' => $position->title, 'candidate' => $candidate->name]);
-        }
+        Audit::election($election, 'election_candidate_removed', ['position' => $position->title, 'candidate' => $candidate->name]);
 
         return $this->back($election, "position-{$position->id}")->with('status', "{$candidate->name} removed.");
     }

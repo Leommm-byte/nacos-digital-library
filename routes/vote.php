@@ -8,6 +8,7 @@
 | every route() on its pages.
 */
 
+use App\Http\Controllers\Vote\Admin\ActivityController;
 use App\Http\Controllers\Vote\Admin\BallotController;
 use App\Http\Controllers\Vote\Admin\ElectionController as AdminElectionController;
 use App\Http\Controllers\Vote\Admin\RollController;
@@ -71,6 +72,9 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
         Route::post('/roll', [RollController::class, 'store'])->middleware('throttle:department-admin')->name('roll.store');
         Route::post('/roll/students', [RollController::class, 'storeOne'])->name('roll.students.store');
         Route::delete('/roll/students/{entry}', [RollController::class, 'destroy'])->whereNumber('entry')->name('roll.students.destroy');
+
+        Route::get('/activity', [ActivityController::class, 'index'])->name('activity');
+        Route::get('/activity/export', [ActivityController::class, 'export'])->middleware('throttle:department-admin')->name('activity.export');
 
         Route::get('/voters', [VoterController::class, 'index'])->name('voters');
         Route::post('/voters/{voter}/password', [VoterController::class, 'password'])->whereNumber('voter')->name('voters.password');

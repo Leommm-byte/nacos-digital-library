@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Voter;
+use App\Support\Departments\Activity;
 use App\Support\MatricNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,7 @@ class AuthController extends Controller
         if (! Hash::check((string) $data['password'], $voter->password ?? self::DUMMY_HASH) || ! $voter instanceof Voter) {
             RateLimiter::hit($accountKey, 60);
             RateLimiter::hit($ipKey, 600);
+            Activity::record($organization, 'login_failed', $voter, ['login' => $login, 'reason' => $voter instanceof Voter ? 'Wrong password' : 'No such account'], $voter instanceof Voter ? $voter : false);
 
             throw ValidationException::withMessages(['login' => 'That matric number and password don\'t match. Check both and try again.']);
         }
@@ -72,20 +74,27 @@ class AuthController extends Controller
         RateLimiter::clear($accountKey);
 
         if ($voter->status !== UserStatus::Active) {
+            Activity::record($organization, 'login_failed', $voter, ['login' => $login, 'reason' => 'Suspended'], $voter);
+
             throw ValidationException::withMessages(['login' => 'This account has been suspended. Ask the department\'s election admin.']);
         }
 
         Auth::guard('voter')->login($voter, $request->boolean('remember'));
         $request->session()->regenerate();
         $voter->forceFill(['last_login_at' => now()])->save();
+        Activity::record($organization, 'login', $voter, [], $voter);
 
         return $voter->must_change_password
             ? redirect()->route('vote.password.edit')
             : redirect()->intended(route('vote.home'));
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, Organization $organization): RedirectResponse
     {
+        $voter = $request->user('voter');
+        if ($voter instanceof Voter) {
+            Activity::record($organization, 'logout', $voter, [], $voter);
+        }
         Auth::guard('voter')->logout();
         // Only this space's sign-in ends: someone also signed in to the
         // NACOS app on this browser stays signed in there.

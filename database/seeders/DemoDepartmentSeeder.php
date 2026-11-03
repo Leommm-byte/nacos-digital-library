@@ -9,6 +9,7 @@ use App\Models\Election;
 use App\Models\Organization;
 use App\Models\OrganizationRollEntry;
 use App\Models\Voter;
+use App\Support\Departments\Activity;
 use App\Support\Elections\BallotBox;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
@@ -76,6 +77,8 @@ class DemoDepartmentSeeder extends Seeder
                 // Before the closed election below opened (8 days ago).
                 $voter->created_at = now()->subDays(10);
                 $voter->save();
+                Activity::record($fst, 'voter_registered', $voter, ['matric' => $matric, 'name' => $name], $voter)
+                    ->forceFill(['created_at' => $voter->created_at])->save();
                 $voters->push($voter);
             }
         }
@@ -129,6 +132,7 @@ class DemoDepartmentSeeder extends Seeder
 
         foreach ($voters as $voter) {
             BallotBox::cast($election, $voter, $positions->mapWithKeys(fn ($position) => [$position->id => $position->candidates->random()->id])->all());
+            Activity::record($election->organization_id, 'election_voted', $election, ['title' => $election->title], $voter);
         }
 
         LiveResults::refresh($election);

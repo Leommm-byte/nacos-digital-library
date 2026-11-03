@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Voter;
 use App\Notifications\VoterPasswordReset;
+use App\Support\Departments\Activity;
 use App\Support\MatricNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,7 @@ class PasswordController extends Controller
                 ['token_hash', 'created_at'],
             );
             $voter->notify(new VoterPasswordReset(route('vote.password.reset', ['voter' => $voter->id, 'token' => $token])));
+            Activity::record($organization, 'password_reset_requested', $voter, [], $voter);
         }
 
         return back()->with('status', 'If that account has an email, a link to reset the password is on its way. No email on your account? Ask the department\'s election admins for a new password.');
@@ -75,6 +77,7 @@ class PasswordController extends Controller
         $account = $organization->voters()->findOrFail($voter);
         $account->forceFill(['password' => (string) $data['password'], 'must_change_password' => false, 'remember_token' => null])->save();
         DB::table('voter_password_resets')->where('voter_id', $voter)->delete();
+        Activity::record($organization, 'password_reset', $account, [], $account);
 
         return redirect()->route('vote.login')->with('status', 'Password changed. Log in with your new password.');
     }
@@ -122,7 +125,9 @@ class PasswordController extends Controller
             throw ValidationException::withMessages(['password' => 'Choose a password different from the one you have now.']);
         }
 
+        $forced = $voter->must_change_password;
         $voter->forceFill(['password' => (string) $data['password'], 'must_change_password' => false])->save();
+        Activity::record($voter->organization_id, 'password_changed', $voter, $forced ? ['from_slip' => true] : [], $voter);
 
         return redirect()->route('vote.home')->with('status', 'Password changed.');
     }

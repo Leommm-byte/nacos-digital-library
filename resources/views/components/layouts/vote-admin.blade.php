@@ -9,6 +9,7 @@
         ['route' => 'vote.admin.elections', 'match' => 'vote.admin.elections*', 'label' => 'Elections', 'icon' => 'vote'],
         ['route' => 'vote.admin.roll', 'match' => 'vote.admin.roll*', 'label' => 'Nominal roll', 'icon' => 'clipboard-list'],
         ['route' => 'vote.admin.voters', 'match' => 'vote.admin.voters*', 'label' => 'Voters', 'icon' => 'users'],
+        ['route' => 'vote.admin.activity', 'match' => 'vote.admin.activity*', 'label' => 'Activity', 'icon' => 'scroll-text'],
         ['route' => 'vote.admin.guide', 'match' => 'vote.admin.guide', 'label' => 'Guide', 'icon' => 'book-open'],
     ];
 @endphp

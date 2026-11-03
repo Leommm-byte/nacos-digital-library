@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\AuditLog;
+use App\Models\Election;
+use App\Support\Departments\Activity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -30,5 +32,23 @@ class Audit
             'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
             'meta' => $meta ?: null,
         ]);
+    }
+
+    /**
+     * An election's setup and lifecycle: into NACOS's audit log for NACOS's
+     * own elections, into the department's activity log for a
+     * department's (each keeps its own).
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public static function election(Election $election, string $action, array $meta = []): void
+    {
+        if ($election->organization_id !== null) {
+            Activity::record((int) $election->organization_id, $action, $election, $meta);
+
+            return;
+        }
+
+        self::record($action, $election, $meta);
     }
 }

@@ -241,6 +241,7 @@ const pages = [
     ['vote-admin-election-form', '/vote/food-science/admin/elections/create', 'vote:food-science:admin@fst.test'],
     ['vote-admin-roll', '/vote/food-science/admin/roll', 'vote:food-science:admin@fst.test'],
     ['vote-admin-voters', '/vote/food-science/admin/voters', 'vote:food-science:admin@fst.test'],
+    ['vote-admin-activity', '/vote/food-science/admin/activity', 'vote:food-science:admin@fst.test'],
     ['vote-admin-guide', '/vote/food-science/admin/guide', 'vote:food-science:admin@fst.test'],
     ['vote-forgot-password', '/vote/food-science/forgot-password', null],
     ['vote-directory', '/vote', null],
