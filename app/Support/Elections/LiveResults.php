@@ -149,12 +149,18 @@ class LiveResults
         // the same moment.
         return DB::transaction(function () use ($election) {
             $ballots = $election->ballotCount();
-            // Can't change while a roll-only election is open (the roll is
-            // locked); elsewhere a minute's delay is fine. Counting it on
-            // every ballot was the slowest part of a rush.
+            // Changes slowly while voting is open (the roll is locked; holds
+            // are placed and released by hand), so a minute's delay is
+            // fine. Counting it on every ballot was the slowest part of a
+            // rush.
             $electorate = $election->status === ElectionStatus::Open
                 ? (int) Cache::remember("elections:{$election->id}:electorate", 60, fn () => $election->electorate()->count())
                 : $election->electorate()->count();
+            // On hold until checked in person: released ones join the
+            // electorate (VoteHolds forgets both counts).
+            $held = $election->status === ElectionStatus::Open
+                ? (int) Cache::remember("elections:{$election->id}:held", 60, fn () => $election->heldVoters()->count())
+                : $election->heldVoters()->count();
 
             $positions = $election->positions()->with('candidates')->get()->map(function (ElectionPosition $position) use ($ballots, $election) {
                 $total = (int) $position->candidates->sum('votes_count');
@@ -189,6 +195,7 @@ class LiveResults
                 'ends_at' => $election->ends_at?->toIso8601String(),
                 'ballots' => $ballots,
                 'electorate' => $electorate,
+                'held' => $held,
                 'turnout' => $electorate > 0 ? round(min(100, $ballots / $electorate * 100), 1) : 0.0,
                 'updated_at' => now()->toIso8601String(),
                 'positions' => $positions,

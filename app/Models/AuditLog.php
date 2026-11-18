@@ -16,13 +16,16 @@ use Illuminate\Support\Carbon;
  * @property int|null $subject_id
  * @property string|null $ip_address
  * @property array<string, mixed>|null $meta
+ * @property string|null $device_id
+ * @property string|null $network_key
+ * @property string|null $user_agent
  * @property Carbon $created_at
  */
 class AuditLog extends Model
 {
     public const UPDATED_AT = null;
 
-    protected $fillable = ['user_id', 'action', 'subject_type', 'subject_id', 'ip_address', 'user_agent', 'meta'];
+    protected $fillable = ['user_id', 'action', 'subject_type', 'subject_id', 'ip_address', 'user_agent', 'meta', 'device_id', 'network_key'];
 
     protected function casts(): array
     {

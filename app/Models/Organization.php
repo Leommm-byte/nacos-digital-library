@@ -134,4 +134,14 @@ class Organization extends Model
     {
         return $this->hasMany(OrganizationRollEntry::class);
     }
+
+    /**
+     * Its activity log (App\Support\Departments\Activity).
+     *
+     * @return HasMany<OrganizationActivity, $this>
+     */
+    public function activity(): HasMany
+    {
+        return $this->hasMany(OrganizationActivity::class);
+    }
 }

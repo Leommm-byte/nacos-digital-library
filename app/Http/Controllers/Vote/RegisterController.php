@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Voter;
 use App\Rules\ValidMatricNumber;
+use App\Support\Departments\Activity;
 use App\Support\MatricNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,6 +68,7 @@ class RegisterController extends Controller
         $voter->organization_id = $organization->id;
         $voter->last_login_at = now();
         $voter->save();
+        Activity::record($organization, 'voter_registered', $voter, ['matric' => $matric, 'name' => $voter->fullname, 'email' => $email !== null ? 'given' : 'none'], $voter);
 
         Auth::guard('voter')->login($voter);
         $request->session()->regenerate();

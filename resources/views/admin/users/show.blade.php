@@ -15,6 +15,9 @@
             @if ($user->isSuspended())
                 <x-badge variant="danger">Suspended</x-badge>
             @endif
+            @if ($user->isOnVoteHold())
+                <x-badge variant="danger">On hold for voting</x-badge>
+            @endif
             @if ($user->isGraduated() && $user->role !== \App\Enums\Role::Student)
                 <x-badge variant="accent">Graduate</x-badge>
             @endif
@@ -49,6 +52,27 @@
                 </dl>
             </x-card>
 
+            @if ($sameDevice['device']->isNotEmpty() || $sameDevice['network']->isNotEmpty())
+                <x-section title="Seen on the same device" description="Other accounts that signed up, signed in or voted from a device this account used. Leads to check, not proof: on the same network and browser can just be classmates on campus Wi-Fi." icon="smartphone" tone="yellow">
+                    @foreach (['device' => 'Same device', 'network' => 'Same network and browser'] as $kind => $heading)
+                        @if ($sameDevice[$kind]->isNotEmpty())
+                            <h3 class="mb-2 text-sm font-semibold">{{ $heading }} ({{ $sameDevice[$kind]->count() }})</h3>
+                            <ul class="mb-4 space-y-1 text-sm">
+                                @foreach ($sameDevice[$kind] as $other)
+                                    <li>
+                                        <a href="{{ route('admin.users.show', $other) }}" class="link">{{ $other->fullname }}</a>
+                                        <span class="text-muted">{{ $other->matric_number }}</span>
+                                        @if ($other->vote_held_at)
+                                            <x-badge variant="danger">On hold</x-badge>
+                                        @endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    @endforeach
+                </x-section>
+            @endif
+
             <x-section title="Recent activity" description="What they did, and what was done to their account." icon="scroll-text" tone="blue">
                 @if ($activity->isEmpty())
                     <p class="text-sm text-muted">Nothing yet.</p>
@@ -70,6 +94,29 @@
 
         @unless ($self)
             <aside class="space-y-4">
+                <x-card class="space-y-3">
+                    <h2 class="text-base">Voting</h2>
+                    @if ($user->isOnVoteHold())
+                        <p class="text-sm">On hold since {{ $user->vote_held_at?->timezone($zone)->format('j M Y, g:i a') }}@if ($user->voteHeldBy) by {{ $user->voteHeldBy->fullname }}@endif. They can't vote until released.</p>
+                        @if ($user->vote_hold_reason)
+                            <p class="text-xs text-muted">Why: {{ $user->vote_hold_reason }}</p>
+                        @endif
+                        <form method="POST" action="{{ route('admin.users.vote-release', $user) }}" class="space-y-3" data-confirm="Release {{ $user->firstName() }}? They can vote straight away, in an election that's open now too.">
+                            @csrf
+                            @method('DELETE')
+                            <x-field name="note" label="How you checked it's them" :value="old('note', 'Saw their student ID in person')" />
+                            <x-button size="sm" icon="user-check" class="w-full">Release for voting</x-button>
+                        </form>
+                    @else
+                        <p class="text-xs text-muted">Hold an account that may have been registered by someone else. It can still sign in, but can't vote until you've seen the student in person and released it.</p>
+                        <form method="POST" action="{{ route('admin.users.vote-hold', $user) }}" class="space-y-3" data-confirm="Put {{ $user->firstName() }} on hold? They can't vote until an admin releases them.">
+                            @csrf
+                            <x-field name="reason" label="Why" :value="old('reason')" />
+                            <x-button size="sm" variant="secondary" icon="user-lock" class="w-full">Put on hold for voting</x-button>
+                        </form>
+                    @endif
+                </x-card>
+
                 <x-card class="space-y-3">
                     <h2 class="text-base">Role</h2>
                     <form method="POST" action="{{ route('admin.users.role', $user) }}" class="space-y-3" data-confirm="Change {{ $user->firstName() }}'s role?">

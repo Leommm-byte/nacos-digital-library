@@ -54,10 +54,7 @@ class ElectionLifecycle
         $election->save();
 
         LiveResults::publish($election);
-        // NACOS's audit log is NACOS's: departments' elections stay out of it.
-        if (! $election->isForDepartment()) {
-            Audit::record('election_launched', $election, ['title' => $election->title, 'hours' => $hours]);
-        }
+        Audit::election($election, 'election_launched', ['title' => $election->title, 'hours' => $hours]);
     }
 
     /**
@@ -95,13 +92,11 @@ class ElectionLifecycle
         $election->setRawAttributes($closed->getAttributes(), true);
 
         LiveResults::publish($election);
-        if (! $election->isForDepartment()) {
-            Audit::record('election_closed', $election, [
-                'title' => $election->title,
-                'automatic' => $automatic,
-                'ballots' => $election->ballotCount(),
-            ]);
-        }
+        Audit::election($election, 'election_closed', [
+            'title' => $election->title,
+            'automatic' => $automatic,
+            'ballots' => $election->ballotCount(),
+        ]);
 
         return true;
     }

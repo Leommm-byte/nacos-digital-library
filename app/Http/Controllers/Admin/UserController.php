@@ -13,6 +13,7 @@ use App\Models\RollEntry;
 use App\Models\User;
 use App\Support\Audit;
 use App\Support\Classes\Arms;
+use App\Support\Elections\SharedDevices;
 use App\Support\MatricNumber;
 use App\Support\TemporaryPassword;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,7 +36,7 @@ class UserController extends Controller
         $search = trim($request->string('q')->toString());
         $filters = $request->validate([
             'role' => ['nullable', Rule::enum(Role::class)],
-            'status' => ['nullable', Rule::in([...array_column(UserStatus::cases(), 'value'), 'graduated', 'signed-in', 'not-signed-in'])],
+            'status' => ['nullable', Rule::in([...array_column(UserStatus::cases(), 'value'), 'graduated', 'signed-in', 'not-signed-in', 'on-hold'])],
             'level' => ['nullable', Rule::enum(Level::class)],
             'programme' => ['nullable', Rule::enum(Programme::class)],
             'arm' => ['nullable', Rule::in(array_keys(Arms::all()))],
@@ -54,6 +55,7 @@ class UserController extends Controller
                 'graduated' => $query->whereNotNull('graduated_at'),
                 'signed-in' => $query->whereNotNull('last_login_at'),
                 'not-signed-in' => $query->whereNull('last_login_at'),
+                'on-hold' => $query->whereNotNull('vote_held_at'),
                 default => $query->where('status', $status),
             })
             ->when($filters['level'] ?? null, fn (Builder $query, $level) => $query->where('level', $level))
@@ -80,7 +82,7 @@ class UserController extends Controller
 
     public function show(User $user): View
     {
-        $user->load(['department:id,name', 'invitation']);
+        $user->load(['department:id,name', 'invitation', 'voteHeldBy:id,fullname']);
 
         return view('admin.users.show', [
             'user' => $user,
@@ -93,6 +95,8 @@ class UserController extends Controller
                 ->limit(10)
                 ->get(),
             'departments' => Department::query()->orderBy('name')->pluck('name', 'id')->all(),
+            // Leads when checking whether someone registered in this name.
+            'sameDevice' => SharedDevices::sameAs($user),
         ]);
     }
 

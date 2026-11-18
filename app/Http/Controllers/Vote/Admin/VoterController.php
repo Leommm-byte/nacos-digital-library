@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Models\Voter;
+use App\Support\Departments\Activity;
 use App\Support\MatricNumber;
 use App\Support\TemporaryPassword;
 use Illuminate\Http\RedirectResponse;
@@ -57,6 +58,7 @@ class VoterController extends Controller
         $voter = $this->find($request, $organization, $voter);
         $password = TemporaryPassword::make();
         $voter->forceFill(['password' => $password, 'must_change_password' => true, 'remember_token' => null])->save();
+        Activity::record($organization, 'voter_password_slip', $voter, ['name' => $voter->fullname, 'matric' => $voter->matric_number]);
 
         return redirect()->route('vote.admin.voters', ['q' => $voter->matric_number ?? $voter->email])->with('slip', [
             'name' => $voter->fullname,
@@ -70,6 +72,7 @@ class VoterController extends Controller
         $voter = $this->find($request, $organization, $voter);
         $suspend = $request->input('status') === UserStatus::Suspended->value;
         $voter->forceFill(['status' => $suspend ? UserStatus::Suspended : UserStatus::Active, 'remember_token' => null])->save();
+        Activity::record($organization, $suspend ? 'voter_suspended' : 'voter_reactivated', $voter, ['name' => $voter->fullname, 'matric' => $voter->matric_number]);
 
         return back()->with('status', $suspend ? "{$voter->fullname} is suspended and can't vote." : "{$voter->fullname} is active again.");
     }

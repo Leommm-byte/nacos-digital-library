@@ -34,6 +34,11 @@
             </x-section>
         </li>
         <li>
+            <x-section title="Activity" icon="scroll-text" tone="violet">
+                <p>Activity lists who registered, signed in, voted (never who they chose) and changed the roll or an election, with the time. Filter it by election or person, and press "Export CSV" to keep a copy after the election.</p>
+            </x-section>
+        </li>
+        <li>
             <x-section title="Helping students" icon="key-round" tone="blue">
                 <ul class="list-disc space-y-1 pl-5">
                     <li><strong>Forgot password:</strong> students with an email reset it themselves ("Forgot password?" on the login page). Otherwise, find them under Voters and press "New password", then give them the slip.</li>

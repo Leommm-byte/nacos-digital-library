@@ -4,6 +4,7 @@
     <x-page-header :title="$department->name" :subtitle="preg_replace('#^https?://#', '', $space)" :back="route('admin.departments.index')" back-label="Departments">
         <x-slot:actions>
             <x-button href="{{ route('vote.admin.roll', $department) }}" icon="settings">Manage roll and elections</x-button>
+            <x-button href="{{ route('vote.admin.activity', $department) }}" variant="secondary" icon="scroll-text">Activity log</x-button>
             <x-button href="{{ $space }}" variant="secondary" icon="eye">Open its space</x-button>
             <x-button href="{{ route('admin.departments.edit', $department) }}" variant="secondary" icon="pencil">Edit</x-button>
         </x-slot:actions>

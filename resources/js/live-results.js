@@ -168,6 +168,8 @@ function render(root, data) {
 
     set('[data-result-ballots]', numbers.format(data.ballots));
     set('[data-result-electorate]', numbers.format(data.electorate));
+    set('[data-result-held]', numbers.format(data.held ?? 0));
+    root.querySelector('[data-result-held-row]')?.classList.toggle('hidden', !data.held);
     set('[data-result-turnout]', percents.format(data.turnout));
 
     const turnout = root.querySelector('[data-result-turnout-bar]');

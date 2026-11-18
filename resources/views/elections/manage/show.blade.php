@@ -151,6 +151,9 @@
                 </div>
                 <p class="text-sm">{{ $election->eligibilitySummary() }}.</p>
                 <p class="text-sm text-muted">{{ number_format($electorate) }} {{ \Illuminate\Support\Str::plural('account', $electorate) }} can vote{{ $draft ? ' right now' : '' }}.@if ($draft) <a href="{{ $desk->route('.edit', $election) }}" class="link">Change</a>@endif</p>
+                @if ($held > 0)
+                    <p class="text-sm text-muted">{{ number_format($held) }} more {{ \Illuminate\Support\Str::plural('account', $held) }} on hold until checked in person (<a href="{{ route('admin.vote-holds.index') }}" class="link">Vote holds</a>).</p>
+                @endif
                 @if ($election->excludesLateAccounts())
                     <p class="text-sm text-muted">Only accounts created before voting opened ({{ $election->starts_at->timezone(config('app.display_timezone'))->format('D j M, g:i a') }}).</p>
                 @elseif (! $election->allow_late_accounts)

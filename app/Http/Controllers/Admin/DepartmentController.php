@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Models\OrganizationRequest;
 use App\Models\Voter;
 use App\Support\Audit;
+use App\Support\Departments\Activity;
 use App\Support\Departments\Colours;
 use App\Support\TemporaryPassword;
 use App\Support\Uploads\Images;
@@ -136,6 +137,7 @@ class DepartmentController extends Controller
         $department->forceFill(['status' => $pause ? UserStatus::Suspended : UserStatus::Active])->save();
 
         Audit::record($pause ? 'vote_space_paused' : 'vote_space_resumed', $department, ['name' => $department->name]);
+        Activity::record($department, $pause ? 'space_paused' : 'space_resumed');
 
         return back()->with('status', $pause ? "{$department->name}'s space is paused." : "{$department->name}'s space is open again.");
     }
@@ -170,6 +172,7 @@ class DepartmentController extends Controller
         $admin->save();
 
         Audit::record('vote_space_admin_added', $department, ['name' => $admin->fullname, 'email' => $email]);
+        Activity::record($department, 'admin_added', $admin, ['name' => $admin->fullname, 'email' => $email], null);
 
         return redirect()->route('admin.departments.show', $department)->with('slip', [
             'name' => $admin->fullname,
@@ -185,6 +188,7 @@ class DepartmentController extends Controller
         $admin->forceFill(['password' => $password, 'must_change_password' => true, 'remember_token' => null])->save();
 
         Audit::record('vote_space_admin_password', $department, ['name' => $admin->fullname]);
+        Activity::record($department, 'admin_password', $admin, ['name' => $admin->fullname]);
 
         return redirect()->route('admin.departments.show', $department)->with('slip', [
             'name' => $admin->fullname,
@@ -210,6 +214,7 @@ class DepartmentController extends Controller
         });
 
         Audit::record('vote_space_admin_removed', $department, ['name' => $admin->fullname]);
+        Activity::record($department, 'admin_removed', null, ['name' => $admin->fullname]);
 
         return back()->with('status', "{$admin->fullname} is no longer an admin of {$department->name}.");
     }

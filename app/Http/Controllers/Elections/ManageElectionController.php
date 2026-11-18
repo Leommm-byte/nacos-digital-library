@@ -84,9 +84,7 @@ class ManageElectionController extends Controller
         $election->created_by = ! $desk->isDepartment() && $user instanceof User ? $user->id : null;
         $election->save();
 
-        if (! $desk->isDepartment()) {
-            Audit::record('election_created', $election, ['title' => $election->title]);
-        }
+        Audit::election($election, 'election_created', ['title' => $election->title]);
 
         return redirect()->to($desk->route('.show', $election))
             ->with('status', 'Election created. Add its positions and candidates next.');
@@ -101,6 +99,7 @@ class ManageElectionController extends Controller
             'election' => $election,
             'results' => LiveResults::read($election),
             'electorate' => $election->electorate()->count(),
+            'held' => $election->heldVoters()->count(),
             'rollCount' => $this->desk()->rollCount(),
             'ballots' => $election->ballotCount(),
             'launchProblem' => $election->isDraft() ? ElectionLifecycle::launchProblem($election) : null,
@@ -119,9 +118,7 @@ class ManageElectionController extends Controller
         $this->authorizeChange('update', $election);
 
         $election->update($this->validated($request));
-        if (! $election->isForDepartment()) {
-            Audit::record('election_updated', $election, ['title' => $election->title]);
-        }
+        Audit::election($election, 'election_updated', ['title' => $election->title]);
 
         return redirect()->to($this->desk()->route('.show', $election))->with('status', 'Election details saved.');
     }
@@ -133,9 +130,7 @@ class ManageElectionController extends Controller
         $election->delete();
         LiveResults::forget($election);
         Storage::disk('private')->deleteDirectory("candidate-photos/{$election->id}");
-        if (! $election->isForDepartment()) {
-            Audit::record('election_deleted', $election, ['title' => $election->title]);
-        }
+        Audit::election($election, 'election_deleted', ['title' => $election->title]);
 
         return redirect()->to($this->desk()->route(''))->with('status', 'Draft election deleted.');
     }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Rules\ValidMatricNumber;
 use App\Support\Classes\SchoolClass;
+use App\Support\Departments\Activity;
 use App\Support\Departments\DepartmentRoll;
 use App\Support\Elections\RollImport;
 use App\Support\Elections\RollTemplate;
@@ -16,6 +17,7 @@ use App\Support\Spreadsheets\SpreadsheetRows;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
@@ -119,6 +121,14 @@ class RollController extends Controller
         $replace = $request->input('mode', 'replace') !== 'add';
         $result = DepartmentRoll::saveClass($organization, $parsed['rows'], $programme, $level, $replace);
 
+        Activity::record($organization, 'roll_imported', null, [
+            'class' => $class,
+            'file' => Str::limit($file->getClientOriginalName(), 120),
+            'mode' => $replace ? 'replace' : 'add',
+            'total' => $result['total'],
+            'removed' => $result['removed'],
+        ]);
+
         $summary = "{$class}: {$result['total']} on the list";
         $summary .= $result['removed'] > 0 ? ", {$result['removed']} removed" : '';
         $summary .= count($parsed['skipped']) > 0 ? ', '.count($parsed['skipped']).' rows skipped (no matric number)' : '';
@@ -151,6 +161,12 @@ class RollController extends Controller
             'fullname' => trim((string) preg_replace('/\s+/', ' ', (string) $data['fullname'])),
             'email' => isset($data['email']) ? strtolower((string) $data['email']) : null,
         ]], Programme::from((string) $data['programme']), Level::from((string) $data['level']), false);
+        Activity::record($organization, 'roll_student_added', null, [
+            'matric' => $matric,
+            'name' => trim((string) $data['fullname']),
+            'class' => Level::from((string) $data['level'])->label().' '.Programme::from((string) $data['programme'])->label(),
+            'moved' => $result['moved'] > 0,
+        ]);
 
         return redirect()->route('vote.admin.roll', ['q' => $matric])
             ->with('status', $result['moved'] > 0 ? "{$matric} moved to its new class." : "{$matric} added to the roll.");
@@ -164,6 +180,7 @@ class RollController extends Controller
 
         $row = $organization->roll()->findOrFail($entry);
         $row->delete();
+        Activity::record($organization, 'roll_student_removed', null, ['matric' => $row->matric_number, 'name' => $row->fullname]);
 
         return back()->with('status', "{$row->matric_number} removed from the roll.");
     }

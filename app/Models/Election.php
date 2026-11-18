@@ -293,6 +293,10 @@ class Election extends Model
             }
         }
 
+        if ($user->isOnVoteHold()) {
+            return 'Your account is on hold for voting while NACOS checks who registered it. Come to a NACOS admin with your student ID: once they\'ve checked it\'s you, you can vote straight away.';
+        }
+
         return null;
     }
 
@@ -360,6 +364,32 @@ class Election extends Model
             return $this->departmentElectorate();
         }
 
+        return $this->nacosVoters()->whereNull('users.vote_held_at');
+    }
+
+    /**
+     * Accounts that could vote but are on hold until an admin checks them
+     * in person (docs/vote-integrity.md): the most extra ballots there can
+     * still be. Departments have no holds.
+     *
+     * @return Builder<User>|Builder<Voter>
+     */
+    public function heldVoters(): Builder
+    {
+        if ($this->isForDepartment()) {
+            return $this->departmentElectorate()->whereRaw('1 = 0');
+        }
+
+        return $this->nacosVoters()->whereNotNull('users.vote_held_at');
+    }
+
+    /**
+     * Everyone who meets this NACOS election's rules, held or not.
+     *
+     * @return Builder<User>
+     */
+    private function nacosVoters(): Builder
+    {
         $query = User::query()->where('users.status', UserStatus::Active)->whereNull('users.graduated_at');
 
         if ($this->excludesLateAccounts()) {

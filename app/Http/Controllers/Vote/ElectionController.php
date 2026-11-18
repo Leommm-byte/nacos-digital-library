@@ -10,6 +10,7 @@ use App\Models\ElectionCandidate;
 use App\Models\ElectionPosition;
 use App\Models\Organization;
 use App\Models\Voter;
+use App\Support\Departments\Activity;
 use App\Support\Elections\AlreadyVoted;
 use App\Support\Elections\BallotBox;
 use App\Support\Elections\BallotRejected;
@@ -67,6 +68,8 @@ class ElectionController extends Controller
             return redirect()->route('vote.elections.show', $election)->withInput()->withErrors(['ballot' => $exception->getMessage()]);
         }
 
+        // That they voted, never how.
+        Activity::record($organization, 'election_voted', $election, ['title' => $election->title], $voter);
         LiveResults::refresh($election);
 
         return redirect()->route('vote.elections.show', $election)->with('voted', true);

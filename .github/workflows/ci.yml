@@ -41,7 +41,8 @@ jobs:
       - run: npm run build
       - name: Performance budget
         run: node scripts/check-budget.mjs
-      - run: npm audit --audit-level=high
+      - name: npm audit (high and critical; dated exceptions in the script)
+        run: node scripts/npm-audit.mjs
 
   tests:
     name: Tests (MySQL 8)

@@ -45,7 +45,9 @@ The first department is Food Science and Technology.
    department's page opens its Manage area as you (signed in to NACOS):
    upload its roll, set up its election, help its voters. It works exactly
    as for its own admins, and you never become a voter there.
-5. **Later, from the same page:**
+5. **See what happened:** *Activity log* on the department's page (the
+   same as its admins' *Manage → Activity*).
+6. **Later, from the same page:**
    - add more admins;
    - give an admin a new password;
    - remove an admin;
@@ -83,6 +85,16 @@ step by step.
      (*Forgot password?*: a link that works once, for 60 minutes).
    - For everyone else, *New password* gives a printed slip.
    - *Suspend* stops an account from voting.
+5. **Activity:** the department's own log, like NACOS's audit log.
+   - Who registered, signed in (and failed to), changed or reset a
+     password, voted (that they voted, never how), and every change to the
+     roll, elections and accounts, with the time and address.
+   - Changes made by a NACOS admin are marked *NACOS admin*; voting closed
+     at its end time shows as *by the system*.
+   - Filter by action, election, person and day; *Export CSV* downloads
+     what's shown, for keeping after the election.
+   - Only the department's own activity: NACOS's audit log doesn't show it,
+     and it doesn't show NACOS's.
 
 ## How it's built
 
@@ -112,7 +124,8 @@ step by step.
     - shows the paused page;
     - fills `{organization}` into every `route()`.
   - `Audit::record` always uses the `web` guard. NACOS's audit log
-    doesn't record department election activity.
+    doesn't record department election activity: that goes to the
+    department's activity log (below).
 - **Shared code.** Both kinds of election use the same:
   - eligibility (`Election::ineligibilityReason`, `electorate`);
   - ballot box (`BallotBox::cast` takes a `User` or a `Voter`);
@@ -143,6 +156,19 @@ step by step.
   tokens (the CSP rules out inline styles). The space's styles are in
   `resources/css/vote.css`, loaded only on its pages and the department
   form, not with `app.css`.
+- **Activity log.** `organization_activity`, one per department
+  (`App\Support\Departments\Activity::record`, labels in
+  `ActivityActions`, page `Vote\Admin\ActivityController`).
+  - Who acted: the space's signed-in account (`voter_id`), else a NACOS
+    admin (`user_id`), else the system; their name and login are copied in
+    so entries still read right after an account is removed.
+  - The shared election screens call `Audit::election()`, which writes to
+    NACOS's audit log or the department's log by the election's owner.
+  - A ballot is logged as having happened, with no choices: like
+    `election_voters`, nothing links it to `election_votes`.
+  - Activity from before the log existed (registrations, ballots, voting
+    opened and closed) was filled in by its migration from those records'
+    dates (`ActivityBackfill`), marked *recorded later*, with no address.
 - **Password reset.** `voter_password_resets`, keyed by account (the same
   email can be in several spaces and in NACOS); only a hash of the token is
   kept. The email (`VoterPasswordReset`) goes through the queue.
