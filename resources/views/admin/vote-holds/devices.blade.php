@@ -43,11 +43,15 @@
             <div class="space-y-6">
                 @foreach ($groups as $group)
                     <x-card>
-                        @php($unheld = $group['accounts']->filter(fn ($account) => $account['user']->vote_held_at === null)->count())
+                        @php($unheld = $group['accounts']->filter(fn ($account) => $account['user']->vote_held_at === null && ! $account['locked'])->count())
                         <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <h2 id="device-{{ $loop->index }}" class="text-base">{{ $group['label'] }}</h2>
-                                <p class="text-sm text-muted">{{ $group['accounts']->count() }} accounts · {{ $group['registered'] }} signed up here · {{ $group['voted'] }} voted here</p>
+                                <p class="text-sm text-muted">{{ $group['accounts']->count() }} accounts · {{ $group['registered'] }} signed up here · {{ $group['voted'] }} voted here
+                                    @if ($group['locked'] > 0)
+                                        · {{ $group['locked'] }} locked to a class-list email (left out of "Put all")
+                                    @endif
+                                </p>
                             </div>
                             @if ($unheld > 0)
                                 <x-button name="group" value="{{ $group['key'] }}" size="sm" variant="secondary" icon="user-lock">Put all {{ $unheld }} on hold</x-button>
@@ -74,6 +78,10 @@
                                                 <span class="block text-xs text-muted">{{ $user->matric_number }}</span>
                                                 @if ($user->email)
                                                     <span class="block text-xs text-muted">{{ $user->email }}{{ $user->email_verified_at ? ' (confirmed)' : ' (not confirmed)' }}</span>
+                                                @endif
+                                                @if ($account['locked'])
+                                                    <x-badge variant="primary">Locked to class-list email</x-badge>
+                                                    <span class="block text-xs text-muted">Whoever signed up can't use it: only the link sent to the class list's email sets a password.</span>
                                                 @endif
                                                 @if ($account['registered_at'] === null && $account['logins'] > 0)
                                                     <x-badge>Only signed in here</x-badge>

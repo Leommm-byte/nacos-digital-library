@@ -190,6 +190,34 @@ class VoteHoldTest extends TestCase
     }
 
     #[Test]
+    public function accounts_locked_to_a_class_list_email_are_marked_and_left_out_of_put_all(): void
+    {
+        $device = str_repeat('a', 31).'1';
+        $usable = User::factory()->count(2)->create();
+        foreach ($usable as $account) {
+            $this->entry('user_registered', $account, $device);
+        }
+        // Signed up with a matric number whose class-list row has an email:
+        // only the link sent there sets a password.
+        $locked = User::factory()->create(['fullname' => 'Locked Owner']);
+        AuditLog::create([
+            'user_id' => $locked->id, 'action' => 'user_registered', 'ip_address' => '10.0.0.1', 'user_agent' => 'Test',
+            'device_id' => $device, 'network_key' => sha1('10.0.0.1|Test'), 'meta' => ['via' => 'class_list_email'],
+        ]);
+
+        $this->actingAs($this->admin)->get(route('admin.vote-holds.devices'))->assertOk()
+            ->assertSee('Locked to class-list email')->assertSee('Put all 2 on hold');
+
+        $csv = $this->get(route('admin.vote-holds.devices.export'))->assertOk()->streamedContent();
+        $this->assertMatchesRegularExpression('/"Locked Owner",[^\n]*,Yes,/', $csv);
+
+        $this->post(route('admin.vote-holds.store-many'), ['group' => $device, 'kind' => 'device', 'reason' => 'Bulk sign-ups'])
+            ->assertSessionHas('status', '2 accounts are on hold.');
+        $this->assertFalse($locked->refresh()->isOnVoteHold());
+        $this->assertTrue($usable[0]->refresh()->isOnVoteHold());
+    }
+
+    #[Test]
     public function browser_details_are_shown_in_plain_words(): void
     {
         $this->assertNull(SharedDevices::domainReceivesMail(null));
