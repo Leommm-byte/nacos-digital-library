@@ -32,7 +32,7 @@ class SharedDevices
      * Groups of accounts seen on the same device, most suspicious first:
      * the most accounts signed up there, then voted there, then seen.
      *
-     * @return Collection<int, array{key: string, label: string, ip: string|null, agent: string, accounts: Collection<int, array{user: User, registered_at: mixed, voted_at: mixed, logins: int, first_seen: mixed}>, registered: int, voted: int}>
+     * @return Collection<int, array{key: string, label: string, ip: string|null, agent: string, accounts: Collection<int, array{user: User, registered_at: mixed, voted_at: mixed, logins: int, first_seen: mixed, locked: bool}>, registered: int, locked: int, voted: int}>
      */
     public static function groups(string $kind, Carbon $from, Carbon $to, int $min = 2, int $limit = 40): Collection
     {
@@ -69,10 +69,12 @@ class SharedDevices
             ->get(['id', 'fullname', 'matric_number', 'email', 'email_verified_at', 'level', 'programme', 'vote_held_at', 'created_at'])
             ->keyBy('id');
 
-        return collect($keys)->map(function (string $key) use ($entries, $users, $column) {
+        $locked = self::lockedToClassListEmail($users->keys()->all());
+
+        return collect($keys)->map(function (string $key) use ($entries, $users, $column, $locked) {
             $here = $entries->where($column, $key);
 
-            $accounts = $here->groupBy('user_id')->map(function (Collection $events, $userId) use ($users) {
+            $accounts = $here->groupBy('user_id')->map(function (Collection $events, $userId) use ($users, $locked) {
                 $user = $users->get($userId);
 
                 return [
@@ -81,6 +83,8 @@ class SharedDevices
                     'voted_at' => $events->where('action', 'election_voted')->min('created_at'),
                     'logins' => $events->where('action', 'login')->count(),
                     'first_seen' => $events->min('created_at'),
+                    // Whoever signed up can't use it (SignupController::inviteFromRoll).
+                    'locked' => isset($locked[(int) $userId]),
                 ];
             })->filter(fn (array $account) => $account['user'] !== null)
                 ->sortBy('first_seen')
@@ -98,6 +102,7 @@ class SharedDevices
                 'agent' => $agent,
                 'accounts' => $accounts,
                 'registered' => $accounts->whereNotNull('registered_at')->count(),
+                'locked' => $accounts->where('locked', true)->count(),
                 'voted' => $accounts->whereNotNull('voted_at')->count(),
             ];
         })->values();
@@ -138,6 +143,31 @@ class SharedDevices
         }
 
         return $result;
+    }
+
+    /**
+     * Accounts signed up with a matric number whose class-list row has an
+     * email: they were made with no usable password, and only the link sent
+     * to that email sets one (SignupController::inviteFromRoll). Whoever
+     * filled in the form can't sign in, so the account is no risk; holding
+     * it would only make its owner queue on election day.
+     *
+     * @param  list<int|string>  $userIds
+     * @return array<int, bool>
+     */
+    public static function lockedToClassListEmail(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        return AuditLog::query()
+            ->where('action', 'user_registered')
+            ->where('meta->via', 'class_list_email')
+            ->whereIn('user_id', $userIds)
+            ->pluck('user_id')
+            ->mapWithKeys(fn ($id) => [(int) $id => true])
+            ->all();
     }
 
     /**

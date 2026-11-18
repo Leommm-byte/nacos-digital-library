@@ -23,6 +23,11 @@ to that address).
    - *No browser details* or *Not a browser* means the sign-ups didn't come
      from a phone's browser but from a script or tool: a strong sign of
      bulk registration.
+   - *Locked to class-list email*: signed up with a matric number whose
+     class-list row has an email. The account has no usable password; only
+     the link sent to that email sets one, so whoever signed up can't use
+     it. *Put all on hold* leaves these out, so their owners don't have to
+     queue on election day.
    - *Only signed in here*: an account that didn't sign up on that device
      but signed in from it, often the account of whoever ran it.
    - *Export CSV* downloads the report (one row per account, with the

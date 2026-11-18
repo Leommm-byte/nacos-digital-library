@@ -83,7 +83,7 @@ class VoteHoldController extends Controller
             }
             fwrite($out, "\u{FEFF}"); // Excel reads the names' accents correctly.
             fputcsv($out, [($report['kind'] === 'device' ? 'Same device' : 'Same network and browser').', '.$report['from']->format('j M Y').' to '.$report['to']->format('j M Y')], escape: '');
-            fputcsv($out, ['Group', 'Address', 'Browser', 'Browser details as sent', 'Accounts in group', 'Signed up in group', 'Voted in group', 'Name', 'Matric number', 'Email', 'Email confirmed', 'Email domain receives mail', 'Signed up here', 'Voted here', 'Sign-ins here', 'On hold'], escape: '');
+            fputcsv($out, ['Group', 'Address', 'Browser', 'Browser details as sent', 'Accounts in group', 'Signed up in group', 'Voted in group', 'Name', 'Matric number', 'Email', 'Email confirmed', 'Email domain receives mail', 'Locked to class-list email', 'Signed up here', 'Voted here', 'Sign-ins here', 'On hold'], escape: '');
 
             foreach ($groups as $index => $group) {
                 foreach ($group['accounts'] as $account) {
@@ -104,6 +104,7 @@ class VoteHoldController extends Controller
                             false => 'No',
                             null => '',
                         },
+                        $account['locked'] ? 'Yes' : 'No',
                         $time($account['registered_at']),
                         $time($account['voted_at']),
                         (string) $account['logins'],
@@ -187,7 +188,10 @@ class VoteHoldController extends Controller
             $report = $this->report($request);
             $group = SharedDevices::groups($report['kind'], $report['from']->copy()->utc(), $report['to']->copy()->utc(), 2, 500)
                 ->firstWhere('key', (string) $data['group']);
-            $ids = $group === null ? [] : $group['accounts']->map(fn (array $account) => $account['user']->id)->all();
+            // Not the accounts locked to a class-list email: whoever signed
+            // up can't use them, and their owners shouldn't have to queue.
+            $ids = $group === null ? [] : $group['accounts']->reject(fn (array $account) => $account['locked'])
+                ->map(fn (array $account) => $account['user']->id)->all();
         }
 
         $held = User::query()->whereIn('id', $ids)->get()
