@@ -66,7 +66,7 @@ class SharedDevices
 
         $users = User::query()
             ->whereIn('id', $entries->pluck('user_id')->unique())
-            ->get(['id', 'fullname', 'matric_number', 'level', 'programme', 'vote_held_at', 'created_at'])
+            ->get(['id', 'fullname', 'matric_number', 'email', 'email_verified_at', 'level', 'programme', 'vote_held_at', 'created_at'])
             ->keyBy('id');
 
         return collect($keys)->map(function (string $key) use ($entries, $users, $column) {
@@ -138,6 +138,25 @@ class SharedDevices
         }
 
         return $result;
+    }
+
+    /**
+     * Whether an email address's domain can receive mail (it has mail or
+     * address records in DNS): a made-up or mistyped domain can't. No email
+     * is sent. Null when there's no address. Each domain is looked up once.
+     */
+    public static function domainReceivesMail(?string $email): ?bool
+    {
+        static $domains = [];
+
+        $domain = $email !== null && str_contains($email, '@') ? strtolower(trim((string) substr($email, (int) strrpos($email, '@') + 1))) : '';
+
+        if ($domain === '') {
+            return null;
+        }
+
+        return $domains[$domain] ??= preg_match('/^[a-z0-9.-]+\.[a-z]{2,}$/', $domain) === 1
+            && (checkdnsrr($domain.'.', 'MX') || checkdnsrr($domain.'.', 'A'));
     }
 
     /**

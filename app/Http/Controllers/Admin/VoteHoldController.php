@@ -83,7 +83,7 @@ class VoteHoldController extends Controller
             }
             fwrite($out, "\u{FEFF}"); // Excel reads the names' accents correctly.
             fputcsv($out, [($report['kind'] === 'device' ? 'Same device' : 'Same network and browser').', '.$report['from']->format('j M Y').' to '.$report['to']->format('j M Y')], escape: '');
-            fputcsv($out, ['Group', 'Address', 'Browser', 'Browser details as sent', 'Accounts in group', 'Signed up in group', 'Voted in group', 'Name', 'Matric number', 'Signed up here', 'Voted here', 'Sign-ins here', 'On hold'], escape: '');
+            fputcsv($out, ['Group', 'Address', 'Browser', 'Browser details as sent', 'Accounts in group', 'Signed up in group', 'Voted in group', 'Name', 'Matric number', 'Email', 'Email confirmed', 'Email domain receives mail', 'Signed up here', 'Voted here', 'Sign-ins here', 'On hold'], escape: '');
 
             foreach ($groups as $index => $group) {
                 foreach ($group['accounts'] as $account) {
@@ -97,6 +97,13 @@ class VoteHoldController extends Controller
                         (string) $group['voted'],
                         $account['user']->fullname,
                         $account['user']->matric_number,
+                        (string) $account['user']->email,
+                        $account['user']->email === null ? '' : ($account['user']->email_verified_at !== null ? 'Yes' : 'No'),
+                        match (SharedDevices::domainReceivesMail($account['user']->email)) {
+                            true => 'Yes',
+                            false => 'No',
+                            null => '',
+                        },
                         $time($account['registered_at']),
                         $time($account['voted_at']),
                         (string) $account['logins'],

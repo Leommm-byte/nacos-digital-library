@@ -173,8 +173,12 @@ class VoteHoldTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.vote-holds.devices'))->assertOk()
             ->assertSee('Put all 5 on hold')->assertSee('Only signed in here');
 
+        $accounts[0]->forceFill(['email' => 'victim@nothing.invalid', 'email_verified_at' => null])->save();
+
         $csv = $this->get(route('admin.vote-holds.devices.export'))->assertOk()->streamedContent();
         $this->assertStringContainsString('Operator Person', $csv);
+        // The email, not confirmed, at a domain that can't receive mail.
+        $this->assertStringContainsString('victim@nothing.invalid,No,No', $csv);
         $this->assertStringContainsString($accounts[0]->matric_number, $csv);
         $this->assertStringNotContainsString('Bystander', $csv);
         $this->assertDatabaseHas('audit_logs', ['action' => 'shared_devices_exported', 'user_id' => $this->admin->id]);
@@ -188,6 +192,9 @@ class VoteHoldTest extends TestCase
     #[Test]
     public function browser_details_are_shown_in_plain_words(): void
     {
+        $this->assertNull(SharedDevices::domainReceivesMail(null));
+        $this->assertFalse(SharedDevices::domainReceivesMail('someone@not a domain'));
+        $this->assertFalse(SharedDevices::domainReceivesMail('someone@nothing.invalid'));
         $this->assertSame('No browser details (a script or tool, not a phone browser)', SharedDevices::browser(''));
         $this->assertSame('Not a browser: python-requests/2.31.0', SharedDevices::browser('python-requests/2.31.0'));
         $this->assertSame('Chrome 131 on Android 10', SharedDevices::browser('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'));
