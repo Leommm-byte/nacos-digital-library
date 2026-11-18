@@ -144,6 +144,8 @@ const pages = [
     ['admin-books', '/admin/books', 'F/HD/24/3211001'],
     ['admin-reports', '/admin/reports', 'F/HD/24/3211001'],
     ['admin-audit', '/admin/audit', 'F/HD/24/3211001'],
+    ['admin-vote-holds', '/admin/vote-holds', 'F/HD/24/3211001'],
+    ['admin-shared-devices', '/admin/vote-holds/devices?kind=network', 'F/HD/24/3211001'],
     ['admin-settings', '/admin/settings', 'F/HD/24/3211001'],
     ['admin-session', '/admin/session', 'F/HD/24/3211001'],
     ['admin-session-part-time', '/admin/session?programme=part_time', 'F/HD/24/3211001'],

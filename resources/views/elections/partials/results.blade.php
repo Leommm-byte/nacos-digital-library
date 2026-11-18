@@ -19,6 +19,9 @@
                     <span class="text-muted">of <span data-result-electorate>{{ number_format($results['electorate']) }}</span> eligible voted</span></p>
                 <p class="results-turnout-percent"><span data-result-turnout>{{ $percent($results['turnout']) }}</span>%</p>
             </div>
+            <p @class(['results-note', 'hidden' => ($results['held'] ?? 0) === 0]) data-result-held-row>
+                <x-icon name="user-lock" /> <span><span data-result-held>{{ number_format($results['held'] ?? 0) }}</span> more on hold until NACOS checks who registered them.</span>
+            </p>
             <progress class="result-bar result-bar-lg" max="100" value="{{ $results['turnout'] }}" data-result-turnout-bar aria-label="Turnout {{ $percent($results['turnout']) }}%">{{ $results['turnout'] }}%</progress>
             <p class="results-note">
                 @if ($final)

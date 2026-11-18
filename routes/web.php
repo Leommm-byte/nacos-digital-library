@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SessionController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VoteHoldController;
 use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\Assistant\AssistantController;
 use App\Http\Controllers\Elections\BallotSetupController;
@@ -151,6 +152,14 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{user}/class', [AdminUserController::class, 'updateClass'])->name('users.class');
         Route::delete('/users/{user}/two-factor', [AdminUserController::class, 'resetTwoFactor'])->name('users.two-factor');
         Route::post('/users/{user}/password', [AdminUserController::class, 'resetPassword'])->name('users.password');
+
+        // Holding accounts back from voting until checked in person
+        // (docs/vote-integrity.md).
+        Route::get('/vote-holds', [VoteHoldController::class, 'index'])->name('vote-holds.index');
+        Route::get('/vote-holds/devices', [VoteHoldController::class, 'devices'])->name('vote-holds.devices');
+        Route::post('/vote-holds', [VoteHoldController::class, 'storeMany'])->name('vote-holds.store-many');
+        Route::post('/users/{user}/vote-hold', [VoteHoldController::class, 'store'])->name('users.vote-hold');
+        Route::delete('/users/{user}/vote-hold', [VoteHoldController::class, 'destroy'])->name('users.vote-release');
 
         Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
         Route::post('/accounts', [AccountController::class, 'store'])->middleware('throttle:20,1')->name('accounts.store');

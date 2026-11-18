@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Http\Middleware\DeviceId;
 use App\Models\AuditLog;
 use App\Models\Election;
 use App\Support\Departments\Activity;
@@ -31,6 +32,9 @@ class Audit
             'ip_address' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
             'meta' => $meta ?: null,
+            // Who was on which device (Admin → Shared devices).
+            'device_id' => DeviceId::from($request),
+            'network_key' => $request->ip() !== null ? sha1($request->ip().'|'.Str::limit((string) $request->userAgent(), 250, '')) : null,
         ]);
     }
 

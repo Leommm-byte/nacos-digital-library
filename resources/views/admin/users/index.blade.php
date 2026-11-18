@@ -1,6 +1,6 @@
 @php
     $roles = ['' => 'Any role'] + collect(\App\Enums\Role::cases())->mapWithKeys(fn ($r) => [$r->value => $r->label()])->all();
-    $statuses = ['' => 'Any status', 'signed-in' => 'Signed in', 'not-signed-in' => 'Not signed in yet', 'suspended' => 'Suspended', 'graduated' => 'Graduates'];
+    $statuses = ['' => 'Any status', 'signed-in' => 'Signed in', 'not-signed-in' => 'Not signed in yet', 'suspended' => 'Suspended', 'on-hold' => 'On hold for voting', 'graduated' => 'Graduates'];
     $total = $users->total();
     $summary = number_format($total).' '.\Illuminate\Support\Str::plural('account', $total).($search !== '' || array_filter($filters) ? ' found' : '')
         .($total > 0 ? ' · '.number_format($signedIn).' signed in · '.number_format($total - $signedIn).' not yet' : '');
@@ -59,6 +59,9 @@
                                 <span class="flex flex-wrap items-center gap-1 whitespace-nowrap">
                                     @if ($user->isSuspended())
                                         <x-badge variant="danger">Suspended</x-badge>
+                                    @endif
+                                    @if ($user->isOnVoteHold())
+                                        <x-badge variant="danger">On hold</x-badge>
                                     @endif
                                     <x-badge :variant="$state->signedIn ? 'primary' : 'neutral'">{{ $state->label }}</x-badge>
                                 </span>

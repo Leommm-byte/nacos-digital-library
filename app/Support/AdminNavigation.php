@@ -28,6 +28,7 @@ class AdminNavigation
             ['exams.manage', 'Exam timetable', 'calendar-days', 'exams.manage'],
             ['admin.reports', 'Reports', 'chart-column', 'admin.reports'],
             ['admin.audit', 'Audit log', 'scroll-text', 'admin.audit'],
+            ['admin.vote-holds.index', 'Vote holds', 'user-lock', 'admin.vote-holds.*'],
             ['admin.session', 'New session', 'graduation-cap', 'admin.session*'],
             ['admin.settings', 'Settings', 'settings', 'admin.settings*'],
         ];

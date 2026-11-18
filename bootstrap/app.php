@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Offline\ServiceWorkerController;
 use App\Http\Controllers\Operations\HealthController;
+use App\Http\Middleware\DeviceId;
 use App\Http\Middleware\EnforceAccountState;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\SecurityHeaders;
@@ -34,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(ServerTiming::class);
         $middleware->append(SecurityHeaders::class);
-        $middleware->web(append: [EnforceAccountState::class]);
+        $middleware->web(append: [EnforceAccountState::class, DeviceId::class]);
         $middleware->alias([
             'role' => EnsureRole::class,
             // Department election spaces (routes/vote.php).

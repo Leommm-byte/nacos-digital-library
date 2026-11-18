@@ -45,6 +45,9 @@ use Illuminate\Support\Carbon;
  * @property int|null $two_factor_last_step
  * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
+ * @property Carbon|null $vote_held_at
+ * @property string|null $vote_hold_reason
+ * @property int|null $vote_held_by
  * @property Carbon $created_at
  */
 class User extends Authenticatable implements MustVerifyEmail
@@ -100,6 +103,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_recovery_codes' => null,
         'two_factor_confirmed_at' => null,
         'two_factor_last_step' => null,
+        'vote_held_at' => null,
+        'vote_hold_reason' => null,
+        'vote_held_by' => null,
     ];
 
     protected function casts(): array
@@ -118,6 +124,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_last_step' => 'integer',
             'last_login_at' => 'datetime',
             'graduated_at' => 'datetime',
+            'vote_held_at' => 'datetime',
         ];
     }
 
@@ -218,6 +225,25 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasRole(Role $role): bool
     {
         return $this->role->atLeast($role);
+    }
+
+    /**
+     * On hold for voting: an admin wants to see the student in person
+     * before this account can vote (docs/vote-integrity.md).
+     */
+    public function isOnVoteHold(): bool
+    {
+        return $this->vote_held_at !== null;
+    }
+
+    /**
+     * The admin who put the account on hold.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function voteHeldBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'vote_held_by');
     }
 
     public function isSuspended(): bool

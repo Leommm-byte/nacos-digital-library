@@ -99,6 +99,7 @@ class ManageElectionController extends Controller
             'election' => $election,
             'results' => LiveResults::read($election),
             'electorate' => $election->electorate()->count(),
+            'held' => $election->heldVoters()->count(),
             'rollCount' => $this->desk()->rollCount(),
             'ballots' => $election->ballotCount(),
             'launchProblem' => $election->isDraft() ? ElectionLifecycle::launchProblem($election) : null,
