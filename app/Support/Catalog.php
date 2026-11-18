@@ -56,19 +56,16 @@ class Catalog
         }
 
         $search = trim((string) ($filters['q'] ?? ''));
-        $relevance = $search !== '' ? self::search($query, $search) : null;
+        $words = $search !== '' ? self::words($search) : [];
+        $relevance = $search !== '' ? self::search($query, $search, $words) : null;
 
         $sort = (string) ($filters['sort'] ?? '');
         if (! isset(self::SORTS[$sort])) {
-            $sort = $relevance !== null ? 'relevance' : 'newest';
+            $sort = $search !== '' ? 'relevance' : 'newest';
         }
 
         return match ($sort) {
-            // A match in the title, author or description outranks one in the
-            // book's text.
-            'relevance' => $query
-                ->orderByRaw('(MATCH (books.title, books.author, books.description) AGAINST (? IN BOOLEAN MODE) * 3 + COALESCE(MATCH (book_texts.text) AGAINST (? IN BOOLEAN MODE), 0)) DESC', [$relevance, $relevance])
-                ->orderByDesc('books.id'),
+            'relevance' => self::byRelevance($query, $words, $relevance),
             'popular' => $query->orderByDesc('views_count')->orderByDesc('id'),
             'title' => $query->orderBy('title')->orderBy('id'),
             default => $query->orderByDesc('approved_at')->orderByDesc('id'),
@@ -94,18 +91,69 @@ class Catalog
     }
 
     /**
+     * The words searched for: 3+ letters, not a stopword, at most 8.
+     *
+     * @return list<string>
+     */
+    private static function words(string $search): array
+    {
+        return collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($search)) ?: [])
+            ->filter(fn (string $word) => mb_strlen($word) >= 3 && ! in_array($word, self::STOPWORDS, true))
+            ->unique()
+            ->take(8)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Best matches first. A book whose title, author or description has
+     * every word comes before one that has them only in its text; that is
+     * decided first, not left to the full-text score, which depends on how
+     * often a word appears across all books (and on rows MySQL hasn't
+     * cleaned out of its index yet), so it can't keep that order on its
+     * own. Then the score (MySQL), then the newest.
+     *
+     * @param  Builder<Book>  $query
+     * @param  list<string>  $words
+     * @return Builder<Book>
+     */
+    private static function byRelevance(Builder $query, array $words, ?string $boolean): Builder
+    {
+        if ($words !== []) {
+            $conditions = [];
+            $bindings = [];
+
+            foreach ($words as $word) {
+                $like = '%'.self::escapeLike($word).'%';
+                $conditions[] = "(books.title LIKE ? OR books.author LIKE ? OR COALESCE(books.description, '') LIKE ?)";
+                array_push($bindings, $like, $like, $like);
+            }
+
+            $query->orderByRaw('CASE WHEN '.implode(' AND ', $conditions).' THEN 1 ELSE 0 END DESC', $bindings);
+        }
+
+        if ($boolean !== null) {
+            $query->orderByRaw('(MATCH (books.title, books.author, books.description) AGAINST (? IN BOOLEAN MODE) * 3 + COALESCE(MATCH (book_texts.text) AGAINST (? IN BOOLEAN MODE), 0)) DESC', [$boolean, $boolean]);
+        }
+
+        return $query->orderByDesc('books.id');
+    }
+
+    private static function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
+
+    /**
      * Adds the search condition. Returns the full-text expression to rank
      * by, or null when the simple fallback was used.
      *
      * @param  Builder<Book>  $query
+     * @param  list<string>  $words
      */
-    private static function search(Builder $query, string $search): ?string
+    private static function search(Builder $query, string $search, array $words): ?string
     {
-        $words = collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($search)) ?: [])
-            ->filter(fn (string $word) => mb_strlen($word) >= 3 && ! in_array($word, self::STOPWORDS, true))
-            ->unique()
-            ->take(8)
-            ->values();
+        $words = collect($words);
 
         $mysql = $query->getModel()->getConnection()->getDriverName() === 'mysql';
 
@@ -123,7 +171,7 @@ class Catalog
             return $boolean;
         }
 
-        $escape = fn (string $value) => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+        $escape = self::escapeLike(...);
 
         if (! $mysql) {
             // No full-text index (SQLite in local tests): every word must
