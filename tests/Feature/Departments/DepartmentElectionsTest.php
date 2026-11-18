@@ -512,7 +512,10 @@ class DepartmentElectionsTest extends TestCase
             auth('voter')->logout();
         }
 
-        // Guessing one account's password is stopped after five tries.
+        // Guessing one account's password is stopped after five tries. The
+        // clock is frozen so the wait shown is exactly 60 seconds, however
+        // slowly the requests run.
+        $this->freezeTime();
         for ($i = 0; $i < 5; $i++) {
             $this->post(route('vote.login.store', $this->fst), ['login' => 'F/ND/24/3002001', 'password' => 'wrong-'.$i]);
         }
