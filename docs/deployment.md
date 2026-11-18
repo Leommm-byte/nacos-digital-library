@@ -273,6 +273,13 @@ the link. Rolling back switches the link back.
 - **Releases.** Merge to `main`. When CI passes, the Deploy workflow
   publishes it. The version (commit) is shown on the admin dashboard under
   *Site health*.
+- **Security advisories.** CI fails when `composer audit` or the npm audit
+  finds a known high or critical problem in a package; usually updating it
+  fixes that (`composer update <package>`, `npm update <package>`). When no
+  fixed version exists yet and the problem can't reach the site, an
+  exception with an end date goes in `scripts/npm-audit.mjs`; CI fails
+  again on that date. Current: `picomatch` (build tool only), until
+  31 Dec 2026.
 - **Rolling back.** Go to *Actions → Deploy → Run workflow*, tick
   **rollback**, then *Run*. The previous release is live within seconds.
   Database changes made by the newer release stay in place: our database
