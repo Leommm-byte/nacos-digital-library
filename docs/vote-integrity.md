@@ -20,7 +20,15 @@ to that address).
      that signed up minutes apart.
    - A person's page under Users also lists *Seen on the same device*:
      start from an account someone reported and find the others.
-2. **Put them on hold**, before the election: tick them on Shared devices,
+   - *No browser details* or *Not a browser* means the sign-ups didn't come
+     from a phone's browser but from a script or tool: a strong sign of
+     bulk registration.
+   - *Only signed in here*: an account that didn't sign up on that device
+     but signed in from it, often the account of whoever ran it.
+   - *Export CSV* downloads the report (one row per account, with the
+     address and browser details as sent) to show the committee.
+2. **Put them on hold**, before the election: *Put all on hold* for a whole
+   group, tick some on Shared devices,
    or *Put on hold for voting* on a person's page, with a reason. A held
    account can still sign in, but can't vote.
 3. **On election day**, a student whose account is held comes with their

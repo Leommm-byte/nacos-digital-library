@@ -158,8 +158,38 @@ class VoteHoldTest extends TestCase
     }
 
     #[Test]
+    public function a_whole_group_is_held_at_once_and_the_report_exports_as_csv(): void
+    {
+        $device = str_repeat('e', 32);
+        $accounts = User::factory()->count(4)->create();
+        foreach ($accounts as $account) {
+            $this->entry('user_registered', $account, $device);
+        }
+        $operator = User::factory()->create(['fullname' => 'Operator Person']);
+        $this->entry('login', $operator, $device);
+        $bystander = User::factory()->create(['fullname' => 'Bystander']);
+        $this->entry('login', $bystander, str_repeat('f', 32));
+
+        $this->actingAs($this->admin)->get(route('admin.vote-holds.devices'))->assertOk()
+            ->assertSee('Put all 5 on hold')->assertSee('Only signed in here');
+
+        $csv = $this->get(route('admin.vote-holds.devices.export'))->assertOk()->streamedContent();
+        $this->assertStringContainsString('Operator Person', $csv);
+        $this->assertStringContainsString($accounts[0]->matric_number, $csv);
+        $this->assertStringNotContainsString('Bystander', $csv);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'shared_devices_exported', 'user_id' => $this->admin->id]);
+
+        $this->post(route('admin.vote-holds.store-many'), ['group' => $device, 'kind' => 'device', 'reason' => 'Bulk sign-ups'])
+            ->assertSessionHas('status', '5 accounts are on hold.');
+        $this->assertSame(5, User::query()->whereNotNull('vote_held_at')->count());
+        $this->assertFalse($bystander->refresh()->isOnVoteHold());
+    }
+
+    #[Test]
     public function browser_details_are_shown_in_plain_words(): void
     {
+        $this->assertSame('No browser details (a script or tool, not a phone browser)', SharedDevices::browser(''));
+        $this->assertSame('Not a browser: python-requests/2.31.0', SharedDevices::browser('python-requests/2.31.0'));
         $this->assertSame('Chrome 131 on Android 10', SharedDevices::browser('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'));
         $this->assertSame('Safari 17 on iOS 17', SharedDevices::browser('Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'));
     }

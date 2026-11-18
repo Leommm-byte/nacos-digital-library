@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Accounts that signed up, signed in or voted from the same device, from
@@ -31,7 +32,7 @@ class SharedDevices
      * Groups of accounts seen on the same device, most suspicious first:
      * the most accounts signed up there, then voted there, then seen.
      *
-     * @return Collection<int, array{key: string, label: string, accounts: Collection<int, array{user: User, registered_at: mixed, voted_at: mixed, logins: int, first_seen: mixed}>, registered: int, voted: int}>
+     * @return Collection<int, array{key: string, label: string, ip: string|null, agent: string, accounts: Collection<int, array{user: User, registered_at: mixed, voted_at: mixed, logins: int, first_seen: mixed}>, registered: int, voted: int}>
      */
     public static function groups(string $kind, Carbon $from, Carbon $to, int $min = 2, int $limit = 40): Collection
     {
@@ -86,12 +87,15 @@ class SharedDevices
                 ->values();
 
             $sample = $here->first();
+            $agent = (string) $sample?->user_agent;
 
             return [
                 'key' => $key,
                 'label' => $column === 'device_id'
                     ? 'Device '.substr($key, 0, 8)
-                    : ($sample->ip_address ?? '?').' · '.self::browser((string) $sample?->user_agent),
+                    : ($sample->ip_address ?? '?').' · '.self::browser($agent),
+                'ip' => $sample?->ip_address,
+                'agent' => $agent,
                 'accounts' => $accounts,
                 'registered' => $accounts->whereNotNull('registered_at')->count(),
                 'voted' => $accounts->whereNotNull('voted_at')->count(),
@@ -148,8 +152,13 @@ class SharedDevices
             preg_match('#(?:Chrome|CriOS)/(\d+)#', $agent, $m) === 1 => 'Chrome '.$m[1],
             preg_match('#(?:Firefox|FxiOS)/(\d+)#', $agent, $m) === 1 => 'Firefox '.$m[1],
             preg_match('#Version/(\d+).*Safari#', $agent, $m) === 1 => 'Safari '.$m[1],
-            default => 'Unknown browser',
+            default => null,
         };
+
+        if ($browser === null) {
+            // A script or app, not a phone's browser: say what it called itself.
+            return trim($agent) === '' ? 'No browser details (a script or tool, not a phone browser)' : 'Not a browser: '.Str::limit($agent, 60);
+        }
 
         $system = match (true) {
             preg_match('#Android ([\d.]+)#', $agent, $m) === 1 => 'Android '.$m[1],
