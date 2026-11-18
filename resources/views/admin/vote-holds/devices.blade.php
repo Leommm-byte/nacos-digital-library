@@ -72,6 +72,9 @@
                                             <td>
                                                 <a href="{{ route('admin.users.show', $user) }}" class="link font-semibold">{{ $user->fullname }}</a>
                                                 <span class="block text-xs text-muted">{{ $user->matric_number }}</span>
+                                                @if ($user->email)
+                                                    <span class="block text-xs text-muted">{{ $user->email }}{{ $user->email_verified_at ? ' (confirmed)' : ' (not confirmed)' }}</span>
+                                                @endif
                                                 @if ($account['registered_at'] === null && $account['logins'] > 0)
                                                     <x-badge>Only signed in here</x-badge>
                                                 @endif
