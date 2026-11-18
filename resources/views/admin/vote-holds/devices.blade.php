@@ -4,7 +4,11 @@
 @endphp
 
 <x-layouts.admin title="Shared devices">
-    <x-page-header title="Shared devices" subtitle="Accounts that signed up, signed in or voted from the same device. Leads to check before putting accounts on hold, not proof." :back="route('admin.vote-holds.index')" back-label="Vote holds" />
+    <x-page-header title="Shared devices" subtitle="Accounts that signed up, signed in or voted from the same device. Leads to check before putting accounts on hold, not proof." :back="route('admin.vote-holds.index')" back-label="Vote holds">
+        <x-slot:actions>
+            <x-button :href="route('admin.vote-holds.devices.export', ['kind' => $kind, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d'), 'min' => $min])" variant="secondary" size="sm" icon="download">Export CSV</x-button>
+        </x-slot:actions>
+    </x-page-header>
 
     <nav class="mb-4 flex flex-wrap gap-2" aria-label="Kind of match">
         @foreach ($kinds as $value => $label)
@@ -31,13 +35,24 @@
     @if ($groups->isEmpty())
         <x-empty-state icon="smartphone" title="Nothing found" text="No device was used by that many accounts in these dates." />
     @else
-        <form method="POST" action="{{ route('admin.vote-holds.store-many') }}" data-confirm="Put the ticked accounts on hold? They can't vote until an admin releases them.">
+        <form method="POST" action="{{ route('admin.vote-holds.store-many') }}" data-confirm="Put these accounts on hold? They can't vote until an admin releases them.">
             @csrf
+            <input type="hidden" name="kind" value="{{ $kind }}">
+            <input type="hidden" name="from" value="{{ $from->format('Y-m-d') }}">
+            <input type="hidden" name="to" value="{{ $to->format('Y-m-d') }}">
             <div class="space-y-6">
                 @foreach ($groups as $group)
                     <x-card>
-                        <h2 id="device-{{ $loop->index }}" class="text-base">{{ $group['label'] }}</h2>
-                        <p class="mb-3 text-sm text-muted">{{ $group['accounts']->count() }} accounts · {{ $group['registered'] }} signed up here · {{ $group['voted'] }} voted here</p>
+                        @php($unheld = $group['accounts']->filter(fn ($account) => $account['user']->vote_held_at === null)->count())
+                        <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <h2 id="device-{{ $loop->index }}" class="text-base">{{ $group['label'] }}</h2>
+                                <p class="text-sm text-muted">{{ $group['accounts']->count() }} accounts · {{ $group['registered'] }} signed up here · {{ $group['voted'] }} voted here</p>
+                            </div>
+                            @if ($unheld > 0)
+                                <x-button name="group" value="{{ $group['key'] }}" size="sm" variant="secondary" icon="user-lock">Put all {{ $unheld }} on hold</x-button>
+                            @endif
+                        </div>
                         <div class="table-scroll" tabindex="0" role="region" aria-label="Accounts on {{ $group['label'] }}, scrolls sideways">
                             <table class="admin-table">
                                 <thead>
@@ -57,6 +72,9 @@
                                             <td>
                                                 <a href="{{ route('admin.users.show', $user) }}" class="link font-semibold">{{ $user->fullname }}</a>
                                                 <span class="block text-xs text-muted">{{ $user->matric_number }}</span>
+                                                @if ($account['registered_at'] === null && $account['logins'] > 0)
+                                                    <x-badge>Only signed in here</x-badge>
+                                                @endif
                                             </td>
                                             <td class="whitespace-nowrap">{{ $account['registered_at']?->timezone($zone)->format('j M, g:i a') ?? '–' }}</td>
                                             <td class="whitespace-nowrap">{{ $account['voted_at']?->timezone($zone)->format('j M, g:i a') ?? '–' }}</td>

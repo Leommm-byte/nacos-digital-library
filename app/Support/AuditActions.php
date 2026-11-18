@@ -67,6 +67,7 @@ class AuditActions
         'audit_exported' => 'Exported the audit log',
         'vote_hold_placed' => 'Put on hold for voting',
         'vote_hold_released' => 'Released for voting',
+        'shared_devices_exported' => 'Exported shared devices',
         'department_opened' => 'Opened a department',
         'department_closed' => 'Closed a department',
         'vote_space_created' => 'Added a department\'s election space',
@@ -99,7 +100,7 @@ class AuditActions
             str_starts_with($action, 'user_'), str_starts_with($action, 'settings_'), str_starts_with($action, 'department_'), str_starts_with($action, 'vote_space_'),
             str_starts_with($action, 'accounts_'), str_starts_with($action, 'audit_'), str_starts_with($action, 'announcement_'),
             str_starts_with($action, 'timetable_'), str_starts_with($action, 'exam'), str_starts_with($action, 'session_'),
-            str_starts_with($action, 'vote_hold_') => 'yellow',
+            str_starts_with($action, 'vote_hold_'), str_starts_with($action, 'shared_devices_') => 'yellow',
             default => 'green',
         };
     }

@@ -157,6 +157,7 @@ Route::middleware('auth')->group(function () {
         // (docs/vote-integrity.md).
         Route::get('/vote-holds', [VoteHoldController::class, 'index'])->name('vote-holds.index');
         Route::get('/vote-holds/devices', [VoteHoldController::class, 'devices'])->name('vote-holds.devices');
+        Route::get('/vote-holds/devices/export', [VoteHoldController::class, 'export'])->name('vote-holds.devices.export');
         Route::post('/vote-holds', [VoteHoldController::class, 'storeMany'])->name('vote-holds.store-many');
         Route::post('/users/{user}/vote-hold', [VoteHoldController::class, 'store'])->name('users.vote-hold');
         Route::delete('/users/{user}/vote-hold', [VoteHoldController::class, 'destroy'])->name('users.vote-release');
