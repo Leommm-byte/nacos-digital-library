@@ -67,7 +67,7 @@ class ActivityActions
         return [
             'title' => 'Election', 'name' => 'Name', 'matric' => 'Matric', 'login' => 'Tried', 'reason' => 'Why',
             'class' => 'Class', 'file' => 'File', 'mode' => 'Mode', 'total' => 'On the list', 'removed' => 'Removed',
-            'moved' => 'Moved class', 'hours' => 'Hours', 'automatic' => 'At its end time', 'ballots' => 'Ballots',
+            'moved' => 'Moved class', 'hours' => 'Hours', 'minutes' => 'Minutes', 'automatic' => 'At its end time', 'ballots' => 'Ballots',
             'position' => 'Position', 'candidate' => 'Candidate', 'email' => 'Email', 'from_slip' => 'After a slip',
             'recorded_later' => 'Recorded later from its record',
         ];

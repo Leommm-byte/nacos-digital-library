@@ -3,12 +3,6 @@
     $draft = $election->isDraft();
     $open = $election->status === \App\Enums\ElectionStatus::Open;
     $final = (bool) ($results['final'] ?? false);
-    $durations = [];
-    foreach (\App\Models\Election::DURATIONS as $hours) {
-        $durations[$hours] = $hours < 24
-            ? $hours.' '.\Illuminate\Support\Str::plural('hour', $hours)
-            : intdiv($hours, 24).' '.\Illuminate\Support\Str::plural('day', intdiv($hours, 24));
-    }
 @endphp
 
 <x-dynamic-component :component="$desk->layout()" :title="$election->title">
@@ -177,7 +171,14 @@
                     <form method="POST" action="{{ $desk->route('.launch', $election) }}" class="space-y-4"
                         data-confirm="Open voting now? Positions and candidates can't change after this.">
                         @csrf
-                        <x-select name="hours" label="Voting time" :value="6" :options="$durations" />
+                        <fieldset>
+                            <legend class="field-label">Voting time</legend>
+                            <div class="grid grid-cols-2 gap-3">
+                                <x-field name="hours" label="Hours" type="number" min="0" max="{{ intdiv(\App\Models\Election::MAX_MINUTES, 60) }}" inputmode="numeric" :value="old('hours', 6)" />
+                                <x-field name="minutes" label="Minutes" type="number" min="0" max="59" inputmode="numeric" :value="old('minutes', 0)" />
+                            </div>
+                            <p class="mt-1 text-xs text-muted">From {{ \App\Models\Election::MIN_MINUTES }} minutes to {{ intdiv(\App\Models\Election::MAX_MINUTES, 1440) }} days, for example 3 hours 30 minutes.</p>
+                        </fieldset>
                         <x-button icon="rocket" class="w-full" :disabled="$launchProblem !== null">Open voting</x-button>
                     </form>
                 </x-card>
