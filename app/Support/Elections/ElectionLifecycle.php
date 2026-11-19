@@ -44,17 +44,17 @@ class ElectionLifecycle
     }
 
     /**
-     * Opens voting now, for the given number of hours.
+     * Opens voting now, for the given hours and minutes.
      */
-    public static function launch(Election $election, int $hours): void
+    public static function launch(Election $election, int $hours, int $minutes = 0): void
     {
         $election->status = ElectionStatus::Open;
         $election->starts_at = now();
-        $election->ends_at = now()->addHours($hours);
+        $election->ends_at = now()->addHours($hours)->addMinutes($minutes);
         $election->save();
 
         LiveResults::publish($election);
-        Audit::election($election, 'election_launched', ['title' => $election->title, 'hours' => $hours]);
+        Audit::election($election, 'election_launched', ['title' => $election->title, 'hours' => $hours, 'minutes' => $minutes]);
     }
 
     /**

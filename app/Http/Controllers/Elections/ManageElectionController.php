@@ -140,8 +140,21 @@ class ManageElectionController extends Controller
         $this->authorizeChange('update', $election);
 
         $data = $request->validate([
-            'hours' => ['required', 'integer', Rule::in(Election::DURATIONS)],
+            'hours' => ['required', 'integer', 'min:0', 'max:'.intdiv(Election::MAX_MINUTES, 60)],
+            'minutes' => ['nullable', 'integer', 'min:0', 'max:59'],
+        ], [
+            'hours.required' => 'Enter how many hours voting stays open (0 is fine with minutes).',
         ]);
+
+        $hours = (int) $data['hours'];
+        $minutes = (int) ($data['minutes'] ?? 0);
+        $total = $hours * 60 + $minutes;
+
+        if ($total < Election::MIN_MINUTES || $total > Election::MAX_MINUTES) {
+            throw ValidationException::withMessages([
+                'hours' => 'Voting must stay open for at least '.Election::MIN_MINUTES.' minutes and at most '.intdiv(Election::MAX_MINUTES, 1440).' days.',
+            ]);
+        }
 
         $problem = ElectionLifecycle::launchProblem($election);
 
@@ -149,7 +162,7 @@ class ManageElectionController extends Controller
             return back()->withErrors(['launch' => $problem]);
         }
 
-        ElectionLifecycle::launch($election, (int) $data['hours']);
+        ElectionLifecycle::launch($election, $hours, $minutes);
 
         return redirect()->to($this->desk()->route('.show', $election))->with('status', 'Voting is open.');
     }

@@ -98,8 +98,13 @@ class Election extends Model
         return $this->organization_id !== null;
     }
 
-    /** Voting windows an admin can launch an election for, in hours. */
-    public const DURATIONS = [1, 2, 6, 12, 24, 48, 72];
+    /**
+     * How long voting can last, in minutes: any time from 15 minutes to
+     * 7 days, chosen as hours and minutes at launch.
+     */
+    public const MIN_MINUTES = 15;
+
+    public const MAX_MINUTES = 7 * 24 * 60;
 
     protected $fillable = ['title', 'description', 'levels', 'programmes', 'arms', 'entry_year_from', 'entry_year_to', 'roll_only', 'allow_late_accounts'];
 

@@ -149,14 +149,18 @@ class ManageElectionTest extends TestCase
             ->assertSessionHasErrors(['launch' => 'Add at least one position before launching.']);
 
         $election = Election::factory()->withBallot(['President' => 2])->create();
-        $this->post(route('elections.manage.launch', $election), ['hours' => 5])->assertSessionHasErrors('hours');
+        // Any time from 15 minutes to 7 days.
+        $this->post(route('elections.manage.launch', $election), ['hours' => 0, 'minutes' => 10])->assertSessionHasErrors('hours');
+        $this->post(route('elections.manage.launch', $election), ['hours' => 169])->assertSessionHasErrors('hours');
+        $this->post(route('elections.manage.launch', $election), ['hours' => 2, 'minutes' => 75])->assertSessionHasErrors('minutes');
+        $this->assertTrue($election->refresh()->isDraft());
 
         $this->travelTo(now()->startOfMinute());
-        $this->post(route('elections.manage.launch', $election), ['hours' => 6])->assertSessionHasNoErrors();
+        $this->post(route('elections.manage.launch', $election), ['hours' => 3, 'minutes' => 30])->assertSessionHasNoErrors();
 
         $election->refresh();
         $this->assertSame(ElectionStatus::Open, $election->status);
-        $this->assertTrue($election->ends_at?->equalTo(now()->addHours(6)));
+        $this->assertTrue($election->ends_at?->equalTo(now()->addHours(3)->addMinutes(30)));
         $this->assertFileExists(LiveResults::path($election));
         $this->assertDatabaseHas('audit_logs', ['action' => 'election_launched', 'subject_id' => $election->id]);
 
