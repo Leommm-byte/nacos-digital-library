@@ -53,6 +53,25 @@
             </section>
         @endforeach
 
+        @if ($turnout !== [])
+            <section class="mt-6">
+                <h2 class="text-lg">Turnout by class</h2>
+                <table class="admin-table mt-2">
+                    <thead><tr><th>Class</th><th class="text-right">Could vote</th><th class="text-right">Voted</th><th class="text-right">Turnout %</th></tr></thead>
+                    <tbody>
+                        @foreach ($turnout as $row)
+                            <tr>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right tabular-nums">{{ number_format($row['eligible']) }}</td>
+                                <td class="text-right tabular-nums">{{ number_format($row['voted']) }}</td>
+                                <td class="text-right tabular-nums">{{ $percent($row['turnout']) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+        @endif
+
         <p class="mt-8 text-xs text-muted">
             Printed {{ now()->timezone($zone)->format('j M Y, g:i a') }}. Secret ballot: a record that each student voted is kept, never who they chose.
             @if ($desk->isDepartment()) Powered by NACOS YabaTech. @endif

@@ -216,6 +216,12 @@ class DepartmentElectionsTest extends TestCase
         $this->get(route('vote.admin.elections.results.print', [$this->fst, $election]))
             ->assertOk()->assertSee('Food Science and Technology')->assertSee('Winner')->assertSee('Powered by NACOS YabaTech');
 
+        // Turnout by class, from who voted (departments have no holds).
+        $this->get(route('vote.admin.elections.show', [$this->fst, $election]))->assertOk()
+            ->assertSeeInOrder(['Turnout by class', 'ND1 Full-time', '100%'])->assertDontSee('On hold');
+        $turnout = $this->get(route('vote.admin.elections.turnout.csv', [$this->fst, $election]))->assertOk()->streamedContent();
+        $this->assertStringContainsString("Class,\"Could vote\",Voted,\"Turnout %\"\n\"ND1 Full-time\",1,1,100\n", $turnout);
+
         // NACOS's own elections have them too.
         $nacos = Election::factory()->closed()->withBallot()->create();
         $this->actingAs(User::factory()->role(Role::Admin)->create())
