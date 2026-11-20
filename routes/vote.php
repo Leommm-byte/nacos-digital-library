@@ -94,6 +94,7 @@ Route::prefix('vote/{organization}')->middleware('vote')->name('vote.')->group(f
                 Route::post('/launch', [AdminElectionController::class, 'launch'])->name('.launch');
                 Route::post('/close', [AdminElectionController::class, 'close'])->name('.close');
                 Route::get('/results.csv', [AdminElectionController::class, 'resultsCsv'])->name('.results.csv');
+                Route::get('/turnout.csv', [AdminElectionController::class, 'turnoutCsv'])->name('.turnout.csv');
                 Route::get('/results/print', [AdminElectionController::class, 'resultsPrint'])->name('.results.print');
 
                 Route::post('/positions', [BallotController::class, 'storePosition'])->name('.positions.store');

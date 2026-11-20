@@ -8,6 +8,7 @@ use App\Enums\Programme;
 use App\Enums\UserStatus;
 use App\Support\Classes\Arms;
 use Database\Factories\ElectionFactory;
+use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -389,6 +390,30 @@ class Election extends Model
     }
 
     /**
+     * The columns that hold a voter's class in electorate() and
+     * heldVoters(): the roll's class when the election is limited to the
+     * roll (it is the official one), else the account's.
+     *
+     * @return array{programme: Expression|string, level: Expression|string, arm: Expression|string|null}
+     */
+    public function classColumns(): array
+    {
+        if ($this->isForDepartment()) {
+            return ['programme' => 'organization_roll.programme', 'level' => 'organization_roll.level', 'arm' => null];
+        }
+
+        if ($this->roll_only) {
+            return [
+                'programme' => DB::raw('coalesce(nominal_roll.programme, users.programme)'),
+                'level' => DB::raw('coalesce(nominal_roll.level, users.level)'),
+                'arm' => DB::raw('coalesce(nominal_roll.arm, users.arm)'),
+            ];
+        }
+
+        return ['programme' => 'users.programme', 'level' => 'users.level', 'arm' => 'users.arm'];
+    }
+
+    /**
      * Everyone who meets this NACOS election's rules, held or not.
      *
      * @return Builder<User>
@@ -400,16 +425,11 @@ class Election extends Model
         if ($this->excludesLateAccounts()) {
             $query->where('users.created_at', '<=', $this->starts_at);
         }
-        $level = 'users.level';
-        $programme = 'users.programme';
-        $arm = 'users.arm';
-
         if ($this->roll_only) {
             $query->join('nominal_roll', 'nominal_roll.matric_number', '=', 'users.matric_number');
-            $level = DB::raw('coalesce(nominal_roll.level, users.level)');
-            $programme = DB::raw('coalesce(nominal_roll.programme, users.programme)');
-            $arm = DB::raw('coalesce(nominal_roll.arm, users.arm)');
         }
+
+        ['programme' => $programme, 'level' => $level, 'arm' => $arm] = $this->classColumns();
 
         if (($this->programmes ?? []) !== []) {
             $query->whereIn($programme, $this->programmes);

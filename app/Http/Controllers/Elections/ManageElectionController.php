@@ -13,6 +13,7 @@ use App\Support\Classes\Arms;
 use App\Support\Elections\ElectionDesk;
 use App\Support\Elections\ElectionLifecycle;
 use App\Support\Elections\LiveResults;
+use App\Support\Elections\TurnoutByClass;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -103,6 +104,7 @@ class ManageElectionController extends Controller
             'rollCount' => $this->desk()->rollCount(),
             'ballots' => $election->ballotCount(),
             'launchProblem' => $election->isDraft() ? ElectionLifecycle::launchProblem($election) : null,
+            'turnout' => $election->isDraft() ? [] : TurnoutByClass::for($election),
         ]);
     }
 
@@ -209,6 +211,36 @@ class ManageElectionController extends Controller
     }
 
     /**
+     * Turnout by class as a spreadsheet (CSV). Who voted, never what they
+     * chose.
+     */
+    public function turnoutCsv(Election $election): StreamedResponse
+    {
+        abort_if($election->isDraft(), 404);
+
+        $rows = TurnoutByClass::for($election);
+        $holds = ! $this->desk()->isDepartment();
+        $filename = Str::slug($election->title).'-turnout-by-class.csv';
+
+        return response()->streamDownload(function () use ($election, $rows, $holds) {
+            $out = fopen('php://output', 'w');
+            if ($out === false) {
+                return;
+            }
+            fwrite($out, "\u{FEFF}"); // Excel reads the file as UTF-8.
+            fputcsv($out, [$election->title.': turnout by class'], escape: '');
+            fputcsv($out, array_merge(['Class', 'Could vote', 'Voted', 'Turnout %'], $holds ? ['On hold'] : []), escape: '');
+            foreach ($rows as $row) {
+                fputcsv($out, array_merge([$row['label'], $row['eligible'], $row['voted'], $row['turnout']], $holds ? [$row['held']] : []), escape: '');
+            }
+            $eligible = array_sum(array_column($rows, 'eligible'));
+            $voted = array_sum(array_column($rows, 'voted'));
+            fputcsv($out, array_merge(['All classes', $eligible, $voted, $eligible > 0 ? round(min(100, $voted / $eligible * 100), 1) : 0], $holds ? [array_sum(array_column($rows, 'held'))] : []), escape: '');
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=utf-8']);
+    }
+
+    /**
      * The results on one page to print or save as PDF.
      */
     public function resultsPrint(Election $election): View
@@ -217,6 +249,7 @@ class ManageElectionController extends Controller
             'desk' => $this->desk(),
             'election' => $election,
             'results' => $this->results($election),
+            'turnout' => TurnoutByClass::for($election),
         ]);
     }
 

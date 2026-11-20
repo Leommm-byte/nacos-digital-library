@@ -134,6 +134,10 @@
                     </div>
                     @include('elections.partials.results', ['results' => $results, 'election' => $election, 'live' => ! $final])
                 </section>
+
+                <div class="mt-8">
+                    @include('elections.manage.turnout-by-class', ['turnout' => $turnout])
+                </div>
             @endif
         </div>
 

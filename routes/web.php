@@ -130,6 +130,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/launch', [ManageElectionController::class, 'launch'])->name('.launch');
             Route::post('/close', [ManageElectionController::class, 'close'])->name('.close');
             Route::get('/results.csv', [ManageElectionController::class, 'resultsCsv'])->name('.results.csv');
+            Route::get('/turnout.csv', [ManageElectionController::class, 'turnoutCsv'])->name('.turnout.csv');
             Route::get('/results/print', [ManageElectionController::class, 'resultsPrint'])->name('.results.print');
 
             Route::post('/positions', [BallotSetupController::class, 'storePosition'])->name('.positions.store');
