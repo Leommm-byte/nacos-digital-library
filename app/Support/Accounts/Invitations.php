@@ -3,6 +3,7 @@
 namespace App\Support\Accounts;
 
 use App\Models\AccountInvitation;
+use App\Models\RollEntry;
 use App\Models\User;
 use App\Notifications\AccountInvitation as InvitationEmail;
 use Illuminate\Support\Facades\DB;
@@ -78,9 +79,15 @@ class Invitations
         foreach ($due as $invitation) {
             $user = $invitation->user;
 
+            // Always to the class-list email on the roll, never the account's:
+            // an impersonator may have changed the account's, but can't touch
+            // the roll's (docs/vote-integrity.md). Falls back to the account's
+            // for anyone not on the roll (e.g. staff).
+            $to = RollEntry::emailFor($user->matric_number) ?? $user->email;
+
             // No address to send to (or the account is suspended): marked
             // expired, so it shows on the admin's list to fix and re-send.
-            if ($user->email === null || $user->isSuspended()) {
+            if ($to === null || $user->isSuspended()) {
                 $invitation->forceFill(['sent_at' => now(), 'expires_at' => now()])->save();
 
                 continue;

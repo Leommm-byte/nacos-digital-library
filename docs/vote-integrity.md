@@ -44,6 +44,33 @@ to that address).
 
 Every hold and release is in the audit log, with who did it and why.
 
+## Class-email verification (the vote gate)
+
+Holds are reactive: an admin has to spot a suspicious account first. The
+gate is proactive. When an election has **require_roll_email** on (the
+default for NACOS elections), a ballot is only accepted from an account
+that has proved control of the **class-list email on the nominal roll** —
+the one address an impersonator can't change. It's the same email the roll
+already stores and that invitations go to.
+
+- **Proof** is opening a one-time link emailed to that address. Invitation
+  links always go to the roll email, never the account's (an impersonator
+  may have changed the account's), so opening one proves it's the real
+  student. Acceptance sets `users.roll_email_verified_at`, puts the
+  account's email back to the roll's, signs out every other session, and
+  **auto-releases a hold** (controlling the class email answers what the
+  hold was waiting for, so the hold queue drains itself).
+- **Verify / reclaim** (`/verify-account`): a student enters their matric
+  number and we email the link to their roll email. This replaces admins
+  issuing reset codes one by one, and is how a student takes back an
+  account someone registered or voted with.
+- **In advance**: *Invitations → Queue verification links* emails every
+  unconfirmed student on the roll, sent under the hourly cap, so they
+  verify before voting day instead of all at once.
+- A student with no class email on the roll can't verify remotely; fix
+  their email on the roll (a re-upload fills emails without wiping the
+  ones already there) and they can.
+
 ## What it doesn't do
 
 - **Take back a ballot.** Ballots aren't linked to voters (that's what
@@ -70,4 +97,15 @@ Every hold and release is in the audit log, with who did it and why.
   and votes already in the log.
 - `App\Support\Elections\SharedDevices` groups accounts by either key;
   `Admin\VoteHoldController` has the pages.
-- Tests: `tests/Feature/Elections/VoteHoldTest.php`.
+- `users.roll_email_verified_at`, `elections.require_roll_email`
+  (`2026_11_22_000100_add_roll_email_verification`).
+  `Election::needsRollEmailVerification` and `ineligibilityReason` gate the
+  vote; `User::hasVerifiedRollEmail`. `RollEntry::emailFor` is the roll
+  email; `User::routeNotificationForMail` sends invitation links there.
+  `Auth\VerifyAccountController` is the verify/reclaim flow;
+  `InvitationController@store` records the proof, resets the email, and
+  releases the hold. `AccountController@queueVerifications` is the
+  advance send. `RollImport::saveClass` never wipes an email with a blank
+  cell and reports the reconcile counts.
+- Tests: `tests/Feature/Elections/VoteHoldTest.php`,
+  `tests/Feature/Elections/RollEmailVerificationTest.php`.

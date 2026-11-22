@@ -6,6 +6,7 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Support\Classes\Arms;
 use App\Support\Classes\SchoolClass;
+use App\Support\MatricNumber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -42,6 +43,18 @@ class RollEntry extends Model
             'level' => Level::class,
             'programme' => Programme::class,
         ];
+    }
+
+    /**
+     * The class-list email for a matric number, if the roll has one. This
+     * is where account-verification links are sent: the one address an
+     * impersonator can't change (docs/vote-integrity.md).
+     */
+    public static function emailFor(string $matric): ?string
+    {
+        $email = static::query()->where('matric_number', MatricNumber::normalize($matric))->value('email');
+
+        return is_string($email) && $email !== '' ? $email : null;
     }
 
     public function schoolClass(): ?SchoolClass

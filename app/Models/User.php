@@ -6,6 +6,7 @@ use App\Enums\Level;
 use App\Enums\Programme;
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Notifications\AccountInvitation as AccountInvitationNotification;
 use App\Support\Classes\Arms;
 use App\Support\Classes\SchoolClass;
 use App\Support\MatricNumber;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 
 /**
@@ -39,6 +41,7 @@ use Illuminate\Support\Carbon;
  * @property UserStatus $status
  * @property bool $must_change_password
  * @property Carbon|null $email_verified_at
+ * @property Carbon|null $roll_email_verified_at
  * @property string|null $two_factor_secret
  * @property list<string>|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -99,6 +102,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'arm' => null,
         'graduated_at' => null,
         'email_verified_at' => null,
+        'roll_email_verified_at' => null,
         'two_factor_secret' => null,
         'two_factor_recovery_codes' => null,
         'two_factor_confirmed_at' => null,
@@ -112,6 +116,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'roll_email_verified_at' => 'datetime',
             'password' => 'hashed',
             'level' => Level::class,
             'programme' => Programme::class,
@@ -210,6 +215,31 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasVerifiedEmailAddress(): bool
     {
         return $this->email !== null && $this->email_verified_at !== null;
+    }
+
+    /**
+     * Proved they control the class-list email on the nominal roll by
+     * opening the one-time link sent there (docs/vote-integrity.md). It is
+     * the one address an impersonator can't set, so voting can require it.
+     */
+    public function hasVerifiedRollEmail(): bool
+    {
+        return $this->roll_email_verified_at !== null;
+    }
+
+    /**
+     * Where this account's mail goes. Account-verification links must reach
+     * the class-list email on the nominal roll, never an address an
+     * impersonator may have set on the account (docs/vote-integrity.md);
+     * everything else goes to the account's own address.
+     */
+    public function routeNotificationForMail(Notification $notification): ?string
+    {
+        if ($notification instanceof AccountInvitationNotification) {
+            return RollEntry::emailFor($this->matric_number) ?? $this->email;
+        }
+
+        return $this->email;
     }
 
     /**

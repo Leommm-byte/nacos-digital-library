@@ -123,13 +123,37 @@ class RollImport
      * listed under another class move to this one.
      *
      * @param  array<string, array{matric_number: string, fullname: string|null, email: string|null}>  $rows
-     * @return array{total: int, added: int, removed: int, moved: int}
+     * @return array{total: int, added: int, removed: int, moved: int, emails: array{filled: int, changed: int, unchanged: int, kept: int}}
      */
     public static function saveClass(array $rows, SchoolClass $class, bool $replace = true): array
     {
         return DB::transaction(function () use ($rows, $class, $replace) {
             $incoming = array_keys($rows);
             $inClass = self::inClass($class)->pluck('matric_number')->all();
+
+            // Reconcile emails against what the roll already has, and never
+            // wipe an address with a blank cell: a re-upload to fill emails
+            // (docs/vote-integrity.md) should only add or correct them.
+            $existing = RollEntry::query()->whereIn('matric_number', $incoming)->pluck('email', 'matric_number');
+            $emails = ['filled' => 0, 'changed' => 0, 'unchanged' => 0, 'kept' => 0];
+            foreach ($rows as $matric => $row) {
+                $was = $existing[$matric] ?? null;
+                $now = $row['email'];
+
+                if ($now === null) {
+                    // No email in the file: keep whatever the roll holds.
+                    $rows[$matric]['email'] = $was;
+                    if ($was !== null) {
+                        $emails['kept']++;
+                    }
+                } elseif ($was === null) {
+                    $emails['filled']++;
+                } elseif (strcasecmp($was, $now) === 0) {
+                    $emails['unchanged']++;
+                } else {
+                    $emails['changed']++;
+                }
+            }
 
             $moved = 0;
             foreach (array_chunk($incoming, 500) as $chunk) {
@@ -164,6 +188,7 @@ class RollImport
                 'added' => count(array_diff($incoming, $inClass)) - $moved,
                 'removed' => count($removed),
                 'moved' => $moved,
+                'emails' => $emails,
             ];
         });
     }

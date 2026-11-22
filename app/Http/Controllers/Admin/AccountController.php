@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\Level;
 use App\Enums\Programme;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AccountInvitation;
 use App\Models\Department;
@@ -258,6 +259,61 @@ class AccountController extends Controller
     /**
      * Sends every expired invitation again.
      */
+    /**
+     * Queues a verification link for every student on the roll who hasn't
+     * proved their class email yet and isn't already waiting for one, so
+     * they can confirm their account ahead of an election instead of all
+     * at once on voting day. The scheduler sends them to the class-list
+     * email under the hourly cap (Invitations::sendDue). Safe to run again:
+     * accounts already waiting or verified are skipped.
+     */
+    public function queueVerifications(): RedirectResponse
+    {
+        $targetIds = User::query()
+            ->whereNull('roll_email_verified_at')
+            ->whereNull('graduated_at')
+            ->where('status', UserStatus::Active)
+            ->whereIn('matric_number', RollEntry::query()->whereNotNull('email')->where('email', '!=', '')->select('matric_number'))
+            ->pluck('id');
+
+        $queued = DB::transaction(function () use ($targetIds) {
+            $acted = 0;
+
+            foreach ($targetIds->chunk(500) as $chunk) {
+                // Re-arm any invitation that was sent, has expired, or was
+                // accepted before this check existed: a fresh link to the
+                // class email.
+                $acted += AccountInvitation::query()
+                    ->whereIn('user_id', $chunk)
+                    ->where(fn (Builder $q) => $q->whereNotNull('sent_at')->orWhereNotNull('accepted_at'))
+                    ->update(['token_hash' => null, 'sent_at' => null, 'expires_at' => null, 'accepted_at' => null, 'priority' => false]);
+
+                // New invitations for students who never had one.
+                $missing = $chunk->diff(AccountInvitation::query()->whereIn('user_id', $chunk)->pluck('user_id'));
+                $now = now();
+                AccountInvitation::query()->insert($missing->map(fn (int $id) => [
+                    'user_id' => $id,
+                    'invited_by' => null,
+                    'token_hash' => null,
+                    'priority' => false,
+                    'sends' => 0,
+                    'sent_at' => null,
+                    'expires_at' => null,
+                    'accepted_at' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ])->all());
+                $acted += $missing->count();
+            }
+
+            return $acted;
+        });
+
+        Audit::record('verifications_queued', null, ['count' => $queued]);
+
+        return back()->with('status', $queued.' verification '.Str::plural('link', $queued).' queued for students who haven\'t confirmed their class email. '.self::sendingTime());
+    }
+
     public function resendExpired(): RedirectResponse
     {
         $expired = AccountInvitation::query()->unused()->whereNotNull('sent_at')->where('expires_at', '<=', now());

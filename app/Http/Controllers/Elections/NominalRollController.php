@@ -17,6 +17,7 @@ use App\Support\Spreadsheets\SpreadsheetRows;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
@@ -148,8 +149,16 @@ class NominalRollController extends Controller
             'mismatches' => count($mismatches),
         ]);
 
+        $emails = $result['emails'];
+        $emailNote = match (true) {
+            $emails['filled'] > 0 && $emails['changed'] > 0 => " {$emails['filled']} class ".Str::plural('email', $emails['filled'])." filled in, {$emails['changed']} changed.",
+            $emails['filled'] > 0 => " {$emails['filled']} class ".Str::plural('email', $emails['filled']).' filled in.',
+            $emails['changed'] > 0 => " {$emails['changed']} class ".Str::plural('email', $emails['changed']).' changed.',
+            default => '',
+        };
+
         return redirect()->route('roll.index')
-            ->with('status', "{$class} imported.")
+            ->with('status', "{$class} imported.".$emailNote)
             ->with('import', [...$result, 'class' => $class, 'replace' => $replace, 'skipped' => array_slice($parsed['skipped'], 0, 20), 'skippedCount' => count($parsed['skipped'])]);
     }
 

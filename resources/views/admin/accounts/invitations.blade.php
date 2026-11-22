@@ -7,6 +7,15 @@
 <x-layouts.admin title="Invitations">
     <x-page-header title="Invitations" :subtitle="'Accounts emailed a link to choose their password who haven\'t used it yet. Invitations go out about '.$perHour.' an hour, and links work for '.config('mail.invitations.expire_days').' days. '.number_format($accepted).' '.\Illuminate\Support\Str::plural('invitation', $accepted).' used so far.'" :back="route('admin.accounts.index')" back-label="Create accounts" />
 
+    <div class="mb-6 rounded-lg border border-line bg-surface-2 p-4">
+        <p class="font-semibold">Send verification links to everyone</p>
+        <p class="mt-1 text-sm text-muted">Queues a one-time link to the class-list email for every student on the roll who hasn't confirmed it yet, so they can verify before voting day instead of all at once. Safe to run again. The links go out about {{ $perHour }} an hour.</p>
+        <form method="POST" action="{{ route('admin.accounts.verifications') }}" class="mt-3" data-confirm="Queue verification links for all students who haven't confirmed their class email?">
+            @csrf
+            <x-button variant="secondary" size="sm" icon="mail">Queue verification links</x-button>
+        </form>
+    </div>
+
     @if (session('next'))
         <form method="POST" action="{{ route('admin.accounts.store') }}" class="mb-6">
             @csrf
