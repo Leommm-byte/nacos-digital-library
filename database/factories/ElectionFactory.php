@@ -20,11 +20,21 @@ class ElectionFactory extends Factory
             'levels' => null,
             'entry_year_from' => null,
             'entry_year_to' => null,
-            // Tests opt in to the nominal roll, and to leaving out accounts
-            // created after voting opened, where they need them.
+            // Tests opt in to the nominal roll, to the class-email gate, and
+            // to leaving out accounts created after voting opened, where they
+            // need them.
             'roll_only' => false,
+            'require_roll_email' => false,
             'allow_late_accounts' => true,
         ];
+    }
+
+    /**
+     * Voters must have verified their class-list email to vote.
+     */
+    public function requireRollEmail(): static
+    {
+        return $this->state(['require_roll_email' => true]);
     }
 
     /**

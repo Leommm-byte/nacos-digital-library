@@ -6,6 +6,7 @@
     $yearOptions = ['' => 'Any year'] + $years;
     $rollOnly = $errors->any() ? (bool) old('roll_only') : $election->roll_only;
     $lateAccounts = $errors->any() ? (bool) old('allow_late_accounts') : $election->allow_late_accounts;
+    $requireRollEmail = $errors->any() ? (bool) old('require_roll_email') : $election->require_roll_email;
 @endphp
 
 <x-dynamic-component :component="$desk->layout()" :title="$editing ? 'Edit election' : 'New election'">
@@ -56,6 +57,18 @@
                 </span>
             </label>
             @endif
+
+            @unless ($desk->isDepartment())
+            <label class="roll-toggle">
+                <input type="checkbox" name="require_roll_email" value="1" class="mt-1 size-4 shrink-0 accent-[var(--primary)]" @checked($requireRollEmail)>
+                <span>
+                    <strong>Voters must confirm their class email first</strong>
+                    <span class="block text-sm text-muted">
+                        Strongly recommended. A ballot is only accepted once the voter has opened the one-time link sent to their class-list email, the one address an impersonator can't change. Students confirm at <a href="{{ route('verify-account') }}" class="link">Verify my account</a>; queue the links in advance from <a href="{{ route('admin.accounts.invitations') }}" class="link">Invitations</a>.
+                    </span>
+                </span>
+            </label>
+            @endunless
 
             <label class="roll-toggle">
                 <input type="checkbox" name="allow_late_accounts" value="1" class="mt-1 size-4 shrink-0 accent-[var(--primary)]" @checked($lateAccounts)>

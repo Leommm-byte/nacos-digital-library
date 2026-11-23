@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VoteHoldController;
 use App\Http\Controllers\Announcements\AnnouncementController;
 use App\Http\Controllers\Assistant\AssistantController;
+use App\Http\Controllers\Auth\VerifyAccountController;
 use App\Http\Controllers\Elections\BallotSetupController;
 use App\Http\Controllers\Elections\CandidatePhotoController;
 use App\Http\Controllers\Elections\ElectionController;
@@ -55,6 +56,13 @@ Route::get('/elections/{election}/candidates/{candidate}/photo', CandidatePhotoC
 // Know your executives: public, like the results.
 Route::get('/executives', [ExecutiveController::class, 'index'])->name('executives.index');
 Route::get('/executives/{executive}/photo', [ExecutiveController::class, 'photo'])->whereNumber('executive')->name('executives.photo');
+
+// Verify / reclaim an account by the class-list email on the nominal roll
+// (docs/vote-integrity.md). Open to everyone: a student may be logged in on
+// a stolen account and still need to prove the class email before voting.
+Route::get('/verify-account', [VerifyAccountController::class, 'create'])->name('verify-account');
+Route::post('/verify-account', [VerifyAccountController::class, 'store'])->middleware('throttle:10,1')->name('verify-account.store');
+Route::get('/verify-account/sent', [VerifyAccountController::class, 'sent'])->name('verify-account.sent');
 
 Route::middleware('auth')->group(function () {
     Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
@@ -168,6 +176,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/accounts/slips', [AccountController::class, 'slips'])->name('accounts.slips');
         Route::get('/accounts/invitations', [AccountController::class, 'invitations'])->name('accounts.invitations');
         Route::post('/accounts/invitations/expired', [AccountController::class, 'resendExpired'])->middleware('throttle:10,1')->name('accounts.invitations.expired');
+        Route::post('/accounts/verifications', [AccountController::class, 'queueVerifications'])->middleware('throttle:4,1')->name('accounts.verifications');
         Route::post('/accounts/invitations/{invitation}', [AccountController::class, 'resend'])->middleware('throttle:60,1')->name('accounts.invitations.resend');
 
         Route::get('/books', [AdminBookController::class, 'index'])->name('books.index');

@@ -48,6 +48,7 @@ const pages = [
     ['invitation', '/invitation/demo-invitation-link-for-screenshots-0123456789a', null],
     ['invitation-expired', '/invitation/no-such-link', null],
     ['forgot-password', '/forgot-password', null],
+    ['verify-account', '/verify-account', null],
     ['reset-with-code', '/reset-with-code', null],
     ['not-found', '/this-page-does-not-exist', null],
     ['home', '/', 'F/ND/24/0000004'],

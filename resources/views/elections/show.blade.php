@@ -45,6 +45,10 @@
                     <x-empty-state icon="vote" tone="green" title="Log in to vote" text="You need your NACOS account to vote. Anyone can follow the results.">
                         <x-button href="{{ route('login') }}" icon="log-in">Log in</x-button>
                     </x-empty-state>
+                @elseif ($reason && $election->needsRollEmailVerification($user))
+                    <x-empty-state icon="shield-check" tone="green" title="Verify your account to vote" :text="$reason">
+                        <x-button href="{{ route('verify-account') }}" icon="mail">Verify my account</x-button>
+                    </x-empty-state>
                 @elseif ($reason)
                     <x-empty-state icon="info" title="You can't vote in this election" :text="$reason" />
                 @endif

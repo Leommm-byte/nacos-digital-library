@@ -107,7 +107,7 @@ class Election extends Model
 
     public const MAX_MINUTES = 7 * 24 * 60;
 
-    protected $fillable = ['title', 'description', 'levels', 'programmes', 'arms', 'entry_year_from', 'entry_year_to', 'roll_only', 'allow_late_accounts'];
+    protected $fillable = ['title', 'description', 'levels', 'programmes', 'arms', 'entry_year_from', 'entry_year_to', 'roll_only', 'require_roll_email', 'allow_late_accounts'];
 
     /**
      * @var array<string, mixed>
@@ -123,6 +123,7 @@ class Election extends Model
         'organization_id' => null,
         'roll_only' => true,
         'allow_late_accounts' => false,
+        'require_roll_email' => true,
         'starts_at' => null,
         'ends_at' => null,
         'closed_at' => null,
@@ -138,6 +139,7 @@ class Election extends Model
             'entry_year_from' => 'integer',
             'entry_year_to' => 'integer',
             'roll_only' => 'boolean',
+            'require_roll_email' => 'boolean',
             'allow_late_accounts' => 'boolean',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
@@ -235,6 +237,20 @@ class Election extends Model
     }
 
     /**
+     * Whether this NACOS voter still has to prove they control their
+     * class-list email before voting (docs/vote-integrity.md). Department
+     * voters (the voter guard) have their own spaces and are never gated
+     * this way.
+     */
+    public function needsRollEmailVerification(User|Voter $user): bool
+    {
+        return $this->require_roll_email
+            && $user instanceof User
+            && ! $this->isForDepartment()
+            && ! $user->hasVerifiedRollEmail();
+    }
+
+    /**
      * Null when the user may vote in this election, otherwise why not.
      */
     public function ineligibilityReason(User|Voter $user): ?string
@@ -297,6 +313,10 @@ class Election extends Model
                 || ($this->entry_year_to !== null && $year > $this->entry_year_to)) {
                 return 'This election is for '.$this->eligibilitySummary().'.';
             }
+        }
+
+        if ($this->needsRollEmailVerification($user)) {
+            return 'Before you can vote, confirm this is really your account. We\'ll email a one-time link to your class email (the one on the nominal roll). Open "Verify my account", enter your matric number, then open the link.';
         }
 
         if ($user->isOnVoteHold()) {

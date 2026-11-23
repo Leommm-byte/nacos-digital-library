@@ -398,6 +398,8 @@ class DemoSeeder extends Seeder
         $past = Election::create([
             'title' => 'NACOS Week Planning Committee',
             'description' => 'Three students to plan NACOS week with the executives.',
+            // Demo accounts aren't put through class-email verification.
+            'require_roll_email' => false,
         ]);
         $past->created_by = $users['admin']->id;
         $past->save();
@@ -412,6 +414,7 @@ class DemoSeeder extends Seeder
         $open = Election::create([
             'title' => 'NACOS Executive Council Election 2026',
             'description' => 'Choose the executives who will lead NACOS YabaTech for the 2026/2027 session.',
+            'require_roll_email' => false,
         ]);
         $open->created_by = $users['admin']->id;
         $open->save();
