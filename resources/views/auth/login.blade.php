@@ -19,6 +19,11 @@
         <x-button class="w-full" icon="log-in">Log in</x-button>
     </form>
 
+    <div class="mt-6 rounded-md bg-surface-2 p-4 text-sm">
+        <p class="font-semibold">Can't get in, or someone registered with your matric number?</p>
+        <p class="mt-1 text-muted">Take your account back: we'll email a one-time link to your class email, the one on the department roll. <a href="{{ route('verify-account') }}" class="link">Verify my account</a>.</p>
+    </div>
+
     <p class="mt-6 text-center text-sm text-muted">
         New here? <a href="{{ route('signup') }}" class="link">Create an account</a>
     </p>
