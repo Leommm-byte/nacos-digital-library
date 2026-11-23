@@ -107,6 +107,29 @@ class RollEmailVerificationTest extends TestCase
     }
 
     #[Test]
+    public function a_logged_in_unverified_student_can_open_and_accept_the_link(): void
+    {
+        $this->onRoll('F/ND/25/3210050', 'deji@gmail.com');
+        $election = Election::factory()->requireRollEmail()->open()->withBallot(['President' => 2])->create();
+        $user = User::factory()->create(['matric_number' => 'F/ND/25/3210050', 'password' => 'Password1!']);
+
+        // Logged in with their own password, but not verified: can't vote yet.
+        $this->assertTrue($election->needsRollEmailVerification($user));
+
+        $this->actingAs($user)->post(route('verify-account.store'), ['matric_number' => 'F/ND/25/3210050'])
+            ->assertRedirect(route('verify-account.sent'));
+        $token = $this->linkFor($user);
+
+        // The link opens and is accepted while still signed in (not bounced
+        // away by guest-only middleware).
+        $this->actingAs($user)->get(route('invitation.show', $token))->assertOk();
+        $this->actingAs($user)->post(route('invitation.store', $token), ['password' => 'NewPass1!', 'password_confirmation' => 'NewPass1!'])
+            ->assertRedirect(route('home'));
+
+        $this->assertTrue($user->refresh()->hasVerifiedRollEmail());
+    }
+
+    #[Test]
     public function verify_points_students_without_an_account_to_signing_up(): void
     {
         $this->onRoll('F/ND/25/3210002', 'nobody@gmail.com');
