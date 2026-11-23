@@ -228,6 +228,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Hasn't confirmed their class email yet, but could: their matric is on
+     * the roll with an address to send the one-time link to. Drives the
+     * site-wide "confirm your account to vote" nudge (docs/vote-integrity.md).
+     */
+    public function awaitingRollEmailVerification(): bool
+    {
+        return ! $this->hasVerifiedRollEmail() && RollEntry::emailFor($this->matric_number) !== null;
+    }
+
+    /**
      * Where this account's mail goes. Account-verification links must reach
      * the class-list email on the nominal roll, never an address an
      * impersonator may have set on the account (docs/vote-integrity.md);

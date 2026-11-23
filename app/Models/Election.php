@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -145,6 +146,21 @@ class Election extends Model
             'ends_at' => 'datetime',
             'closed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether any NACOS election that needs class-email verification is in
+     * play (being set up or open), so the site-wide "confirm your account"
+     * nudge is worth showing. Cached: it changes only when an admin creates,
+     * opens or closes one (docs/vote-integrity.md).
+     */
+    public static function rollEmailElectionActive(): bool
+    {
+        return (bool) Cache::remember('elections:roll-email-nudge', 60, fn () => self::query()
+            ->whereNull('organization_id')
+            ->where('require_roll_email', true)
+            ->whereIn('status', [ElectionStatus::Draft, ElectionStatus::Open])
+            ->exists());
     }
 
     public function isDraft(): bool

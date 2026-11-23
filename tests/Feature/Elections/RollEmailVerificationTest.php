@@ -15,6 +15,7 @@ use App\Support\Classes\SchoolClass;
 use App\Support\Elections\RollEmailVerification;
 use App\Support\Elections\RollImport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -127,6 +128,28 @@ class RollEmailVerificationTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertTrue($user->refresh()->hasVerifiedRollEmail());
+    }
+
+    #[Test]
+    public function unverified_students_see_a_confirm_your_account_banner_during_an_election(): void
+    {
+        $this->onRoll('F/ND/25/3210060', 'x@gmail.com');
+        $user = User::factory()->create(['matric_number' => 'F/ND/25/3210060']);
+
+        // No verification election yet: no nudge.
+        $this->actingAs($user)->get(route('home'))->assertOk()->assertDontSee('Confirm your account so you can vote');
+
+        // A NACOS election that needs verification (draft or open): nudge shows.
+        Election::factory()->requireRollEmail()->create();
+        Cache::forget('elections:roll-email-nudge');
+        $this->actingAs($user)->get(route('home'))->assertOk()
+            ->assertSee('Confirm your account so you can vote')
+            ->assertSee(route('verify-account'));
+
+        // Once verified, the nudge is gone.
+        $user->forceFill(['roll_email_verified_at' => now()])->save();
+        Cache::forget('elections:roll-email-nudge');
+        $this->actingAs($user)->get(route('home'))->assertOk()->assertDontSee('Confirm your account so you can vote');
     }
 
     #[Test]
