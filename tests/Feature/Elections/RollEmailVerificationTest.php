@@ -155,6 +155,23 @@ class RollEmailVerificationTest extends TestCase
     }
 
     #[Test]
+    public function queueing_skips_students_who_already_confirmed_the_just_added_email(): void
+    {
+        $admin = User::factory()->role(Role::Admin)->create();
+        $this->onRoll('F/ND/25/3210030', 'tomi@gmail.com');
+        // The student signed up with their own email and confirmed it; that
+        // address has only now been added to the roll, so they haven't been
+        // marked verified yet — but queueing should recognise it, not email.
+        $tomi = User::factory()->create(['matric_number' => 'F/ND/25/3210030', 'email' => 'tomi@gmail.com', 'email_verified_at' => now()]);
+        $this->assertFalse($tomi->hasVerifiedRollEmail());
+
+        $this->actingAs($admin)->post(route('admin.accounts.verifications'))->assertRedirect();
+
+        $this->assertTrue($tomi->refresh()->hasVerifiedRollEmail()); // recognised
+        $this->assertDatabaseMissing('account_invitations', ['user_id' => $tomi->id]); // not emailed
+    }
+
+    #[Test]
     public function students_who_already_confirmed_their_class_email_are_treated_as_verified(): void
     {
         $this->onRoll('F/ND/25/3210020', 'kemi@gmail.com');

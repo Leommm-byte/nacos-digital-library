@@ -14,6 +14,7 @@ use App\Support\Accounts\Invitations;
 use App\Support\Audit;
 use App\Support\Classes\Arms;
 use App\Support\Classes\SchoolClass;
+use App\Support\Elections\RollEmailVerification;
 use App\Support\TemporaryPassword;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -272,6 +273,11 @@ class AccountController extends Controller
      */
     public function queueVerifications(): RedirectResponse
     {
+        // Against the roll as it is now (emails may have just been uploaded):
+        // mark anyone who already confirmed a matching class email as
+        // verified, so they're skipped below rather than emailed again.
+        $exempted = RollEmailVerification::backfill();
+
         $targetIds = User::query()
             ->whereNull('roll_email_verified_at')
             ->whereNull('graduated_at')
@@ -301,9 +307,11 @@ class AccountController extends Controller
         });
 
         $queued = $targetIds->count();
-        Audit::record('verifications_queued', null, ['count' => $queued]);
+        Audit::record('verifications_queued', null, ['count' => $queued, 'already_verified' => $exempted]);
 
-        return back()->with('status', $queued.' verification '.Str::plural('link', $queued).' queued for students whose class email was just added and who haven\'t had a link yet. '.self::sendingTime());
+        $note = $exempted > 0 ? ' '.$exempted.' '.Str::plural('student', $exempted).' who had already confirmed a matching class email were left out.' : '';
+
+        return back()->with('status', $queued.' verification '.Str::plural('link', $queued).' queued for students whose class email was just added and who haven\'t had a link yet.'.$note.' '.self::sendingTime());
     }
 
     public function resendExpired(): RedirectResponse
