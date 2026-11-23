@@ -197,6 +197,40 @@ class RollEmailVerificationTest extends TestCase
     }
 
     #[Test]
+    public function an_admin_corrects_a_students_email_even_while_voting_is_open(): void
+    {
+        $admin = User::factory()->role(Role::Admin)->create();
+        $entry = $this->onRoll('F/ND/25/3210040', 'old-lost@gmail.com');
+        $student = User::factory()->create(['matric_number' => 'F/ND/25/3210040']);
+        // An open roll-only election locks the roll for adds and removals.
+        Election::factory()->requireRollEmail()->open()->withBallot(['President' => 2])->create(['roll_only' => true]);
+
+        // Adding or removing is blocked while voting is open...
+        $this->actingAs($admin)->delete(route('roll.students.destroy', $entry))->assertRedirect();
+        $this->assertDatabaseHas('nominal_roll', ['id' => $entry->id]); // still there
+
+        // ...but correcting the email, which doesn't change who may vote, works.
+        $this->actingAs($admin)->put(route('roll.students.email', $entry), ['email' => 'New.Address@Gmail.com'])
+            ->assertRedirect()->assertSessionHas('status');
+
+        $this->assertSame('new.address@gmail.com', $entry->refresh()->email); // normalised
+        $this->assertDatabaseHas('audit_logs', ['action' => 'roll_email_corrected']);
+        // A fresh confirmation link is queued for the student, to the new address.
+        $this->assertDatabaseHas('account_invitations', ['user_id' => $student->id]);
+    }
+
+    #[Test]
+    public function a_bad_email_is_rejected_and_an_unchanged_one_is_a_no_op(): void
+    {
+        $admin = User::factory()->role(Role::Admin)->create();
+        $entry = $this->onRoll('F/ND/25/3210041', 'ok@gmail.com');
+
+        $this->actingAs($admin)->put(route('roll.students.email', $entry), ['email' => 'not-an-email'])->assertRedirect();
+        $this->assertSame('ok@gmail.com', $entry->refresh()->email);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'roll_email_corrected']);
+    }
+
+    #[Test]
     public function reuploading_the_roll_fills_emails_without_wiping_them(): void
     {
         $class = SchoolClass::make(Programme::FullTime, Level::ND1);

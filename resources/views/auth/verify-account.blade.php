@@ -1,11 +1,11 @@
 <x-layouts.guest title="Verify my account">
     <h1 class="text-2xl">Verify your account</h1>
-    <p class="mt-1 text-muted">Enter your matric number. We'll email a one-time link to your class email, the one on the department's nominal roll. Open it to confirm the account is yours, set a fresh password, and be able to vote.</p>
+    <p class="mt-1 text-muted">Enter your matric number and we'll send a one-time link to the email NACOS has on record for you. Open it to confirm the account is yours, set a new password, and be able to vote.</p>
 
     @if (session('verify.signup'))
         <div class="mt-4 rounded-md bg-surface-2 p-4 text-sm">
             <p class="font-semibold">No account for that matric number yet</p>
-            <p class="mt-1 text-muted">Create one on the <a href="{{ route('signup') }}" class="link">sign-up page</a>. If your class email is on the roll, we'll send the link straight there.</p>
+            <p class="mt-1 text-muted">Create one on the <a href="{{ route('signup') }}" class="link">sign-up page</a>, and we'll send the link to the email on record for you.</p>
         </div>
     @endif
 
@@ -23,7 +23,7 @@
 
     <div class="mt-6 rounded-md bg-surface-2 p-4 text-sm">
         <p class="font-semibold">Someone registered or voted as you?</p>
-        <p class="mt-1 text-muted">This is how you take the account back. The link only goes to your class email, so whoever made the account can't get it. Opening it signs everyone else out.</p>
+        <p class="mt-1 text-muted">This is how you take the account back. The link only goes to the email on record for you, so whoever made the account can't receive it. Opening it signs everyone else out.</p>
     </div>
 
     <p class="mt-6 text-center text-sm text-muted">

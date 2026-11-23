@@ -74,6 +74,13 @@ already stores and that invitations go to.
 - A student with no class email on the roll can't verify remotely; fix
   their email on the roll (a re-upload fills emails without wiping the
   ones already there) and they can.
+- A student who can't reach the email on record (lost that mailbox) is
+  helped one at a time: an admin corrects the email on the student's roll
+  row (**Set confirmation email**) after checking who they are, and a fresh
+  link goes to the new address. This one change is allowed even while
+  voting is open, because it never changes who may vote, only where a
+  confirmation link goes; it's logged with the old and new address, so keep
+  it to one trusted admin during an election.
 
 ## What it doesn't do
 
@@ -110,6 +117,8 @@ already stores and that invitations go to.
   `InvitationController@store` records the proof, resets the email, and
   releases the hold. `AccountController@queueVerifications` is the advance
   send (only never-invited, unverified, on-roll-with-email accounts).
+  `NominalRollController@updateEmail` corrects one student's roll email
+  (not blocked by the roll lock) and sends them a fresh link.
   `RollEmailVerification::backfill` (a migration) marks accounts that
   already confirmed a matching class email as verified. `RollImport::saveClass`
   never wipes an email with a blank cell and reports the reconcile counts.

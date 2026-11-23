@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Election;
 use App\Models\RollEntry;
+use App\Models\User;
 use App\Rules\ValidMatricNumber;
+use App\Support\Accounts\Invitations;
 use App\Support\Audit;
 use App\Support\Classes\SchoolClass;
 use App\Support\Elections\RollImport;
@@ -213,6 +215,56 @@ class NominalRollController extends Controller
      * Takes one student off the roll (withdrawn, or added by mistake). Their
      * account, if any, stays; they just can't vote in roll-only elections.
      */
+    /**
+     * Corrects the email a student's account-verification link is sent to,
+     * for someone who can't reach the address on record (docs/vote-integrity.md).
+     *
+     * Deliberately NOT blocked while an election is open: unlike adding or
+     * removing a student, this never changes who may vote, only where that
+     * voter's confirmation link goes, so it's the one roll change an admin
+     * can still make on voting day to help a locked-out student. Every
+     * change is logged with the old and new address and who made it; keep
+     * it to one trusted admin while voting is open.
+     */
+    public function updateEmail(Request $request, RollEntry $entry): RedirectResponse
+    {
+        $email = strtolower(trim($request->string('email')->toString()));
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false || mb_strlen($email) > 255) {
+            return back()->with('status', 'That email address doesn\'t look right. Check it and try again.');
+        }
+
+        $back = route('roll.index', array_filter([
+            'q' => $entry->matric_number,
+            'page' => max(1, $request->integer('page')) > 1 ? $request->integer('page') : null,
+        ])).'#find';
+
+        if (strcasecmp((string) $entry->email, $email) === 0) {
+            return redirect()->to($back)->with('status', "{$entry->matric_number} already has that email.");
+        }
+
+        $old = $entry->email;
+        $entry->forceFill(['email' => $email])->save();
+
+        Audit::record('roll_email_corrected', null, [
+            'matric' => $entry->matric_number,
+            'from' => $old,
+            'to' => $email,
+            'during_election' => self::lockedBy() !== null,
+        ]);
+
+        // Send a fresh confirmation link to the new address, so the student
+        // can take their account back without hunting for the page.
+        $user = User::query()->where('matric_number', $entry->matric_number)->first();
+        $note = '';
+        if ($user !== null && ! $user->hasVerifiedRollEmail() && ! $user->isSuspended()) {
+            Invitations::queue($user, by: $user, priority: true);
+            $note = ' A confirmation link is on its way to the new address.';
+        }
+
+        return redirect()->to($back)->with('status', "Email updated for {$entry->matric_number}.".$note);
+    }
+
     public function destroy(Request $request, RollEntry $entry): RedirectResponse
     {
         if (($locked = $this->locked()) !== null) {
