@@ -64,9 +64,13 @@ already stores and that invitations go to.
   number and we email the link to their roll email. This replaces admins
   issuing reset codes one by one, and is how a student takes back an
   account someone registered or voted with.
-- **In advance**: *Invitations → Queue verification links* emails every
-  unconfirmed student on the roll, sent under the hourly cap, so they
-  verify before voting day instead of all at once.
+- **In advance**: *Invitations → Queue verification links* emails the
+  students who need it — on the roll with a class email, not verified, and
+  never sent a link — sent under the hourly cap. Students who signed up
+  through their class email already have a link, and students who already
+  confirmed are marked verified, so both are left out; it's really for the
+  accounts whose email was only just added to the roll. Expired links are
+  re-sent separately from the Expired tab.
 - A student with no class email on the roll can't verify remotely; fix
   their email on the roll (a re-upload fills emails without wiping the
   ones already there) and they can.
@@ -104,8 +108,10 @@ already stores and that invitations go to.
   email; `User::routeNotificationForMail` sends invitation links there.
   `Auth\VerifyAccountController` is the verify/reclaim flow;
   `InvitationController@store` records the proof, resets the email, and
-  releases the hold. `AccountController@queueVerifications` is the
-  advance send. `RollImport::saveClass` never wipes an email with a blank
-  cell and reports the reconcile counts.
+  releases the hold. `AccountController@queueVerifications` is the advance
+  send (only never-invited, unverified, on-roll-with-email accounts).
+  `RollEmailVerification::backfill` (a migration) marks accounts that
+  already confirmed a matching class email as verified. `RollImport::saveClass`
+  never wipes an email with a blank cell and reports the reconcile counts.
 - Tests: `tests/Feature/Elections/VoteHoldTest.php`,
   `tests/Feature/Elections/RollEmailVerificationTest.php`.

@@ -10,7 +10,9 @@ use App\Models\Election;
 use App\Models\RollEntry;
 use App\Models\User;
 use App\Notifications\AccountInvitation as InvitationEmail;
+use App\Support\Accounts\Invitations;
 use App\Support\Classes\SchoolClass;
+use App\Support\Elections\RollEmailVerification;
 use App\Support\Elections\RollImport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -119,30 +121,55 @@ class RollEmailVerificationTest extends TestCase
     }
 
     #[Test]
-    public function an_admin_queues_verification_links_for_everyone_unconfirmed(): void
+    public function queueing_links_targets_only_newly_emailed_students_never_sent_a_link(): void
     {
         $admin = User::factory()->role(Role::Admin)->create();
-        $this->onRoll('F/ND/25/3210010', 'a@gmail.com');
-        $this->onRoll('F/ND/25/3210011', 'b@gmail.com');
-        $this->onRoll('F/ND/25/3210012', ''); // no class email: skipped
+        $this->onRoll('F/ND/25/3210010', 'a@gmail.com'); // email just added
+        $this->onRoll('F/ND/25/3210011', 'b@gmail.com'); // no class email on roll
+        $this->onRoll('F/ND/25/3210012', '');
         $this->onRoll('F/ND/25/3210013', 'd@gmail.com');
+        $this->onRoll('F/ND/25/3210014', 'e@gmail.com');
+
+        // Needs a link: on the roll with an email, never invited.
         $u10 = User::factory()->create(['matric_number' => 'F/ND/25/3210010']);
-        $u11 = User::factory()->create(['matric_number' => 'F/ND/25/3210011']);
+        // No class email on the roll: can't be sent.
         $u12 = User::factory()->create(['matric_number' => 'F/ND/25/3210012']);
-        // Already verified: not re-queued.
+        // Already verified: left out.
         $u13 = User::factory()->create(['matric_number' => 'F/ND/25/3210013', 'roll_email_verified_at' => now()]);
+        // "Locked to class list": signed up through the class email, so it
+        // already has an invitation — left out.
+        $u14 = User::factory()->create(['matric_number' => 'F/ND/25/3210014']);
+        Invitations::queue($u14, by: $u14);
 
         $this->actingAs($admin)->post(route('admin.accounts.verifications'))->assertRedirect()->assertSessionHas('status');
 
         $this->assertDatabaseHas('account_invitations', ['user_id' => $u10->id]);
-        $this->assertDatabaseHas('account_invitations', ['user_id' => $u11->id]);
         $this->assertDatabaseMissing('account_invitations', ['user_id' => $u12->id]); // no class email
         $this->assertDatabaseMissing('account_invitations', ['user_id' => $u13->id]); // already verified
-        $this->assertSame(2, AccountInvitation::query()->count());
+        $this->assertSame(1, AccountInvitation::query()->where('user_id', $u14->id)->count()); // not a second one
+        $this->assertSame(2, AccountInvitation::query()->count()); // u10 + u14's own
 
-        // Running again doesn't pile up duplicates (idempotent).
+        // Idempotent: u10 now has an invitation, so a second run adds nothing.
         $this->actingAs($admin)->post(route('admin.accounts.verifications'))->assertRedirect();
         $this->assertSame(2, AccountInvitation::query()->count());
+    }
+
+    #[Test]
+    public function students_who_already_confirmed_their_class_email_are_treated_as_verified(): void
+    {
+        $this->onRoll('F/ND/25/3210020', 'kemi@gmail.com');
+        // Signed up through the class email and claimed it: account email
+        // matches the roll's and is confirmed.
+        $claimed = User::factory()->create(['matric_number' => 'F/ND/25/3210020', 'email' => 'kemi@gmail.com', 'email_verified_at' => now()]);
+        // Confirmed, but a different (attacker) address: not treated as verified.
+        $this->onRoll('F/ND/25/3210021', 'real@gmail.com');
+        $other = User::factory()->create(['matric_number' => 'F/ND/25/3210021', 'email' => 'attacker@evil.test', 'email_verified_at' => now()]);
+
+        $marked = RollEmailVerification::backfill();
+
+        $this->assertSame(1, $marked);
+        $this->assertTrue($claimed->refresh()->hasVerifiedRollEmail());
+        $this->assertFalse($other->refresh()->hasVerifiedRollEmail());
     }
 
     #[Test]

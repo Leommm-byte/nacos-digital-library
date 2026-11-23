@@ -16,6 +16,7 @@ use App\Support\Classes\Arms;
 use App\Support\Classes\SchoolClass;
 use App\Support\TemporaryPassword;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -260,12 +261,14 @@ class AccountController extends Controller
      * Sends every expired invitation again.
      */
     /**
-     * Queues a verification link for every student on the roll who hasn't
-     * proved their class email yet and isn't already waiting for one, so
-     * they can confirm their account ahead of an election instead of all
-     * at once on voting day. The scheduler sends them to the class-list
-     * email under the hourly cap (Invitations::sendDue). Safe to run again:
-     * accounts already waiting or verified are skipped.
+     * Queues a verification link for the students who need one: on the roll
+     * with a class email, not verified yet, and never sent a class-email
+     * link before. Students who signed up through the class-list email are
+     * already "locked" to it and have had their link, so they're left out;
+     * so are verified accounts. This is for the accounts whose email was
+     * only just added to the roll (docs/vote-integrity.md). The scheduler
+     * sends them to the class email under the hourly cap. Safe to run
+     * again, and separate from "Re-send expired", which re-arms old links.
      */
     public function queueVerifications(): RedirectResponse
     {
@@ -274,24 +277,15 @@ class AccountController extends Controller
             ->whereNull('graduated_at')
             ->where('status', UserStatus::Active)
             ->whereIn('matric_number', RollEntry::query()->whereNotNull('email')->where('email', '!=', '')->select('matric_number'))
+            // Never invited: an invitation already means they've had a link
+            // to their class email (sign-up or a previous run).
+            ->whereNotExists(fn (QueryBuilder $q) => $q->from('account_invitations')->whereColumn('account_invitations.user_id', 'users.id'))
             ->pluck('id');
 
-        $queued = DB::transaction(function () use ($targetIds) {
-            $acted = 0;
-
+        DB::transaction(function () use ($targetIds) {
+            $now = now();
             foreach ($targetIds->chunk(500) as $chunk) {
-                // Re-arm any invitation that was sent, has expired, or was
-                // accepted before this check existed: a fresh link to the
-                // class email.
-                $acted += AccountInvitation::query()
-                    ->whereIn('user_id', $chunk)
-                    ->where(fn (Builder $q) => $q->whereNotNull('sent_at')->orWhereNotNull('accepted_at'))
-                    ->update(['token_hash' => null, 'sent_at' => null, 'expires_at' => null, 'accepted_at' => null, 'priority' => false]);
-
-                // New invitations for students who never had one.
-                $missing = $chunk->diff(AccountInvitation::query()->whereIn('user_id', $chunk)->pluck('user_id'));
-                $now = now();
-                AccountInvitation::query()->insert($missing->map(fn (int $id) => [
+                AccountInvitation::query()->insert($chunk->map(fn (int $id) => [
                     'user_id' => $id,
                     'invited_by' => null,
                     'token_hash' => null,
@@ -303,15 +297,13 @@ class AccountController extends Controller
                     'created_at' => $now,
                     'updated_at' => $now,
                 ])->all());
-                $acted += $missing->count();
             }
-
-            return $acted;
         });
 
+        $queued = $targetIds->count();
         Audit::record('verifications_queued', null, ['count' => $queued]);
 
-        return back()->with('status', $queued.' verification '.Str::plural('link', $queued).' queued for students who haven\'t confirmed their class email. '.self::sendingTime());
+        return back()->with('status', $queued.' verification '.Str::plural('link', $queued).' queued for students whose class email was just added and who haven\'t had a link yet. '.self::sendingTime());
     }
 
     public function resendExpired(): RedirectResponse
