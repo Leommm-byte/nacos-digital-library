@@ -316,7 +316,7 @@ class Election extends Model
         }
 
         if ($this->needsRollEmailVerification($user)) {
-            return 'Before you can vote, confirm this is really your account. We\'ll email a one-time link to your class email (the one on the nominal roll). Open "Verify my account", enter your matric number, then open the link.';
+            return 'Before you can vote, confirm this is really your account. We\'ll send a one-time link to the email NACOS has on record for you. Open "Verify my account", enter your matric number, then open the link.';
         }
 
         if ($user->isOnVoteHold()) {

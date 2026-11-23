@@ -33,7 +33,7 @@ class AccountInvitation extends Notification
             ->greeting('Hello '.$notifiable->greetingName().',');
 
         $mail = $this->fromSignup
-            ? $mail->line("Someone started signing up with your matric number, {$notifiable->matric_number}. Your class list has this email address, so we sent the link here to make sure it's you.")
+            ? $mail->line("Someone used your matric number, {$notifiable->matric_number}, on NACOS. We've sent this link to the email on record for you, to make sure it's really you.")
             : $mail->line("NACOS has made an account for you with your matric number, {$notifiable->matric_number}. Choose a password to start using the library, timetables and elections.");
 
         return $mail

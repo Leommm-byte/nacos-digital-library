@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:10,1')
             ->name('roll.store');
         Route::post('/nominal-roll/students', [NominalRollController::class, 'storeOne'])->name('roll.students.store');
+        Route::put('/nominal-roll/students/{entry}/email', [NominalRollController::class, 'updateEmail'])->middleware('throttle:60,1')->name('roll.students.email');
         Route::delete('/nominal-roll/students/{entry}', [NominalRollController::class, 'destroy'])->name('roll.students.destroy');
     });
 

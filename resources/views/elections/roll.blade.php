@@ -97,7 +97,7 @@
                 @else
                     <ul class="roll-list mt-4">
                         @foreach ($entries as $entry)
-                            <li>
+                            <li class="flex-wrap">
                                 <span class="roll-matric">{{ $entry->matric_number }}</span>
                                 <span class="min-w-0 flex-1 truncate">{{ $entry->fullname ?? '—' }}</span>
                                 @if ($entry->level || $entry->programme)
@@ -110,6 +110,17 @@
                                         <button type="submit" class="icon-btn icon-btn-danger" aria-label="Remove {{ $entry->matric_number }} from the roll"><x-icon name="trash-2" /></button>
                                     </form>
                                 @endunless
+                                {{-- Correcting the email never changes who may vote, only where their
+                                     confirmation link goes, so it stays available while voting is open. --}}
+                                <details class="mt-1 w-full basis-full text-sm">
+                                    <summary class="inline-flex cursor-pointer items-center gap-1.5 text-muted"><x-icon name="mail" class="size-4" /> Set confirmation email</summary>
+                                    <form method="POST" action="{{ route('roll.students.email', ['entry' => $entry, 'q' => $search ?: null, 'page' => $entries->currentPage() > 1 ? $entries->currentPage() : null]) }}" class="mt-2 flex flex-wrap items-end gap-2">
+                                        @csrf
+                                        @method('PUT')
+                                        <x-field name="email" :id="'roll-email-'.$entry->id" label="Send the confirmation link to this address" type="email" class="min-w-0 flex-1" :value="$entry->email" autocomplete="off" required />
+                                        <x-button size="sm" variant="secondary">Save &amp; send link</x-button>
+                                    </form>
+                                </details>
                             </li>
                         @endforeach
                     </ul>
