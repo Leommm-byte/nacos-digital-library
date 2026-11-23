@@ -31,12 +31,6 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/signup/check-your-email', [SignupController::class, 'sent'])->name('signup.sent');
 
-    // Invitation emails (accounts made from the nominal roll).
-    Route::get('/invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
-    Route::post('/invitation/{token}', [InvitationController::class, 'store'])
-        ->middleware('throttle:10,10')
-        ->name('invitation.store');
-
     Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])
         ->middleware('throttle:10,10')
@@ -49,6 +43,16 @@ Route::middleware('guest')->group(function () {
     Route::get('/reset-with-code', [ResetCodeController::class, 'create'])->name('password.code');
     Route::post('/reset-with-code', [ResetCodeController::class, 'store'])->name('password.code.store');
 });
+
+// Invitation / account-verification links (accounts made from the nominal
+// roll). Open to guests AND to signed-in users: a student who is logged in
+// but hasn't verified their class email still has to open the link to
+// confirm, and opening it signs out any other session on the account
+// (docs/vote-integrity.md).
+Route::get('/invitation/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+Route::post('/invitation/{token}', [InvitationController::class, 'store'])
+    ->middleware('throttle:10,10')
+    ->name('invitation.store');
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
