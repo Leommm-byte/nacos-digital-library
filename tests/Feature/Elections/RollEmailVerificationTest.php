@@ -100,6 +100,13 @@ class RollEmailVerificationTest extends TestCase
     }
 
     #[Test]
+    public function the_login_and_forgot_pages_point_locked_out_students_to_verify(): void
+    {
+        $this->get(route('login'))->assertOk()->assertSee(route('verify-account'));
+        $this->get(route('password.request'))->assertOk()->assertSee(route('verify-account'));
+    }
+
+    #[Test]
     public function verify_points_students_without_an_account_to_signing_up(): void
     {
         $this->onRoll('F/ND/25/3210002', 'nobody@gmail.com');
