@@ -70,7 +70,12 @@ class InvitationController extends Controller
                     try {
                         $user->forceFill(['email' => $rollEmail, 'email_verified_at' => now()])->save();
                     } catch (QueryException) {
-                        // Leave the current address; they're still verified.
+                        // Another account already holds that address (a shared
+                        // or duplicated class email). Keep the current one;
+                        // they're still verified. Drop the failed change from
+                        // the model so a later save() (LoginSession::endAllFor)
+                        // doesn't re-attempt the duplicate write and crash.
+                        $user->discardChanges();
                     }
                 }
             }

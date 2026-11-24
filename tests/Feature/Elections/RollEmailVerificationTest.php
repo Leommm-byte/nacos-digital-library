@@ -156,6 +156,31 @@ class RollEmailVerificationTest extends TestCase
     }
 
     #[Test]
+    public function accepting_an_invitation_survives_a_class_email_another_account_already_uses(): void
+    {
+        // The class email on the roll is already taken by a second account
+        // (a shared or duplicated address), so the reclaim can't move it.
+        $this->onRoll('F/ND/25/3210070', 'shared@gmail.com');
+        User::factory()->create(['email' => 'shared@gmail.com']);
+
+        $user = User::factory()->create(['matric_number' => 'F/ND/25/3210070', 'email' => 'old@gmail.com']);
+        Invitations::queue($user);
+        $token = $this->linkFor($user);
+
+        // Before the fix this 500'd: the failed email write stayed on the
+        // model and endAllFor re-attempted it.
+        $this->post(route('invitation.store', $token), [
+            'password' => 'NewPass1!',
+            'password_confirmation' => 'NewPass1!',
+        ])->assertRedirect(route('home'));
+
+        $user->refresh();
+        $this->assertTrue($user->hasVerifiedRollEmail());
+        // The shared address couldn't be taken, so the account keeps its own.
+        $this->assertSame('old@gmail.com', $user->email);
+    }
+
+    #[Test]
     public function a_verified_student_on_hold_is_told_to_see_an_admin_not_to_verify(): void
     {
         $this->onRoll('F/ND/25/3210061', 'hold@gmail.com');
