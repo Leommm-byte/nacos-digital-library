@@ -156,11 +156,25 @@ class Election extends Model
      */
     public static function rollEmailElectionActive(): bool
     {
-        return (bool) Cache::remember('elections:roll-email-nudge', 60, fn () => self::query()
-            ->whereNull('organization_id')
-            ->where('require_roll_email', true)
-            ->whereIn('status', [ElectionStatus::Draft, ElectionStatus::Open])
-            ->exists());
+        return self::rollEmailNudgeElection() !== null;
+    }
+
+    /**
+     * The NACOS election a student's voting-status card speaks for: the one
+     * that is open, or else the next being set up. Null when none needs
+     * class-email verification. Cached like the nudge above: it changes only
+     * when an admin creates, opens or closes one (docs/vote-integrity.md).
+     */
+    public static function rollEmailNudgeElection(): ?self
+    {
+        return Cache::remember('elections:roll-email-nudge', 60, function () {
+            $base = self::query()
+                ->whereNull('organization_id')
+                ->where('require_roll_email', true);
+
+            return (clone $base)->where('status', ElectionStatus::Open)->orderBy('starts_at')->first()
+                ?? (clone $base)->where('status', ElectionStatus::Draft)->orderBy('created_at')->first();
+        });
     }
 
     public function isDraft(): bool
@@ -275,6 +289,19 @@ class Election extends Model
             return $this->departmentIneligibilityReason($user);
         }
 
+        return $this->membershipIneligibilityReason($user)
+            ?? $this->verificationIneligibilityReason($user);
+    }
+
+    /**
+     * Why a NACOS student is barred from this election for who they are:
+     * account state and class. Null when none of these bars them. Kept
+     * apart from the verification and hold checks so the voting-status card
+     * can tell someone who only has to confirm their account (they can fix
+     * it) from someone who isn't on this election's roll (they can't).
+     */
+    private function membershipIneligibilityReason(User $user): ?string
+    {
         if ($user->status !== UserStatus::Active) {
             return 'Your account isn\'t active.';
         }
@@ -331,6 +358,16 @@ class Election extends Model
             }
         }
 
+        return null;
+    }
+
+    /**
+     * Why a NACOS student who belongs to this election still can't vote yet:
+     * they haven't proved their class email, or an admin put the account on
+     * hold. Both are things the student can resolve (docs/vote-integrity.md).
+     */
+    private function verificationIneligibilityReason(User $user): ?string
+    {
         if ($this->needsRollEmailVerification($user)) {
             return 'Before you can vote, confirm this is really your account. We\'ll send a one-time link to the email NACOS has on record for you. Open "Verify my account", enter your matric number, then open the link.';
         }
@@ -340,6 +377,36 @@ class Election extends Model
         }
 
         return null;
+    }
+
+    /**
+     * A NACOS student's standing for this election, for the voting-status
+     * card (docs/vote-integrity.md). 'ready' only when they pass the very
+     * check the ballot uses, so a green card can't disagree with the vote
+     * page; 'verify' when confirming their account is all that's left;
+     * 'hold' when an admin must clear them; 'ineligible' otherwise.
+     *
+     * @return 'ready'|'verify'|'hold'|'ineligible'
+     */
+    public function voterStatus(User $user): string
+    {
+        if ($this->isForDepartment()) {
+            return $this->ineligibilityReason($user) === null ? 'ready' : 'ineligible';
+        }
+
+        if ($this->membershipIneligibilityReason($user) !== null) {
+            return 'ineligible';
+        }
+
+        if ($this->needsRollEmailVerification($user)) {
+            return 'verify';
+        }
+
+        if ($user->isOnVoteHold()) {
+            return 'hold';
+        }
+
+        return 'ready';
     }
 
     /**

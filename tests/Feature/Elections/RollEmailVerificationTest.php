@@ -146,10 +146,43 @@ class RollEmailVerificationTest extends TestCase
             ->assertSee('Confirm your account so you can vote')
             ->assertSee(route('verify-account'));
 
-        // Once verified, the nudge is gone.
+        // Once verified, the amber nudge gives way to a green "all set" card,
+        // so the student knows they can vote instead of guessing.
         $user->forceFill(['roll_email_verified_at' => now()])->save();
         Cache::forget('elections:roll-email-nudge');
-        $this->actingAs($user)->get(route('home'))->assertOk()->assertDontSee('Confirm your account so you can vote');
+        $this->actingAs($user)->get(route('home'))->assertOk()
+            ->assertDontSee('Confirm your account so you can vote')
+            ->assertSee('all set to vote');
+    }
+
+    #[Test]
+    public function a_verified_student_on_hold_is_told_to_see_an_admin_not_to_verify(): void
+    {
+        $this->onRoll('F/ND/25/3210061', 'hold@gmail.com');
+        $user = User::factory()->create(['matric_number' => 'F/ND/25/3210061']);
+        $user->forceFill(['roll_email_verified_at' => now(), 'vote_held_at' => now()])->save();
+
+        Election::factory()->requireRollEmail()->create();
+        Cache::forget('elections:roll-email-nudge');
+
+        $this->actingAs($user)->get(route('home'))->assertOk()
+            ->assertSee('on hold for voting')
+            ->assertDontSee('all set to vote')
+            ->assertDontSee('Confirm your account so you can vote');
+    }
+
+    #[Test]
+    public function a_student_not_on_the_roll_is_told_they_cannot_vote(): void
+    {
+        $user = User::factory()->create(['matric_number' => 'F/ND/25/3210062']);
+        $user->forceFill(['roll_email_verified_at' => now()])->save();
+
+        Election::factory()->requireRollEmail()->create(['roll_only' => true]);
+        Cache::forget('elections:roll-email-nudge');
+
+        $this->actingAs($user)->get(route('home'))->assertOk()
+            ->assertSee("isn't on the current nominal roll")
+            ->assertDontSee('all set to vote');
     }
 
     #[Test]
