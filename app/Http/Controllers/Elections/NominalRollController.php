@@ -40,6 +40,10 @@ class NominalRollController extends Controller
     public function index(Request $request): View
     {
         $search = trim($request->string('q')->toString());
+        // Filter the list by whether the student has confirmed their account,
+        // so an admin can work through just the ones still to confirm.
+        $status = $request->string('status')->toString();
+        $status = in_array($status, ['verified', 'unverified'], true) ? $status : '';
 
         $entries = RollEntry::query()
             ->when($search !== '', function ($query) use ($search) {
@@ -48,11 +52,20 @@ class NominalRollController extends Controller
                         ->orWhere('fullname', 'like', '%'.$search.'%');
                 });
             })
+            ->when($status === 'verified', fn ($query) => $query->whereIn('matric_number', fn ($sub) => $sub->select('matric_number')->from('users')->whereNotNull('roll_email_verified_at')))
+            ->when($status === 'unverified', fn ($query) => $query->whereIn('matric_number', fn ($sub) => $sub->select('matric_number')->from('users')->whereNull('roll_email_verified_at')))
             ->orderBy('matric_number')
             ->paginate(25)
             ->withQueryString()
             // Next and previous land on the list, not the top of the page.
             ->fragment('find');
+
+        // Confirmation status for just the students on this page, so each row
+        // can show who has confirmed and who still needs a link.
+        $accounts = User::query()
+            ->whereIn('matric_number', $entries->getCollection()->pluck('matric_number'))
+            ->get(['matric_number', 'roll_email_verified_at'])
+            ->keyBy('matric_number');
 
         $classes = [];
         $unsorted = 0;
@@ -74,6 +87,9 @@ class NominalRollController extends Controller
             'unsorted' => $unsorted,
             'total' => RollEntry::query()->count(),
             'withAccount' => RollEntry::query()->whereIn('matric_number', fn ($query) => $query->select('matric_number')->from('users'))->count(),
+            'verified' => RollEntry::query()->whereIn('matric_number', fn ($query) => $query->select('matric_number')->from('users')->whereNotNull('roll_email_verified_at'))->count(),
+            'accounts' => $accounts,
+            'status' => $status,
             'lastImport' => AuditLog::query()->where('action', 'roll_imported')->latest('id')->with('user:id,fullname')->first(),
             'lockedBy' => self::lockedBy(),
             'selected' => SchoolClass::fromKey($request->string('class')->toString()),
@@ -263,6 +279,39 @@ class NominalRollController extends Controller
         }
 
         return redirect()->to($back)->with('status', "Email updated for {$entry->matric_number}.".$note);
+    }
+
+    /**
+     * Resend the confirmation link to a student whose class email is already
+     * right but who hasn't opened it yet. Goes to the roll email, like every
+     * invitation, so it only ever reaches the real owner.
+     */
+    public function resendVerification(Request $request, RollEntry $entry): RedirectResponse
+    {
+        $back = route('roll.index', array_filter([
+            'q' => $request->string('q')->toString() ?: null,
+            'status' => $request->string('status')->toString() ?: null,
+            'page' => max(1, $request->integer('page')) > 1 ? $request->integer('page') : null,
+        ])).'#find';
+
+        $user = User::query()->where('matric_number', $entry->matric_number)->first();
+
+        if ($user === null) {
+            return redirect()->to($back)->with('status', "{$entry->matric_number} has no account yet. Create one from Create accounts.");
+        }
+
+        if ($user->hasVerifiedRollEmail()) {
+            return redirect()->to($back)->with('status', "{$entry->matric_number} has already confirmed their account.");
+        }
+
+        if (RollEntry::emailFor($entry->matric_number) === null) {
+            return redirect()->to($back)->with('status', "Add a class email for {$entry->matric_number} first, then send the link.");
+        }
+
+        Invitations::queue($user, by: $request->user(), priority: true);
+        Audit::record('verification_requested', $user, ['matric' => $entry->matric_number, 'via' => 'roll'], userId: $user->id);
+
+        return redirect()->to($back)->with('status', "Confirmation link queued for {$entry->matric_number}. It goes to their class email and sends within the hour.");
     }
 
     public function destroy(Request $request, RollEntry $entry): RedirectResponse

@@ -40,9 +40,10 @@
 
     <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div class="min-w-0 space-y-8">
-            <ul class="grid grid-cols-3 gap-3">
+            <ul class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <li class="stat-tile"><strong>{{ number_format($total) }}</strong><small>On the roll</small></li>
                 <li class="stat-tile"><strong>{{ number_format($withAccount) }}</strong><small>Have an account</small></li>
+                <li class="stat-tile"><strong>{{ number_format($verified) }}</strong><small>Confirmed · {{ number_format(max(0, $withAccount - $verified)) }} not yet</small></li>
                 <li class="stat-tile"><strong>{{ $uploaded }}<span class="text-muted">/{{ count($schoolClasses) }}</span></strong><small>Classes uploaded</small></li>
             </ul>
 
@@ -86,7 +87,15 @@
                     <label for="roll-search" class="sr-only">Find a student on the roll</label>
                     <x-icon name="search" class="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted" />
                     <input id="roll-search" name="q" type="search" value="{{ $search }}" placeholder="Matric number or name" class="field-input pl-11">
+                    @if ($status !== '')<input type="hidden" name="status" value="{{ $status }}">@endif
                 </form>
+
+                <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filter by confirmation">
+                    @foreach (['' => 'Everyone', 'unverified' => 'Not confirmed', 'verified' => 'Confirmed'] as $value => $label)
+                        <a href="{{ route('roll.index', array_filter(['q' => $search ?: null, 'status' => $value ?: null])) }}#find"
+                           @class(['btn', 'btn-sm', 'btn-primary' => $status === $value, 'btn-ghost' => $status !== $value])>{{ $label }}</a>
+                    @endforeach
+                </div>
 
                 @if ($entries->isEmpty())
                     @if ($search !== '')
@@ -97,11 +106,26 @@
                 @else
                     <ul class="roll-list mt-4">
                         @foreach ($entries as $entry)
+                            @php($account = $accounts[$entry->matric_number] ?? null)
+                            @php($state = $account === null ? 'none' : ($account->roll_email_verified_at ? 'verified' : 'unverified'))
                             <li class="flex-wrap">
                                 <span class="roll-matric">{{ $entry->matric_number }}</span>
                                 <span class="min-w-0 flex-1 truncate">{{ $entry->fullname ?? '—' }}</span>
                                 @if ($entry->level || $entry->programme)
                                     <x-badge class="shrink-0">{{ $entry->classLabel() }}</x-badge>
+                                @endif
+                                @if ($state === 'verified')
+                                    <x-badge variant="accent" class="shrink-0">Confirmed</x-badge>
+                                @elseif ($state === 'unverified')
+                                    <x-badge variant="danger" class="shrink-0">Not confirmed</x-badge>
+                                @else
+                                    <x-badge class="shrink-0">No account</x-badge>
+                                @endif
+                                @if ($state === 'unverified')
+                                    <form method="POST" action="{{ route('roll.students.resend', ['entry' => $entry, 'q' => $search ?: null, 'status' => $status ?: null, 'page' => $entries->currentPage() > 1 ? $entries->currentPage() : null]) }}">
+                                        @csrf
+                                        <x-button size="sm" variant="secondary" icon="mail">Resend link</x-button>
+                                    </form>
                                 @endif
                                 @unless ($lockedBy)
                                     <form method="POST" action="{{ route('roll.students.destroy', ['entry' => $entry, 'q' => $search ?: null, 'page' => $entries->currentPage() > 1 ? $entries->currentPage() : null]) }}" data-confirm="Take {{ $entry->matric_number }}{{ $entry->fullname ? ' ('.$entry->fullname.')' : '' }} off the roll? They won't be able to vote in elections limited to the roll.">
