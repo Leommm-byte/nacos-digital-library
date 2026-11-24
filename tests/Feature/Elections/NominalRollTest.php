@@ -349,4 +349,42 @@ class NominalRollTest extends TestCase
         $this->post(route('roll.students.store'), ['matric_number' => 'F/HD/24/0001003', 'fullname' => 'Late Comer', 'class' => 'full_time|HND1|swd'])
             ->assertSessionHasNoErrors();
     }
+
+    #[Test]
+    public function the_roll_shows_who_has_confirmed_and_filters_by_it(): void
+    {
+        RollEntry::create(['matric_number' => 'F/ND/25/5000001', 'fullname' => 'Confirmed Student', 'email' => 'a@gmail.com', 'programme' => 'full_time', 'level' => 'ND1']);
+        RollEntry::create(['matric_number' => 'F/ND/25/5000002', 'fullname' => 'Unconfirmed Student', 'email' => 'b@gmail.com', 'programme' => 'full_time', 'level' => 'ND1']);
+        RollEntry::create(['matric_number' => 'F/ND/25/5000003', 'fullname' => 'No Account Student', 'email' => 'c@gmail.com', 'programme' => 'full_time', 'level' => 'ND1']);
+
+        User::factory()->create(['matric_number' => 'F/ND/25/5000001'])->forceFill(['roll_email_verified_at' => now()])->save();
+        User::factory()->create(['matric_number' => 'F/ND/25/5000002']);
+
+        // Counts: 2 accounts, 1 confirmed, so 1 still to confirm.
+        $this->actingAs($this->admin)->get(route('roll.index'))->assertOk()
+            ->assertSee('Confirmed · 1 not yet')
+            ->assertSee('Not confirmed')
+            ->assertSee('No account');
+
+        // The "Not confirmed" filter shows only the unconfirmed account.
+        $this->actingAs($this->admin)->get(route('roll.index', ['status' => 'unverified']))->assertOk()
+            ->assertSee('F/ND/25/5000002')
+            ->assertDontSee('F/ND/25/5000001')
+            ->assertDontSee('F/ND/25/5000003');
+    }
+
+    #[Test]
+    public function resending_queues_a_confirmation_link_only_for_an_unconfirmed_account(): void
+    {
+        $entry = RollEntry::create(['matric_number' => 'F/ND/25/5000010', 'fullname' => 'Needs Link', 'email' => 'link@gmail.com', 'programme' => 'full_time', 'level' => 'ND1']);
+        $user = User::factory()->create(['matric_number' => 'F/ND/25/5000010']);
+
+        $this->actingAs($this->admin)->post(route('roll.students.resend', $entry))->assertRedirect();
+        $this->assertDatabaseHas('account_invitations', ['user_id' => $user->id, 'accepted_at' => null]);
+
+        // A roll entry with no account yet is reported, not queued or crashed.
+        $ghost = RollEntry::create(['matric_number' => 'F/ND/25/5000011', 'email' => 'ghost@gmail.com', 'programme' => 'full_time', 'level' => 'ND1']);
+        $this->actingAs($this->admin)->post(route('roll.students.resend', $ghost))->assertRedirect();
+        $this->assertDatabaseCount('account_invitations', 1);
+    }
 }
